@@ -2,15 +2,29 @@
 # To do later if necessary
 
 
-#' Prepare data for estimation
+#' Prepares data for panel analysis
 #'
+#' Prepares indicator data for panel estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
 #'
+#' @param indicator Character. Indicator code or name (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.
+#' @param data Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.
+#' @param startyear_data Integer. Minimum year to include. Defaults to 2000.
+#' @param code_col Character. Name of the column with country codes. Defaults to `"iso3c"`.
+#' @param year_col Character. Name of the column with years. Defaults to `"date"`.
 #'
+#' @return A `data.table` with one row per country-year spell, including initial and end years, initial value, annualized change, and a fold ID for cross-validation.
+#' @importFrom splitstackshape expandRows
+#'
+#' @export
 prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                       startyear_data = 2000,
                       code_col       = "iso3c",
                       year_col       = "date") {
+
+  # ________________________________
+  # Start formatting the data ####
+  # ________________________________
 
   # Convert to data.table
   dt <- data.table::as.data.table(data)
@@ -28,8 +42,10 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   data.table::setorder(dt,
                        code,
                        year)
+  # _______________________________________________________
+  # Compute annualized changes from 5 to 10 years ah.  ####
+  # _______________________________________________________
 
-  # Compute annualized changes from 5 to 10 years ahead
   dt <- dt |>
     fmutate(c5   = (lead(y,5)-y)/5,
              c6  = (lead(y,6)-y)/6,
@@ -65,7 +81,10 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
     fmutate(expansion = round(max(n)/n)) |>
     splitstackshape::expandRows('expansion')
 
-  # Create folds for cross-validation
+  # _____________________________________________
+  # Create folds for cross-validation ####
+  # _____________________________________________
+
   folds <- dt |>
     fselect(code) |>
     distinct()
@@ -73,6 +92,11 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   folds$fold_id <- sample(1:5,
                           size          = nrow(folds),
                           replace       = TRUE)
+
+  # ________________________________
+  # Return ####
+  # ________________________________
+
 
   res_data    <- joyn::joyn(dt,
                               folds,
