@@ -6,11 +6,11 @@
 #'
 #'
 #'
-prep_data <- function(data           = wbstats::wb_data(indicator = match.arg(indicator),lang = "en",country="countries_only"),
+prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
+                      data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                       startyear_data = 2000,
                       code_col       = "iso3c",
-                      year_col       = "date",
-                      indicator      = "EG.ELC.ACCS.ZS") {
+                      year_col       = "date") {
 
   # Convert to data.table
   dt <- data.table::as.data.table(data)
@@ -21,11 +21,9 @@ prep_data <- function(data           = wbstats::wb_data(indicator = match.arg(in
                        new         = c("code", "year", "y"),
                        skip_absent = FALSE)
 
-  # Keep only relevant columns
-  dt <- dt[, .(code, year, y)]
-
-  # Filter years and order
-  dt <- dt[year >= startyear_data]
+  dt <- dt |>
+    fselect(code, year, y) |>
+    fsubset(year >= startyear_data)
 
   data.table::setorder(dt,
                        code,
