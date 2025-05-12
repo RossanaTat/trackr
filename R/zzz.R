@@ -1,7 +1,7 @@
 .onLoad <- function(libname, pkgname) {
   op <- options()
   op.sgtrackr <- list(
-    sgtrackr.source      = "wdi",
+    #sgtrackr.source      = "wdi",
     sgtrackr.targetyear  = 2030,
     #sgtrackr.default_granularity = 0.1, #think about it
     sgtrackr.pctl        = FALSE,
