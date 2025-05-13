@@ -21,5 +21,5 @@ whether higher or lower values of the initial variable are considered better.}
 data frame with speed path
 }
 \description{
-Get speed paths
+Calculates the expected path over time from the worst value to the best value.
 }

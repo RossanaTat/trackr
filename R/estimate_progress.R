@@ -213,3 +213,87 @@ predict_pctls <- function(data_model,
 
 }
 
+#' Predict Changes in a Variable Over Time
+#'
+#' This function calculates projected changes in a variable based on its initial value.
+#' Two methods are available: `"speed"` and `"percentiles"`.
+#'
+#' @param data A data frame or list representing the input data model to be used for the prediction.
+#' @inheritParams predict_speed
+#' @inheritParams predict_pctls
+#' @inheritParams get_speed_path
+#' @return A list containing prediction results. The content depends on the selected method:
+#' \describe{
+#'   \item{`predictions_speed`}{Predicted changes using the `"speed"` method (if selected).}
+#'   \item{`path_speed`}{The path or trajectory of predictions based on the `"speed"` method (if selected).}
+#'   \item{`predictions_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
+#' }
+#'
+#' @details
+#' - The `"speed"` method models change using a parametric growth model based on lambda values.
+#' - The `"percentiles"` method estimates expected values based on percentile changes.
+#'
+#' @seealso [predict_speed()], [get_speed_path()], [predict_pctls()]
+#'
+#' @export
+predict_changes <- function(data,
+                            min         = NULL,
+                            max         = NULL,
+                            floor       = 0,
+                            ceiling     = 100,
+                            granularity = 0.1,
+                            lambdas     = NULL,
+                            best        = "high",
+                            method      = c("speed", "percentiles"),
+                            verbose     = TRUE) {
+
+  # Add validations on inputs
+  method <- match.arg(method)
+
+  # Validate 'best'
+  if (!best %in% c("high", "low")) {
+    cli::cli_abort("`best` must be either 'high' or 'low'")
+  }
+
+  if (verbose) {cli::cli_alert_info("Selected method for computations: {.strong {method}}")}
+
+  if (method == "speed") {
+
+    # Predict speed
+    predictions_speed <- predict_speed(data_model  = data,
+                                       min         = min,
+                                       max         = max,
+                                       lambdas     = lambdas,
+                                       granularity = granularity,
+                                       floor       = floor,
+                                       ceiling     = ceiling)
+
+    # Get speed paths
+    path_speed <- get_speed_path(predictions_speed = predictions_speed,
+                                 granularity       = granularity,
+                                 best              = best,
+                                 verbose           = verbose)
+
+    return(list(
+      predictions_speed = predictions_speed,
+      path_speed        = path_speed
+    ))
+
+  } else {
+
+    predictions_percentiles <- predict_pctls(data_model  = data,
+                                             min         = min,
+                                             max         = max,
+                                             granularity = granularity,
+                                             floor       = floor,
+                                             ceiling     = ceiling,
+                                             verbose     = verbose
+                                             )
+
+    return(list(
+      predictions_pctls = predictions_pctls
+    ))
+  }
+
+}
+
