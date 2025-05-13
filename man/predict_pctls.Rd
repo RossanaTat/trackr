@@ -6,11 +6,11 @@
 \usage{
 predict_pctls(
   data_model,
-  min,
-  max,
-  granularity,
-  floor,
-  ceiling,
+  min = NULL,
+  max = NULL,
+  granularity = 0.1,
+  floor = 0,
+  ceiling = 100,
   verbose = TRUE
 )
 }

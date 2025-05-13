@@ -84,6 +84,53 @@ predict_speed <- function(data_model,
 
 }
 
+#' Get speed paths
+#'
+#' Calculates the expected path over time from the worst value to the best value.
+#'
+#' @inheritParams predict_speed
+#' @param best Character string, either \code{"high"} (default) or \code{"low"}, indicating
+#'   whether higher or lower values of the initial variable are considered better.
+#' @return data frame with speed path
+#'
+get_speed_path <- function(predictions_speed,
+                           granularity = 0.1,
+                           best        = "high",
+                           verbose     = TRUE) {
+
+  # Add validations on inputs ####
+
+  if (best=="low") {
+
+    predictions_speed <- predictions_speed |>
+      roworder(-initialvalue) |>
+      fmutate(change=-change)
+
+  }
+
+  path_speed <- predictions_speed |>
+    ftransform(
+      y    = initialvalue,
+      time = change
+    ) |>
+    ftransform(
+      time = {
+        ltime        <- L(time)  # Lagged time
+        time_new     <- 1 / ltime * granularity
+        time_new[1L] <- 0  # Set first to 0
+        cumsum(time_new)
+      }
+    ) |>
+    fsubset(!is.infinite(time) & !is.nan(time)) |>
+    fselect(time,
+            y)
+
+  if (verbose) cli::cli_alert_success("Path speed successfully calculated")
+
+  return(path_speed)
+
+}
+
 #' Predict percentiles
 #'
 #' This function calculates the changes as a function of initial values by percentile
