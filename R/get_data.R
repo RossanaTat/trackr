@@ -11,6 +11,7 @@
 #' @param startyear_data Integer. Minimum year to include. Defaults to 2000.
 #' @param code_col Character. Name of the column with country codes. Defaults to `"iso3c"`.
 #' @param year_col Character. Name of the column with years. Defaults to `"date"`.
+#' @param verbose Logical. If TRUE print messages in console. Default is TRUE
 #'
 #' @return A `data.table` with one row per country-year spell, including initial and end years, initial value, annualized change, and a fold ID for cross-validation.
 #' @importFrom splitstackshape expandRows
@@ -20,7 +21,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                       startyear_data = 2000,
                       code_col       = "iso3c",
-                      year_col       = "date") {
+                      year_col       = "date",
+                      verbose = TRUE) {
 
   # ________________________________
   # Start formatting the data ####
@@ -104,6 +106,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                               match_type = "m:1",
                               reportvar  = FALSE,
                               verbose    = FALSE)
+
+  if (verbose) cli::cli_alert_success("user data successfuly formatted")
 
   return(res_data)
 

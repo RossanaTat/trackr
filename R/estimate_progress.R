@@ -22,6 +22,7 @@
 #'   If `NULL`, predictions are unrestricted on the lower end.
 #' @param ceiling Numeric or `NULL`. Upper bound for the final level.
 #'   If `NULL`, predictions are unrestricted on the upper end.
+#' @param verbose. Logical. If TRUE, display messages in console. Default is TRUE
 #'
 #' @return A data frame with:
 #'   - `initialvalue`: sequence of values used for prediction.
@@ -38,14 +39,14 @@ predict_speed <- function(data_model,
   # Validation of inputs ####
 
   if (is.null(min)) {
-    min = round(if_else(is.na(floor),
+    min = round(if_else(is.null(floor),
                         min(data_model$initialvalue),
                         floor)/granularity)*granularity
 
   }
 
   if (is.null(max)) {
-    max = round(if_else(is.na(ceiling),
+    max = round(if_else(is.null(ceiling),
                         max(data_model$initialvalue),
                         ceiling)/granularity)*granularity
 
@@ -82,3 +83,86 @@ predict_speed <- function(data_model,
   return(predictions_speed)
 
 }
+
+#' Predict percentiles
+#'
+#' This function calculates the changes as a function of initial values by percentile
+#'
+#' @inheritParams predict_speed
+#' @return A data frame with calculated changes by percentiles.
+#' @export
+predict_pctls <- function(data_model,
+                          min         = NULL,
+                          max         = NULL,
+                          granularity = 0.1,
+                          floor       = 0,
+                          ceiling     = 100,
+                          verbose     = TRUE) {
+
+  # __________________________________ #
+  # Validate input ~~~~~ ####
+  # __________________________________ #
+
+
+  if (is.null(min)) {
+    min = round(if_else(is.null(floor),
+                        min(data_model$initialvalue),
+                        floor)/granularity)*granularity
+
+  }
+
+  if (is.null(max)) {
+    max = round(if_else(is.null(ceiling),
+                        max(data_model$initialvalue),
+                        ceiling)/granularity)*granularity
+
+  }
+
+
+
+  # Uses cross-validation to find the optimal smoothing of percentile-curves.
+  # gcrq automatically ensures that the percentile-curves do not cross
+
+  fit_pctl <- gcrq(change ~ ps(initialvalue,
+                               lambda = lambdas),
+                   foldid = data_model$fold_id,
+                   tau = pctlseq/100,
+                   data = data_model)
+
+  predictions_pctl <- as.data.frame(charts(fit_pctl, k = seq(min, max, granularity))) |>
+
+    fmutate(initialvalue = round(
+      seq(min ,max, granularity)/granularity
+    )*granularity)
+
+
+  predictions_pctl <- predictions_pctl |>
+    collapse::pivot(ids = "initialvalue",
+                    values = names(predictions_pctl |> fselect(-initialvalue)),
+                    names = list(variable = "pctl",
+                                 value = "change"),
+                    how = "longer") |>
+    fmutate(pctl = 100*as.numeric(pctl)) |>
+
+    # TODO - MOVE TO COLLAPSE
+    rowwise() |>
+    # Expected changes can never give an outcome lower than the floor
+    mutate(change = if_else(!is.na(floor),
+                            max(change,
+                                floor-initialvalue),
+                            change),
+           # Expected changes can never give an outcome higher than the ceiling
+           change = if_else(!is.na(ceiling),
+                            min(change,ceiling-initialvalue),
+                            change)) |>
+    ungroup()
+
+
+  if (verbose) {cli::cli_alert_success(
+    "Changes as function of initial vals by percentiles successfully calculated"
+                                       )}
+  return(predictions_pctl)
+
+
+}
+

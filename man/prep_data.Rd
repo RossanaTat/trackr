@@ -9,7 +9,8 @@ prep_data(
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   startyear_data = 2000,
   code_col = "iso3c",
-  year_col = "date"
+  year_col = "date",
+  verbose = TRUE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ prep_data(
 \item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
 
 \item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+
+\item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
 \value{
 A `data.table` with one row per country-year spell, including initial and end years, initial value, annualized change, and a fold ID for cross-validation.
