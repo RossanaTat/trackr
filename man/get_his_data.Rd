@@ -11,7 +11,7 @@ get_his_data(
   year_col = "date",
   start_year = 2000,
   end_year = 2022,
-  granularity
+  granularity = 0.1
 )
 }
 \arguments{
@@ -22,6 +22,10 @@ get_his_data(
 \item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
 
 \item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+
+\item{start_year}{The first year to include in the analysis}
+
+\item{end_year}{The last year to include in the analysis}
 
 \item{granularity}{Numeric. Step size for the prediction sequence. Default is `0.1`.}
 }
