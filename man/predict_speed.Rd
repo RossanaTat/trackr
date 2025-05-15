@@ -11,7 +11,8 @@ predict_speed(
   lambdas = NULL,
   granularity = 0.1,
   floor = 0,
-  ceiling = 100
+  ceiling = 100,
+  verbose = TRUE
 )
 }
 \arguments{

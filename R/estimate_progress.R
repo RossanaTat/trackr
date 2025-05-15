@@ -34,7 +34,8 @@ predict_speed <- function(data_model,
                           lambdas     = NULL,
                           granularity = 0.1,
                           floor       = 0,
-                          ceiling     = 100) {
+                          ceiling     = 100,
+                          verbose     = TRUE) {
 
   # Validation of inputs ####
 
@@ -79,6 +80,8 @@ predict_speed <- function(data_model,
   predictions_speed <- fmutate(predictions_speed,
                                change = pmax(change, floor - initialvalue),
                                change = pmin(change, ceiling - initialvalue))
+
+  if (verbose) cli::cli_alert_success("Predictions speed successfully calculated")
 
   return(predictions_speed)
 
@@ -213,12 +216,15 @@ predict_pctls <- function(data_model,
 
 }
 
-#' Predict Changes in a Variable Over Time
+#' Predict Changes in an indicator Over Time
 #'
-#' This function calculates projected changes in a variable based on its initial value.
+#' This function calculates projected changes in an indicator based on its initial value.
 #' Two methods are available: `"speed"` and `"percentiles"`.
 #'
-#' @param data A data frame or list representing the input data model to be used for the prediction.
+#' @param data A data frame or list representing the input data model to be used for the prediction
+#' @param speed Logical. If TRUE, calculate speed of progress scores. For indicators without overall progress, the speed of progress cannot be computed
+#' Default is FALSE
+#' @param percentiles Logical. If TRUE, calculate percentile scores. Default is TRUE
 #' @inheritParams predict_speed
 #' @inheritParams predict_pctls
 #' @inheritParams get_speed_path
@@ -230,8 +236,8 @@ predict_pctls <- function(data_model,
 #' }
 #'
 #' @details
-#' - The `"speed"` method models change using a parametric growth model based on lambda values.
-#' - The `"percentiles"` method estimates expected values based on percentile changes.
+#' - The `"speed"` method XX TO COMPLETE
+#' - The `"percentiles"` method xx TO COMPLETE
 #'
 #' @seealso [predict_speed()], [get_speed_path()], [predict_pctls()]
 #'
@@ -244,20 +250,29 @@ predict_changes <- function(data,
                             granularity = 0.1,
                             lambdas     = NULL,
                             best        = "high",
-                            method      = c("speed", "percentiles"),
+                            speed       = FALSE,
+                            percentiles = TRUE,
                             verbose     = TRUE) {
 
   # Add validations on inputs
-  method <- match.arg(method)
+
+  # at least one between speed and percentiles should be true
+  if(speed == FALSE && percentiles == FALSE) {
+    cli::cli_abort("At least one between speed and percentiles should be TRUE")
+  }
 
   # Validate 'best'
   if (!best %in% c("high", "low")) {
     cli::cli_abort("`best` must be either 'high' or 'low'")
   }
 
-  if (verbose) {cli::cli_alert_info("Selected method for computations: {.strong {method}}")}
+  if (verbose) {cli::cli_alert_info("Selected speed method for computations: {.strong {speed}}")}
+  if (verbose) {cli::cli_alert_info("Selected pctls method for computations: {.strong {percentiles}}")}
 
-  if (method == "speed") {
+
+  res_list <- list()
+
+  if (speed) {
 
     # Predict speed
     predictions_speed <- predict_speed(data_model  = data,
@@ -266,7 +281,8 @@ predict_changes <- function(data,
                                        lambdas     = lambdas,
                                        granularity = granularity,
                                        floor       = floor,
-                                       ceiling     = ceiling)
+                                       ceiling     = ceiling,
+                                       verbose     = verbose)
 
     # Get speed paths
     path_speed <- get_speed_path(predictions_speed = predictions_speed,
@@ -274,14 +290,14 @@ predict_changes <- function(data,
                                  best              = best,
                                  verbose           = verbose)
 
-    return(list(
-      predictions_speed = predictions_speed,
-      path_speed        = path_speed
-    ))
+    res_list$predictions_speed <- predictions_speed
+    res_list$path_speed        <- path_speed
 
-  } else {
+  }
 
-    predictions_percentiles <- predict_pctls(data_model  = data,
+  if (percentiles) {
+
+    predictions_pctls <- predict_pctls(data_model  = data,
                                              min         = min,
                                              max         = max,
                                              granularity = granularity,
@@ -290,10 +306,12 @@ predict_changes <- function(data,
                                              verbose     = verbose
                                              )
 
-    return(list(
-      predictions_pctls = predictions_pctls
-    ))
+    res_list$predictions_pctls <- predictions_pctls
   }
+
+  return(
+    invisible(res_list)
+  )
 
 }
 

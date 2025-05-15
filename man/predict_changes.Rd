@@ -13,12 +13,13 @@ predict_changes(
   granularity = 0.1,
   lambdas = NULL,
   best = "high",
-  method = c("speed", "percentiles"),
+  speed = FALSE,
+  percentiles = TRUE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{data}{A data frame or list representing the input data model to be used for the prediction.}
+\item{data}{A data frame or list representing the input data model to be used for the prediction}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
 it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
@@ -39,6 +40,11 @@ Defaults to `0.1 * 1.148^(0:50)`.}
 
 \item{best}{Character string, either \code{"high"} (default) or \code{"low"}, indicating
 whether higher or lower values of the initial variable are considered better.}
+
+\item{speed}{Logical. If TRUE, calculate speed of progress scores. For indicators without overall progress, the speed of progress cannot be computed
+Default is FALSE}
+
+\item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 }
 \value{
 A list containing prediction results. The content depends on the selected method:
@@ -53,8 +59,8 @@ This function calculates projected changes in a variable based on its initial va
 Two methods are available: `"speed"` and `"percentiles"`.
 }
 \details{
-- The `"speed"` method models change using a parametric growth model based on lambda values.
-- The `"percentiles"` method estimates expected values based on percentile changes.
+- The `"speed"` method XX TO COMPLETE
+- The `"percentiles"` method xx TO COMPLETE
 }
 \seealso{
 [predict_speed()], [get_speed_path()], [predict_pctls()]
