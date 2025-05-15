@@ -142,3 +142,76 @@ project_pctls_path <- function(data_his,
 
   return(path_his_pctl)
 }
+
+
+#' Project speed path
+#'
+#' Calculates path a country would have taken with various speeds
+#'
+#' @inheritParams get_speed_path
+#' @inheritParams project_pctls_path
+#' @param speedseq numeric vector of speed paths to calculate
+#'
+#'
+#' @return A data frame of projected values under different speeds
+#'
+project_path_speed <- function(data_his,
+                               speedseq = c(0.25,0.5,1,2,4),
+                               path_speed,
+                               floor,
+                               ceiling,
+                               granularity,
+                               start_year = 2000,
+                               end_year = 2022,
+                               min = NULL,
+                               max = NULL) {
+
+
+  data_his <- cross_join(data_his,
+                         as.data.frame(speedseq)) |>
+    rename("speed" = "speedseq")
+
+  # Create a new data set which will contain the path a country would have taken with various speeds
+  path_his_speed <- data_his |>
+    filter(!is.na(y_his)) |>
+    select(code,
+           y_his,
+           year,
+           speed) |>
+    cross_join(path_speed) |>
+    mutate(bst = best) |>
+    filter(if_else(bst=="high",
+                   y_his<=y,
+                   y_his>=y)) |>
+    group_by(code,
+             speed) |>
+    arrange(time) |>
+    mutate(year = year + (time-time[1])/speed) |>
+    ungroup() |>
+    select(-c(y_his,time,bst)) |>
+    rename("y_his" = "y") |>
+    joyn::joyn(data_his,
+               match_type="1:1",
+               by=c("code","year","speed"),
+               reportvar=FALSE,
+               y_vars_to_keep="y") |>
+    group_by(code,
+             speed) |>
+    arrange(year) |>
+    mutate(y_his = zoo::na.approx(y_his,
+                                  year,
+                                  na.rm=FALSE,
+                                  rule=2)) |>
+    filter(year %in% seq(start_year,
+                         end_year,
+                         1)) |>
+    ungroup() |>
+    # Only keep cases where target has not been reached
+    filter(between(y,
+                   min,
+                   max))
+
+  return(path_his_speed)
+
+
+}
