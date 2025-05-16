@@ -7,7 +7,7 @@
 #' The function can restrict predictions to a range between a specified `floor` and `ceiling`
 #' (e.g., targets), or default to the observed data range if these are not specified.
 #'
-#' @param data_model A data frame with the training data. Must contain:
+#' @param data_model A data frame with the training data. Obtained through `prep_data()`. Must contain:
 #'   - `initialvalue`: numeric, the initial level of the indicator.
 #'   - `change`: numeric, the change in the indicator.
 #'   - `fold_id`: numeric or factor, used for cross-validation.

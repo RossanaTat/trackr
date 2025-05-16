@@ -195,15 +195,15 @@ project_pctls_path <- function(data_his,
 #' @return A data frame of projected values under different speeds
 #'
 project_path_speed <- function(data_his,
-                               speedseq = c(0.25,0.5,1,2,4),
+                               speedseq    = c(0.25,0.5,1,2,4),
                                path_speed,
-                               floor   = 0,
-                               ceiling = 100,
+                               floor       = 0,
+                               ceiling     = 100,
                                granularity = 0.1,
-                               start_year = 2000,
-                               end_year = 2022,
-                               min = NULL,
-                               max = NULL) {
+                               start_year  = 2000,
+                               end_year    = 2022,
+                               min         = NULL,
+                               max         = NULL) {
 
   # Validate input
 

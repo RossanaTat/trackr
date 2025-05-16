@@ -15,13 +15,14 @@ ceiling        = 100
 granularity    = 0.1
 lambdas        = 0.1*1.148^(0:50)
 
-# Data model
+# Data wdi ####
 
 data_wdi <- wbstats::wb_data(indicator = indicator,lang = "en",country="countries_only") |>
   rename("year" = "date","code" = "iso3c","y"=indicator) |>
   # Only keep relevant columns
   select(year,code,y)
 
+# Data his ####
 data_his <- data_wdi |>
   filter(between(year,startyear_evaluation,endyear_evaluation)) |>
   group_by(code) |>
@@ -35,6 +36,8 @@ data_his <- data_wdi |>
   ungroup() |>
   as.data.table()
 
+
+# Data model ####
 data_model <- data_wdi  |>
   # Remove data not to be used for modelling
   filter(year>=startyear_data) |>
@@ -74,7 +77,7 @@ data_model    <- joyn::joyn(data_model,
                             match_type="m:1",
                             reportvar=FALSE,
                             verbose=FALSE)
-
+# Min and max ####
 min = round(
   if_else(is.na(floor),
           min(data_model$initialvalue),
@@ -229,4 +232,81 @@ test_that("project_pctls_path works as expected", {
 # Speed paths ~~~ ####
 # _____________________________________________ #
 
+# Output --------------- #
+test_that("project_path_speed() works as expected", {
 
+  # Prep input data
+  indicator <- "EG.ELC.ACCS.ZS"
+  data_model <- prep_data()
+
+  data_his <- get_his_data(
+                           start_year  = 2000,
+                           end_year    = 2022,
+                           granularity = 0.1,
+                           min         = data_model$min,
+                           max         = data_model$max)
+
+  out <- predict_changes(data        = data_model$data_model,
+                         percentiles = FALSE,
+                         speed       = TRUE)
+
+  # Run function
+  result <- project_path_speed(data_his    = data_his,
+                               path_speed  = out$path_speed,
+                               start_year  = 2000,
+                               end_year    = 2022,
+                               min         = data_model$min,
+                               max         = data_model$max)
+
+  # Assertions
+  expect_s3_class(result, "data.table")
+  expect_true(all(c("code", "year", "speed", "y", "y_his") %in% names(result)))
+  expect_true(all(result$year >= 2000 & result$year <= 2022))
+  expect_true(all(result$y >= data_model$min & result$y <= data_model$max, na.rm = TRUE))
+  expect_true(all(result$y_his >= data_model$min & result$y_his <= data_model$max, na.rm = TRUE))
+
+  # No missing combinations of code/year/speed in the output (assuming that's expected)
+  anyDuplicated(result[, .(code, year, speed)]) |>
+    expect_equal(0)
+
+  # Expected Result  -------------- #
+
+  data_his <- cross_join(data_his,as.data.frame(speedseq)) |>
+    rename("speed" = "speedseq")
+
+  # Create a new dataset which will contain the path a country would have taken with various speeds
+  expected <- data_his |>
+    filter(!is.na(y_his)) |>
+    select(code,y_his,year,speed) |>
+    cross_join(out$path_speed) |>
+    mutate(bst = best) |>
+    filter(if_else(bst=="high",y_his<=y,y_his>=y)) |>
+    group_by(code,speed) |>
+    arrange(time) |>
+    mutate(year = year + (time-time[1])/speed) |>
+    ungroup() |>
+    select(-c(y_his,time,bst)) |>
+    rename("y_his" = "y") |>
+    joyn::joyn(data_his,match_type="1:1",by=c("code","year","speed"),reportvar=FALSE,y_vars_to_keep="y") |>
+    group_by(code,speed) |>
+    arrange(year) |>
+    mutate(y_his = zoo::na.approx(y_his,year,na.rm=FALSE,rule=2)) |>
+    filter(year %in% seq(startyear_evaluation,endyear_evaluation,1)) |>
+    ungroup() |>
+    # Only keep cases where target has not been reached
+    filter(between(y,min,max)) |>
+    as.data.table()
+
+  # Package -------------- ##
+  # --- . ---------- Output #
+
+
+  # Compare result to expected (sort both before comparison)
+  setDT(result); setDT(expected)
+  setcolorder(expected, names(result))
+  setkeyv(result, c("code", "year", "speed"))
+  setkeyv(expected, c("code", "year", "speed"))
+
+  expect_equal(result, expected, ignore_attr = TRUE)
+
+  })
