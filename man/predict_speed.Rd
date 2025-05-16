@@ -16,7 +16,7 @@ predict_speed(
 )
 }
 \arguments{
-\item{data_model}{A data frame with the training data. Must contain:
+\item{data_model}{A data frame with the training data. Obtained through `prep_data()`. Must contain:
 - `initialvalue`: numeric, the initial level of the indicator.
 - `change`: numeric, the change in the indicator.
 - `fold_id`: numeric or factor, used for cross-validation.}
