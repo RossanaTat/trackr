@@ -2,7 +2,7 @@
 # To do later if necessary
 
 
-#' Prepares data for panel analysis
+#' Prepares data for analysis
 #'
 #' Prepares indicator data for panel estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
 #'
@@ -47,6 +47,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   # _______________________________________________________
   # Compute annualized changes from 5 to 10 years ah.  ####
   # _______________________________________________________
+
+  # To optimize with collapse
 
   dt <- dt |>
     fmutate(c5   = (lead(y,5)-y)/5,

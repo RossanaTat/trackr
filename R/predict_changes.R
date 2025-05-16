@@ -15,12 +15,12 @@
 #'   it is set to `floor` (if provided) or `min(data_model$initialvalue)`.
 #' @param max Optional. Maximum value of `initialvalue` to predict. If `NULL`,
 #'   it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.
-#' @param lambdas Optional. A vector of lambda values used in the penalized spline.
+#' @param lambdas Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 #'   Defaults to `0.1 * 1.148^(0:50)`.
-#' @param granularity Numeric. Step size for the prediction sequence. Default is `0.1`.
-#' @param floor Numeric or `NULL`. Lower bound for the final level (`initialvalue + change`).
+#' @param granularity Numeric. Granularity in outcome variable. Default is `0.1`.
+#' @param floor Numeric or `NULL`.Minimum value of indicator.
 #'   If `NULL`, predictions are unrestricted on the lower end.
-#' @param ceiling Numeric or `NULL`. Upper bound for the final level.
+#' @param ceiling Maximum value of indicator (NA if none).
 #'   If `NULL`, predictions are unrestricted on the upper end.
 #' @param verbose. Logical. If TRUE, display messages in console. Default is TRUE
 #'
@@ -38,6 +38,9 @@ predict_speed <- function(data_model,
                           verbose     = TRUE) {
 
   # Validation of inputs ####
+
+  # If data model is empty
+
 
   if (is.null(min)) {
     min = round(if_else(is.null(floor),
@@ -79,7 +82,8 @@ predict_speed <- function(data_model,
 
   predictions_speed <- fmutate(predictions_speed,
                                change = pmax(change, floor - initialvalue),
-                               change = pmin(change, ceiling - initialvalue))
+                               change = pmin(change, ceiling - initialvalue)) |>
+    as.data.table()
 
   if (verbose) cli::cli_alert_success("Predictions speed successfully calculated")
 
