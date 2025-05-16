@@ -22,11 +22,23 @@ project_path_speed(
 
 \item{speedseq}{numeric vector of speed paths to calculate}
 
+\item{floor}{Numeric or `NULL`.Minimum value of indicator.
+If `NULL`, predictions are unrestricted on the lower end.}
+
+\item{ceiling}{Maximum value of indicator (NA if none).
+If `NULL`, predictions are unrestricted on the upper end.}
+
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
 \item{start_year}{The first year to include in the analysis}
 
 \item{end_year}{The last year to include in the analysis}
+
+\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
+it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+
+\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
+it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 }
 \value{
 A data frame of projected values under different speeds

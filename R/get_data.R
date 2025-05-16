@@ -20,6 +20,9 @@
 prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                       startyear_data = 2000,
+                      floor          = 0,
+                      ceiling        = 100,
+                      granularity    = 0.1,
                       code_col       = "iso3c",
                       year_col       = "date",
                       verbose = TRUE) {
@@ -107,7 +110,28 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                               by         = "code",
                               match_type = "m:1",
                               reportvar  = FALSE,
-                              verbose    = FALSE)
+                              verbose    = FALSE) |>
+    as.data.table()
+
+  # Calculate floor/ceiling adjusted bounds
+  min_val <- round(
+    ifelse(is.na(floor),
+           min(dt$initialvalue, na.rm = TRUE),
+           floor) / granularity
+  ) * granularity
+
+  max_val <- round(
+    ifelse(is.na(ceiling),
+           max(dt$initialvalue, na.rm = TRUE),
+           ceiling) / granularity
+  ) * granularity
+
+  return(list(
+    data_model  = res_data,
+    min_initval = min_val,
+    max_initval = max_val
+  ))
+
 
   if (verbose) cli::cli_alert_success("user data successfuly formatted")
 

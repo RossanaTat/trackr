@@ -6,10 +6,14 @@
 \usage{
 project_pctls_path(
   data_his,
-  start_year,
-  end_year,
-  granularity,
-  pctlseq,
+  start_year = 2000,
+  end_year = 2022,
+  granularity = 0.1,
+  floor = 0,
+  ceiling = 100,
+  min = NULL,
+  max = NULL,
+  pctlseq = seq(20, 80, 20),
   predictions_pctl,
   verbose = TRUE
 )
@@ -22,6 +26,18 @@ project_pctls_path(
 \item{end_year}{The last year to include in the analysis}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+
+\item{floor}{Numeric or `NULL`.Minimum value of indicator.
+If `NULL`, predictions are unrestricted on the lower end.}
+
+\item{ceiling}{Maximum value of indicator (NA if none).
+If `NULL`, predictions are unrestricted on the upper end.}
+
+\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
+it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+
+\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
+it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{pctlseq}{Numeric vector. Sequence of percentiles}
 

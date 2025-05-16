@@ -89,6 +89,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #'
 #' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
 #' @inheritParams get_his_data
+#' @inheritParams predict_pctls
 #' @param pctlseq Numeric vector. Sequence of percentiles
 #' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
@@ -96,7 +97,8 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
 #'
 #' @export
-project_pctls_path <- function(data_his,
+project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
+                               data_his,
                                start_year  = 2000,
                                end_year    = 2022,
                                granularity = 0.1,
@@ -111,6 +113,7 @@ project_pctls_path <- function(data_his,
   if (!inherits(data_his, "data.table")) {
     cli::cli_abort("Input data must be a data table")
   }
+
 
   if (is.null(min)) {
     min = round(if_else(is.null(floor),
@@ -127,10 +130,16 @@ project_pctls_path <- function(data_his,
   }
 
   # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
-  path_his_pctl <- expand.grid(code=unique(data_his$code),year=seq(startyear_evaluation,endyear_evaluation,1),pctl=pctlseq) |>
+  path_his_pctl <- as.data.table(expand.grid(code = unique(data_his$code),year=seq(start_year,
+                                                                   end_year,
+                                                                   1),
+                               pctl = pctlseq)) |>
     # Merge in the actual data from WDI
-    joyn::joyn(data_his,by=c("code","year"),match_type="m:1",keep="left",reportvar=FALSE) |>
-    as.data.table()
+    joyn::joyn(data_his,
+               by=c("code","year"),
+               match_type="m:1",
+               keep="left",
+               reportvar=FALSE)
 
 
   # Year-by-year, calculate the percentile paths from the first value observed.
@@ -138,9 +147,9 @@ project_pctls_path <- function(data_his,
 
   n=2
   # Continue iteratively until the end year of evaluation
-  while (n+startyear_evaluation-1<=endyear_evaluation) {
+  while (n+start_year-1 <= end_year) {
     # Year processed concurrently
-    print(n+startyear_evaluation-1)
+    print(n+start_year-1)
     path_his_pctl <- path_his_pctl |>
       # Merge in data with predicted changes based on initial levels
       joyn::joyn(predictions_pctl,match_type="m:1",keep="left",by=c("y_his=initialvalue","pctl"),reportvar=FALSE, verbose=FALSE) |>
