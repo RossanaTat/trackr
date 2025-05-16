@@ -12,6 +12,13 @@
 #'
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
+#' @param min A numeric value indicating the minimum bound,
+#'   typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
+#'   This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).
+#'
+#' @param max A numeric value indicating the maximum bound,
+#'   typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
+#'   This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).
 #' @param start_year The first year to include in the analysis
 #' @param end_year The last year to include in the analysis
 #' @return A `data.table` containing the following columns:
@@ -33,6 +40,8 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          data         = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                          code_col     = "iso3c",
                          year_col     = "date",
+                         min          = NULL,
+                         max          = NULL,
                          start_year   = 2000,
                          end_year     = 2022,
                          granularity  = 0.1) {
@@ -79,6 +88,15 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
   # Drop cum_nm
   dt[, cum_nm := NULL]
 
+  # Set attributes from external computation
+  setattr(dt,
+       "min",
+       min)
+
+  setattr(dt,
+       "max",
+       max)
+
   return(dt)
 }
 
@@ -97,8 +115,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
 #'
 #' @export
-project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
-                               data_his,
+project_pctls_path <- function(data_his,
                                start_year  = 2000,
                                end_year    = 2022,
                                granularity = 0.1,
@@ -116,18 +133,13 @@ project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
 
 
   if (is.null(min)) {
-    min = round(if_else(is.null(floor),
-                        min(data_model$initialvalue),
-                        floor)/granularity)*granularity
-
+    min <- attr(data_his, "min")
   }
 
   if (is.null(max)) {
-    max = round(if_else(is.null(ceiling),
-                        max(data_model$initialvalue),
-                        ceiling)/granularity)*granularity
-
+    max <- attr(data_his, "max")
   }
+
 
   # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
   path_his_pctl <- as.data.table(expand.grid(code = unique(data_his$code),year=seq(start_year,
@@ -149,7 +161,7 @@ project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
   # Continue iteratively until the end year of evaluation
   while (n+start_year-1 <= end_year) {
     # Year processed concurrently
-    print(n+start_year-1)
+    if (verbose) cli::cli_alert_info("Processing year {.strong {n + start_year - 1}}")
     path_his_pctl <- path_his_pctl |>
       # Merge in data with predicted changes based on initial levels
       joyn::joyn(predictions_pctl,match_type="m:1",keep="left",by=c("y_his=initialvalue","pctl"),reportvar=FALSE, verbose=FALSE) |>
@@ -165,7 +177,6 @@ project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
 
   # Only keep cases where target has not been reached
   path_his_pctl <- as.data.table(path_his_pctl)[y >= min & y <= max]
-
 
 
   return(path_his_pctl)
@@ -186,13 +197,24 @@ project_pctls_path <- function(indicator      = "EG.ELC.ACCS.ZS",
 project_path_speed <- function(data_his,
                                speedseq = c(0.25,0.5,1,2,4),
                                path_speed,
-                               floor,
-                               ceiling,
-                               granularity,
+                               floor   = 0,
+                               ceiling = 100,
+                               granularity = 0.1,
                                start_year = 2000,
                                end_year = 2022,
                                min = NULL,
                                max = NULL) {
+
+  # Validate input
+
+  if (is.null(min)) {
+    min <- attr(data_his, "min")
+  }
+
+  if (is.null(max)) {
+    max <- attr(data_his, "max")
+  }
+
 
 
   data_his <- cross_join(data_his,
@@ -237,7 +259,8 @@ project_path_speed <- function(data_his,
     # Only keep cases where target has not been reached
     filter(between(y,
                    min,
-                   max))
+                   max)) |>
+    as.data.table()
 
   return(path_his_speed)
 

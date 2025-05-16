@@ -128,8 +128,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
 
   return(list(
     data_model  = res_data,
-    min_initval = min_val,
-    max_initval = max_val
+    min = min_val,
+    max = max_val
   ))
 
 

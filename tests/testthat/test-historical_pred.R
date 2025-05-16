@@ -169,8 +169,7 @@ predictions_pctl <- as.data.frame(charts(fit_pctl,
 # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
 path_his_pctl <- expand.grid(code=unique(data_his$code),year=seq(startyear_evaluation,endyear_evaluation,1),pctl=pctlseq) |>
   # Merge in the actual data from WDI
-  joyn::joyn(data_his,by=c("code","year"),match_type="m:1",keep="left",reportvar=FALSE) |>
-  as.data.table()
+  joyn::joyn(data_his,by=c("code","year"),match_type="m:1",keep="left",reportvar=FALSE)
 
 
 # Year-by-year, calculate the percentile paths from the first value observed.
@@ -190,12 +189,17 @@ while (n+startyear_evaluation-1<=endyear_evaluation) {
     ungroup() |>
     select(-change)
   # Move to next year
-  n=n+1}
+  n=n+1
+}
+
+# Only keep cases where target has not been reached
+path_his_pctl <- as.data.table(path_his_pctl)[y >= min & y <= max]
 
 test_that("project_pctls_path works as expected", {
+
   # Run the function
   result <- project_pctls_path(
-    data_his = data_his,
+    data_his = get_his_data(min = 0, max = 100),
     start_year = startyear_evaluation,
     end_year = endyear_evaluation,
     granularity = granularity,

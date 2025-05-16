@@ -34,11 +34,13 @@ If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{end_year}{The last year to include in the analysis}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{A numeric value indicating the minimum bound,
+typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
+This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{A numeric value indicating the maximum bound,
+typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
+This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
 }
 \value{
 A data frame of projected values under different speeds

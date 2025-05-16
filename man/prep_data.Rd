@@ -8,6 +8,9 @@ prep_data(
   indicator = "EG.ELC.ACCS.ZS",
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   startyear_data = 2000,
+  floor = 0,
+  ceiling = 100,
+  granularity = 0.1,
   code_col = "iso3c",
   year_col = "date",
   verbose = TRUE
