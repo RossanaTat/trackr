@@ -41,6 +41,14 @@ predict_speed <- function(data_model,
 
   # If data model is empty
 
+  if (nrow(data_model) == 0) {
+    cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
+
+    return(data.table(initialvalue = NA_real_,
+                      change = NA_real_))
+  }
+
+
 
   if (is.null(min)) {
     min = round(if_else(is.null(floor),
@@ -57,7 +65,7 @@ predict_speed <- function(data_model,
   }
 
   if (is.null(lambdas)) {
-    lambdas <- 0.1*1.148^(0:50)
+    lambdas = 0.1*1.148^(0:50)
   }
 
 
@@ -130,7 +138,8 @@ get_speed_path <- function(predictions_speed,
     ) |>
     fsubset(!is.infinite(time) & !is.nan(time)) |>
     fselect(time,
-            y)
+            y) |>
+    as.data.table()
 
   if (verbose) cli::cli_alert_success("Path speed successfully calculated")
 

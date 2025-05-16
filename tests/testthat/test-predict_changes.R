@@ -15,16 +15,6 @@ ceiling        = 100
 granularity    = 0.1
 lambdas        = 0.1*1.148^(0:50)
 
-min = round(
-  if_else(is.na(floor),
-          min(data_model$initialvalue),
-          floor)/granularity)*granularity
-
-max = round(
-  if_else(is.na(ceiling),
-          max(data_model$initialvalue),
-          ceiling)/granularity)*granularity
-
 # Data model
 
 data_wdi <- wbstats::wb_data(indicator = indicator,lang = "en",country="countries_only") |>
@@ -84,12 +74,22 @@ data_model    <- joyn::joyn(data_model,
                             reportvar=FALSE,
                             verbose=FALSE)
 
+min = round(
+  if_else(is.na(floor),
+          min(data_model$initialvalue),
+          floor)/granularity)*granularity
+
+max = round(
+  if_else(is.na(ceiling),
+          max(data_model$initialvalue),
+          ceiling)/granularity)*granularity
+
 # _____________________________________________ #
 # Speed predictions ~~~ ####
 # _____________________________________________ #
 
 
-fit_speed <- gcrq(change ~ ps(initialvalue,lambda=lambdas),
+fit_speed <- gcrq(change ~ ps(initialvalue,lambda = 0.1*1.148^(0:50)),
                   foldid=data_model$fold_id, tau=0.5, data=data_model)
 
 # Create dataset with the expected changes as a function of initial level.
@@ -109,7 +109,9 @@ expected_predictions <- as.data.frame(charts(fit_speed, k=seq(min,max,granularit
 test_that("predict_speed returns accurate predictions", {
 
   # 1. Run the function
-  my_predictions <- predict_speed(data_model = data_model)
+  my_predictions <- predict_speed(data_model = data_model,
+                                  lambdas        = 0.1*1.148^(0:50)
+  )
 
   # Structure check
   expect_true(all(c("initialvalue", "change") %in% names(my_predictions)))
@@ -131,16 +133,31 @@ test_that("predict_speed returns accurate predictions", {
 
 test_that("predict_speed handles empty input gracefully", {
 
-  # empty_input <- data_model[0, ]
-  #
-  # expect_error(predict_speed(empty_input),
-  #              NA)  # No error should be thrown
+  empty_input <- data_model[0, ]
+
+  result <- predict_speed(empty_input,
+                          verbose = FALSE,
+                          lambdas        = 0.1*1.148^(0:50)
+  )
+
+  expect_s3_class(result,
+                  "data.table")
+
+  expect_equal(ncol(result),
+               2)
+
+  expect_equal(names(result),
+               c("initialvalue", "change"))
+
+  expect_true(all(is.na(result)))
 
 })
 
 test_that("predict_speed returns within bounds", {
 
-  my_predictions <- predict_speed(data_model)
+  my_predictions <- predict_speed(data_model,
+                                  lambdas        = 0.1*1.148^(0:50)
+  )
 
   # Check that predictions do not exceed ceiling or go below floor
   expect_true(all(my_predictions$initialvalue + my_predictions$change <= ceiling + 1e-6))
@@ -150,7 +167,9 @@ test_that("predict_speed returns within bounds", {
 
 test_that("predict_speed returns a data.table", {
 
-  my_predictions <- predict_speed(data_model)
+  my_predictions <- predict_speed(data_model,
+                                  lambdas        = 0.1*1.148^(0:50)
+  )
   expect_s3_class(my_predictions, "data.table")
 
 })
@@ -160,7 +179,9 @@ test_that("predict_speed applies granularity correctly to initialvalue", {
   gran <- 0.2
   preds <- predict_speed(data_model,
                          granularity = gran,
-                         verbose = FALSE)
+                         verbose = FALSE,
+                         lambdas        = 0.1*1.148^(0:50)
+  )
 
   ivals <- preds$initialvalue
   # Generate expected sequence from min to max
@@ -172,4 +193,101 @@ test_that("predict_speed applies granularity correctly to initialvalue", {
   expect_true(all(sapply(ivals, function(x) any(abs(x - expected_seq) < 1e-8))))
 
 })
+
+# _____________________________________________ #
+# Speed Path ~~~ ####
+# _____________________________________________ #
+
+if (best=="low") {
+  predictions_speed <- predictions_speed |>
+    arrange(-initialvalue) |>
+    mutate(change=-change)
+}
+
+expected_path_speed <- predictions_speed |>
+  rename("y" = "initialvalue", "time" = "change") |>
+  mutate(time = 1/lag(time)*granularity,
+         time = if_else(row_number()==1,0,time),
+         time = cumsum(time)) |>
+  filter(time!="Inf" & time!="NaN")
+
+#expected_predictions
+
+
+test_that("get_speed_path works as expected for best = 'high'", {
+
+  path_speed <- get_speed_path(predictions_speed = expected_predictions,
+                               granularity = granularity,
+                               best = "high",
+                               verbose = FALSE)
+
+  # Compare outputs
+  expect_s3_class(path_speed,
+                  "data.table")
+  expect_equal(path_speed$y,
+               expected_path_speed$y)
+  expect_equal(path_speed$time,
+               expected_path_speed$time,
+               tolerance = 1e-6)
+})
+
+
+test_that("get_speed_path works as expected for best = 'low'", {
+
+  predictions_low <- expected_predictions |>
+    arrange(-initialvalue) |>
+    mutate(change = -change)
+
+  path_speed_low <- get_speed_path(predictions_speed = expected_predictions,
+                                   granularity = granularity,
+                                   best = "low",
+                                   verbose = FALSE)
+
+  expected_path_speed_low <- predictions_low |>
+    rename("y" = "initialvalue", "time" = "change") |>
+    mutate(time = 1/lag(time)*granularity,
+           time = if_else(row_number() == 1, 0, time),
+           time = cumsum(time)) |>
+    filter(!is.infinite(time), !is.nan(time)) |>
+    select(time, y)
+
+  expect_s3_class(path_speed_low,
+                  "data.table")
+  expect_equal(path_speed_low$y,
+               expected_path_speed_low$y)
+  expect_equal(path_speed_low$time,
+               expected_path_speed_low$time,
+               tolerance = 1e-6)
+})
+
+
+test_that("get_speed_path filters out NaN and Inf values", {
+
+  bad_preds <- data.table(
+    initialvalue = c(10, 20, 30, 40),
+    change       = c(0.1, NA, 0, -0.1)  # One NA, one 0 (division by zero)
+  )
+
+  result <- get_speed_path(bad_preds,
+                           granularity = 1,
+                           verbose = FALSE)
+
+  expect_s3_class(result, "data.table")
+  expect_true(all(!is.nan(result$time)))
+  expect_true(all(!is.infinite(result$time)))
+
+})
+
+
+test_that("get_speed_path returns correct structure", {
+  path <- get_speed_path(expected_predictions,
+                         verbose = FALSE)
+
+  expect_true(all(c("time", "y") %in% names(path)))
+  expect_type(path$time,
+              "double")
+  expect_type(path$y,
+              "double")
+})
+
 
