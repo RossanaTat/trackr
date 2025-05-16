@@ -27,7 +27,7 @@ get_his_data(
 
 \item{end_year}{The last year to include in the analysis}
 
-\item{granularity}{Numeric. Step size for the prediction sequence. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 }
 \value{
 A `data.table` containing the following columns:

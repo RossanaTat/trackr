@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_data.R
 \name{prep_data}
 \alias{prep_data}
-\title{Prepares data for panel analysis}
+\title{Prepares data for analysis}
 \usage{
 prep_data(
   indicator = "EG.ELC.ACCS.ZS",

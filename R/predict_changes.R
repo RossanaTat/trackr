@@ -257,7 +257,7 @@ predict_pctls <- function(data_model,
 #' Two methods are available: `"speed"` and `"percentiles"`.
 #'
 #' @param data A data frame or list representing the input data model to be used for the prediction
-#' @param speed Logical. If TRUE, calculate speed of progress scores. For indicators without overall progress, the speed of progress cannot be computed
+#' @param speed Logical. If TRUE, calculate speed of progress scores.
 #' Default is FALSE
 #' @param percentiles Logical. If TRUE, calculate percentile scores. Default is TRUE
 #' @inheritParams predict_speed
@@ -271,8 +271,8 @@ predict_pctls <- function(data_model,
 #' }
 #'
 #' @details
-#' - The `"speed"` method XX TO COMPLETE
-#' - The `"percentiles"` method xx TO COMPLETE
+#' - On The `"speed"` method: for indicators without overall progress, the speed of progress cannot be computed.
+#' - The `"percentiles"` method can be computed for all indicators but ideally require rich training data.
 #'
 #' @seealso [predict_speed()], [get_speed_path()], [predict_pctls()]
 #'
@@ -287,6 +287,7 @@ predict_changes <- function(data,
                             best        = "high",
                             speed       = FALSE,
                             percentiles = TRUE,
+                            pctlseq     = NULL,
                             verbose     = TRUE) {
 
   # Add validations on inputs
@@ -294,6 +295,10 @@ predict_changes <- function(data,
   # at least one between speed and percentiles should be true
   if(speed == FALSE && percentiles == FALSE) {
     cli::cli_abort("At least one between speed and percentiles should be TRUE")
+  }
+
+  if(percentiles == TRUE & is.null(pctlseq)) {
+    cli::cli_abort("If percentiles method is selected, need to provide pctls sequence")
   }
 
   # Validate 'best'
@@ -338,6 +343,7 @@ predict_changes <- function(data,
                                              granularity = granularity,
                                              floor       = floor,
                                              ceiling     = ceiling,
+                                             pctlseq     = pctlseq,
                                              verbose     = verbose
                                              )
 

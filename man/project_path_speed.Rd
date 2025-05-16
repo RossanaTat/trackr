@@ -22,7 +22,7 @@ project_path_speed(
 
 \item{speedseq}{numeric vector of speed paths to calculate}
 
-\item{granularity}{Numeric. Step size for the prediction sequence. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
 \item{start_year}{The first year to include in the analysis}
 
