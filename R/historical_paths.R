@@ -97,21 +97,40 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #'
 #' @export
 project_pctls_path <- function(data_his,
-                               start_year,
-                               end_year,
-                               granularity,
-                               pctlseq,
+                               start_year  = 2000,
+                               end_year    = 2022,
+                               granularity = 0.1,
+                               floor       = 0,
+                               ceiling     = 100,
+                               min         = NULL,
+                               max         = NULL,
+                               pctlseq     = seq(20,80,20),
                                predictions_pctl,
-                               verbose = TRUE) {
+                               verbose     = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
     cli::cli_abort("Input data must be a data table")
   }
 
+  if (is.null(min)) {
+    min = round(if_else(is.null(floor),
+                        min(data_model$initialvalue),
+                        floor)/granularity)*granularity
+
+  }
+
+  if (is.null(max)) {
+    max = round(if_else(is.null(ceiling),
+                        max(data_model$initialvalue),
+                        ceiling)/granularity)*granularity
+
+  }
+
   # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
   path_his_pctl <- expand.grid(code=unique(data_his$code),year=seq(startyear_evaluation,endyear_evaluation,1),pctl=pctlseq) |>
     # Merge in the actual data from WDI
-    joyn::joyn(data_his,by=c("code","year"),match_type="m:1",keep="left",reportvar=FALSE)
+    joyn::joyn(data_his,by=c("code","year"),match_type="m:1",keep="left",reportvar=FALSE) |>
+    as.data.table()
 
 
   # Year-by-year, calculate the percentile paths from the first value observed.
@@ -136,8 +155,8 @@ project_pctls_path <- function(data_his,
   }
 
   # Only keep cases where target has not been reached
-  path_his_pctl <- path_his_pctl |>
-    filter(between(y,min,max))
+  path_his_pctl <- as.data.table(path_his_pctl)[y >= min & y <= max]
+
 
 
   return(path_his_pctl)
