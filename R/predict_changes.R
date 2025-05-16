@@ -152,12 +152,14 @@ get_speed_path <- function(predictions_speed,
 #' This function calculates the changes as a function of initial values by percentile
 #'
 #' @inheritParams predict_speed
+#' @param pctlseq Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.
 #' @return A data frame with calculated changes by percentiles.
 #' @export
 predict_pctls <- function(data_model,
                           min         = NULL,
                           max         = NULL,
                           granularity = 0.1,
+                          pctlseq     = seq(20,80,20),
                           floor       = 0,
                           ceiling     = 100,
                           verbose     = TRUE) {
@@ -192,33 +194,53 @@ predict_pctls <- function(data_model,
                    tau = pctlseq/100,
                    data = data_model)
 
-  predictions_pctl <- as.data.frame(charts(fit_pctl, k = seq(min, max, granularity))) |>
+  # predictions_pctl <- as.data.frame(charts(fit_pctl, k = seq(min, max, granularity))) |>
+  #
+  #   fmutate(initialvalue = round(
+  #     seq(min ,max, granularity)/granularity
+  #   )*granularity)
+  #
+  #
+  # predictions_pctl <- predictions_pctl |>
+  #   collapse::pivot(ids = "initialvalue",
+  #                   values = names(predictions_pctl |> fselect(-initialvalue)),
+  #                   names = list(variable = "pctl",
+  #                                value = "change"),
+  #                   how = "longer") |>
+  #   fmutate(pctl = 100*as.numeric(pctl)) |>
+  #
+  #   # TODO - MOVE TO COLLAPSE
+  #   rowwise() |>
+  #   # Expected changes can never give an outcome lower than the floor
+  #   mutate(change = if_else(!is.na(floor),
+  #                           max(change,
+  #                               floor-initialvalue),
+  #                           change),
+  #          # Expected changes can never give an outcome higher than the ceiling
+  #          change = if_else(!is.na(ceiling),
+  #                           min(change,ceiling-initialvalue),
+  #                           change)) |>
+  #   ungroup() |>
+  #   as.data.table()
 
-    fmutate(initialvalue = round(
-      seq(min ,max, granularity)/granularity
-    )*granularity)
+  predictions_pctl <- as.data.frame(charts(fit_pctl,
+                                           k = seq(min, max, granularity))) |>
 
-
-  predictions_pctl <- predictions_pctl |>
-    collapse::pivot(ids = "initialvalue",
-                    values = names(predictions_pctl |> fselect(-initialvalue)),
-                    names = list(variable = "pctl",
-                                 value = "change"),
-                    how = "longer") |>
-    fmutate(pctl = 100*as.numeric(pctl)) |>
-
-    # TODO - MOVE TO COLLAPSE
+    mutate(initialvalue = round(seq(min,max,granularity)/granularity)*granularity) |>
+    tidyr::pivot_longer(-initialvalue,
+                        names_to="pctl",
+                        values_to="change") |>
+    mutate(pctl = 100*as.numeric(pctl)) |>
     rowwise() |>
     # Expected changes can never give an outcome lower than the floor
     mutate(change = if_else(!is.na(floor),
-                            max(change,
-                                floor-initialvalue),
-                            change),
+                            max(change, floor-initialvalue), change),
            # Expected changes can never give an outcome higher than the ceiling
-           change = if_else(!is.na(ceiling),
-                            min(change,ceiling-initialvalue),
+           change = if_else(!is.na(ceiling), min(change,
+                                                 ceiling-initialvalue),
                             change)) |>
-    ungroup()
+    ungroup() |>
+    as.data.table()
 
 
   if (verbose) {cli::cli_alert_success(

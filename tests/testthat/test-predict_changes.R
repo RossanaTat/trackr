@@ -104,7 +104,7 @@ expected_predictions <- as.data.frame(charts(fit_speed, k=seq(min,max,granularit
   ungroup() |>
   as.data.table()
 
-# --------------------------- . --------------------------- ####
+# --------------------------- . --------------------------- ###
 
 test_that("predict_speed returns accurate predictions", {
 
@@ -288,6 +288,49 @@ test_that("get_speed_path returns correct structure", {
               "double")
   expect_type(path$y,
               "double")
+})
+
+# _____________________________________________ #
+# Percentiles Predictions ~~~ ####
+# _____________________________________________ #
+
+fit_pctl <- gcrq(change ~ ps(initialvalue,lambda=lambdas), foldid=data_model$fold_id, tau=pctlseq/100, data=data_model)
+
+# Create data set with the expected changes as a function of initial level.
+expected_predictions_pctl <- as.data.frame(charts(fit_pctl,
+                                                  k=seq(min,max,granularity))) |>
+  mutate(initialvalue = round(seq(min,max,granularity)/granularity)*granularity) |>
+  tidyr::pivot_longer(-initialvalue,names_to="pctl",
+                      values_to="change") |>
+  mutate(pctl = 100*as.numeric(pctl)) |>
+  rowwise() |>
+  # Expected changes can never give an outcome lower than the floor
+  mutate(change = if_else(!is.na(floor),max(change,floor-initialvalue),change),
+         # Expected changes can never give an outcome higher than the ceiling
+         change = if_else(!is.na(ceiling),min(change,ceiling-initialvalue),change)) |>
+  ungroup() |>
+  as.data.table()
+
+
+test_that("predict_pctls works as expected", {
+
+  predictions_pctl <- predict_pctls(data_model = data_model,
+                                    granularity = granularity,
+                                    floor = floor,
+                                    ceiling = ceiling,
+                                    verbose = FALSE)
+
+  # Basic checks
+  expect_s3_class(predictions_pctl, "data.table")
+  expect_named(predictions_pctl, c("initialvalue", "pctl", "change"))
+
+  # Structural check
+  expect_equal(nrow(predictions_pctl), nrow(expected_predictions_pctl))
+
+  # Content checks with tolerance for floating-point differences
+  expect_equal(predictions_pctl$initialvalue, expected_predictions_pctl$initialvalue, tolerance = 1e-6)
+  expect_equal(predictions_pctl$pctl, expected_predictions_pctl$pctl, tolerance = 1e-6)
+  expect_equal(predictions_pctl$change, expected_predictions_pctl$change, tolerance = 1e-6)
 })
 
 
