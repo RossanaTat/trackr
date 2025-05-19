@@ -51,8 +51,11 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
   return(dt)
 }
 
-# Calculate the future path for each country based on the percentile curves
+# -------------------- #
+# Percentiles ~~ #
+# -------------------- #
 
+# Calculate the future path for each country based on the percentile curves
 future_path_pctls <- function(data_fut,
                               pctlseq     = seq(20,80,20),
                               predictions_pctl,
@@ -114,3 +117,75 @@ future_path_pctls <- function(data_fut,
   # Return ####
   return(path_fut_pctl)
 }
+
+# -------------------- #
+# Speed ~~ #
+# -------------------- #
+
+
+future_path_speed <- function(data_fut,
+                              speedseq    = c(0.25,0.5,1,2,4),
+                              path_speed,
+                              best        = "high",
+                              target_year = 2030,
+                              min         = 0,
+                              max         = 100) {
+
+
+  # Creates dataset with the country-years-speeds where projections are needed
+  data_fut <- expand.grid(code = unique(data_fut$code),
+                          year =seq(min(data_fut$year),
+                                   target_year,
+                                   1),
+                          speed = speedseq) |>
+    rename("yeartemp"          = "year") |>
+    joyn::joyn(data_fut,
+               match_type      = "m:1",
+               by              = "code",
+               reportvar       = FALSE,
+               verbose         = FALSE,
+               y_vars_to_keep  = "year") |>
+    filter(yeartemp >= year) |>
+    select(-year) |>
+    rename("year"              = "yeartemp") |>
+    joyn::joyn(data_fut,
+               match_type      = "m:1",
+               by              = c("code",
+                    "year"),
+               reportvar       = FALSE)
+
+  # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
+  path_fut_speed <- data_fut |>
+    select(-y) |>
+    filter(!is.na(y_fut)) |>
+    cross_join(path_speed) |>
+    mutate(bst = best) |>
+    filter(if_else(bst=="high",y_fut<=y,y_fut>=y)) |>
+    group_by(code,speed) |>
+    arrange(time) |>
+    mutate(year = year + (time-time[1])/speed) |>
+    ungroup() |>
+    select(-c(y_fut,time,bst)) |>
+    rename("y_fut" = "y") |>
+    joyn::joyn(data_fut,
+               match_type="1:1",
+               by=c("code","year","speed"),
+               reportvar=FALSE,
+               verbose=FALSE,
+               y_vars_to_keep="y") |>
+    group_by(code,
+             speed) |>
+    arrange(year) |>
+    mutate(y_fut = zoo::na.approx(y_fut,year,na.rm=FALSE,rule=2)) |>
+    filter(year %in% seq(min(year), target_year, 1)) |>
+    ungroup() |>
+    filter(!is.na(y_fut))
+
+    # Only keep cases where target has not been reached
+    #filter(between(y,min,max) | is.na(y))
+
+  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y) | (y >= min & y <= max)]
+
+  return(path_fut_speed)
+}
+

@@ -65,7 +65,7 @@ predict_speed <- function(data_model,
   }
 
   if (is.null(lambdas)) {
-    lambdas = 0.1*1.148^(0:50)
+    lambdas <<- 0.1*1.148^(0:50)
   }
 
 
