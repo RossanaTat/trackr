@@ -113,3 +113,59 @@ get_scores_speed <- function(path_his_speed,
 
   return(score_speed)
 }
+
+#' Wrapper to calculate percentile-based and/or speed-based scores
+#'
+#' Calls `get_scores_pctl()` and/or `get_scores_speed()` depending on input.
+#'
+#' @param speed Logical. If TRUE, compute speed-based score.
+#' @param pctl Logical. If TRUE, compute percentile-based score.
+#' @param path_his_pctl Data for `get_scores_pctl()`.
+#' @param best "high" or "low", for `get_scores_pctl()`.
+#' @param path_his_speed Data for `get_scores_speed()`.
+#' @param path_speed Lookup for `get_scores_speed()`.
+#' @param min Minimum value for both methods (default 0).
+#' @param max Maximum value for both methods (default 100).
+#' @param granularity Granularity for speed-based method (default 0.1).
+#'
+#' @return A list with `pctl` and/or `speed` elements (data.tables).
+#'
+#' @export
+get_scores <- function(speed = FALSE,
+                       pctl = FALSE,
+                       path_his_pctl = NULL,
+                       best = "high",
+                       path_his_speed = NULL,
+                       path_speed = NULL,
+                       min = 0,
+                       max = 100,
+                       granularity = 0.1) {
+  if (!speed && !pctl) {
+    stop("At least one of `speed` or `pctl` must be TRUE.")
+  }
+
+  out <- list()
+
+  if (pctl) {
+    if (is.null(path_his_pctl)) stop("`path_his_pctl` must be provided for percentile-based score.")
+    out$pctl <- get_scores_pctl(path_his_pctl = path_his_pctl,
+                                best = best,
+                                min = min,
+                                max = max)
+  }
+
+  if (speed) {
+    if (is.null(path_his_speed) || is.null(path_speed)) {
+      stop("Both `path_his_speed` and `path_speed` must be provided for speed-based score.")
+    }
+    out$speed <- get_scores_speed(path_his_speed = path_his_speed,
+                                  path_speed = path_speed,
+                                  min = min,
+                                  max = max,
+                                  granularity = granularity)
+  }
+
+  return(out)
+}
+
+
