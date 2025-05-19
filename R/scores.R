@@ -19,56 +19,60 @@ get_scores_pctl <- function(path_his_pctl,
                             min = 0,
                             max = 100) {
 
-  score_pctl <- path_his_pctl |>
-    filter(!is.na(y) & between(y,
-                               min,
-                               max)) |>
-    group_by(code, pctl) |>
-    arrange(year) |>
-    mutate(firstobs = if_else(row_number() == 1, y, NA),
-           firstyear = if_else(row_number()==1, year, NA)) |>
-    tidyr::fill(firstobs) |>
-    tidyr::fill(firstyear) |>
-    slice_tail(n = 1) |>
-    filter(year-firstyear >= 5) |>
-    mutate(evaluationperiod = paste0(firstyear,"-",year)) |>
-    ungroup() |>
-    select(-c(year,firstyear))
-
-  # Calculates the score for indicators where a low value is better
-  if (best=="low") {
-    score_pctl <- score_pctl |>
-      mutate(pctl = 100 - pctl) |>
-      group_by(code) |>
-      arrange(pctl) |>
-      mutate(score = if_else(y>=y_his & row_number()==1,paste0(0,"-",pctl),NA),
-             score = if_else(y<y_his & y>=lead(y_his),paste0(pctl,"-",lead(pctl)),score),
-             score = if_else(y<y_his & row_number()==n(),paste0(pctl,"-",100),score)) |>
-      ungroup()  |>
-      filter(firstobs!=best) |>
-      filter(!is.na(score)) |>
-      select(code,score,evaluationperiod)
+  if (!data.table::is.data.table(path_his_pctl)) {
+    cli::cli_abort("{.arg path_his_pctl} must be a {.cls data.table}.")
   }
 
-  # Calculate the score for indicators where a high value is better
-  if (best=="high") {
-    score_pctl <- score_pctl |>
-      group_by(code) |>
-      arrange(pctl) |>
-      mutate(score = if_else(y<=y_his & row_number()==1,paste0(0,"-",pctl),NA),
-             score = if_else(y>y_his & y<=lead(y_his),paste0(pctl,"-",lead(pctl)),score),
-             score = if_else(y>y_his & row_number()==n(),paste0(pctl,"-",100),score)) |>
-      ungroup() |>
-      filter(firstobs!=best) |>
-      filter(!is.na(score)) |>
-      select(code,score,evaluationperiod)
+  dt <- copy(path_his_pctl)  # avoid modifying input in-place
+
+  # Filter out NA and keep only rows within the desired range
+  dt <- dt[!is.na(y) & between(y, min, max)]
+
+  # Create firstobs and firstyear per group
+  setorder(dt, code, pctl, year)
+  dt[, firstobs := y[1L], by = .(code, pctl)]
+  dt[, firstyear := year[1L], by = .(code, pctl)]
+
+  # Keep only the last observation in the group
+  dt <- dt[, .SD[.N], by = .(code, pctl)]
+
+  # Filter for evaluation period of at least 5 years
+  dt <- dt[year - firstyear >= 5]
+  dt[, evaluationperiod := paste0(firstyear, "-", year)]
+  dt[, c("year", "firstyear") := NULL]
+
+  # Compute score depending on whether higher or lower is better
+  if (best == "low") {
+    dt[, pctl := 100 - pctl]
   }
 
-  score_pctl <- as.data.table(score_pctl)
+  setorder(dt, code, pctl)
 
-  return(score_pctl)
+  dt[, score := fifelse(
+    (best == "low" & y >= y_his & .I == .I[1L]) | (best == "high" & y <= y_his & .I == .I[1L]),
+    paste0(0, "-", pctl),
+    NA_character_
+  ), by = code]
 
+  dt[, score := fifelse(
+    (best == "low" & y < y_his & y >= shift(y_his, type = "lead")) |
+      (best == "high" & y > y_his & y <= shift(y_his, type = "lead")),
+    paste0(pctl, "-", shift(pctl, type = "lead")),
+    score
+  ), by = code]
+
+  dt[, score := fifelse(
+    (best == "low" & y < y_his & .I == .I[.N]) |
+      (best == "high" & y > y_his & .I == .I[.N]),
+    paste0(pctl, "-", 100),
+    score
+  ), by = code]
+
+  dt <- dt[firstobs != best & !is.na(score), .(code, score, evaluationperiod)]
+
+  return(dt)
 }
+
 
 #' Calculate speed-based score over time
 #'
@@ -168,4 +172,4 @@ get_scores <- function(speed = FALSE,
   return(out)
 }
 
-
+# Data table version #### TEST ################################
