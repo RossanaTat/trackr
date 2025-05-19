@@ -4,7 +4,7 @@
 
 #' Prepares data for analysis
 #'
-#' Prepares indicator data for panel estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
+#' Prepares indicator data for estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
 #'
 #' @param indicator Character. Indicator code or name (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.
 #' @param data Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.
@@ -13,7 +13,7 @@
 #' @param year_col Character. Name of the column with years. Defaults to `"date"`.
 #' @param verbose Logical. If TRUE print messages in console. Default is TRUE
 #'
-#' @return A `data.table` with one row per country-year spell, including initial and end years, initial value, annualized change, and a fold ID for cross-validation.
+#' @return A `list` with 3 elements: 1. data prepared for estimation, 2. min and 3. max. Min and Max are range limits for expected changes, based on floor/ceiling if provided, otherwise on observed values. Rounded to nearest granularity.
 #' @importFrom splitstackshape expandRows
 #'
 #' @export

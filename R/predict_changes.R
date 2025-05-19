@@ -162,7 +162,8 @@ predict_pctls <- function(data_model,
                           pctlseq     = seq(20,80,20),
                           floor       = 0,
                           ceiling     = 100,
-                          verbose     = TRUE) {
+                          verbose     = TRUE,
+                          lambdas     = NULL) {
 
   # __________________________________ #
   # Validate input ~~~~~ ####
@@ -183,45 +184,22 @@ predict_pctls <- function(data_model,
 
   }
 
-
-
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
 
-  fit_pctl <- gcrq(change ~ ps(initialvalue,
-                               lambda = lambdas),
+
+  if (is.null(lambdas)) {
+    lambdas <<- 0.1 * 1.148^(0:50)
+  }
+
+  # Inject lambdas into the data_model so gcrq can find it
+
+  # Use formula with lambda as a name
+  fit_pctl <- gcrq(change ~ ps(initialvalue, lambda = lambdas),
                    foldid = data_model$fold_id,
-                   tau = pctlseq/100,
+                   tau = pctlseq / 100,
                    data = data_model)
 
-  # predictions_pctl <- as.data.frame(charts(fit_pctl, k = seq(min, max, granularity))) |>
-  #
-  #   fmutate(initialvalue = round(
-  #     seq(min ,max, granularity)/granularity
-  #   )*granularity)
-  #
-  #
-  # predictions_pctl <- predictions_pctl |>
-  #   collapse::pivot(ids = "initialvalue",
-  #                   values = names(predictions_pctl |> fselect(-initialvalue)),
-  #                   names = list(variable = "pctl",
-  #                                value = "change"),
-  #                   how = "longer") |>
-  #   fmutate(pctl = 100*as.numeric(pctl)) |>
-  #
-  #   # TODO - MOVE TO COLLAPSE
-  #   rowwise() |>
-  #   # Expected changes can never give an outcome lower than the floor
-  #   mutate(change = if_else(!is.na(floor),
-  #                           max(change,
-  #                               floor-initialvalue),
-  #                           change),
-  #          # Expected changes can never give an outcome higher than the ceiling
-  #          change = if_else(!is.na(ceiling),
-  #                           min(change,ceiling-initialvalue),
-  #                           change)) |>
-  #   ungroup() |>
-  #   as.data.table()
 
   predictions_pctl <- as.data.frame(charts(fit_pctl,
                                            k = seq(min, max, granularity))) |>

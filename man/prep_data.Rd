@@ -30,8 +30,8 @@ prep_data(
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
 \value{
-A `data.table` with one row per country-year spell, including initial and end years, initial value, annualized change, and a fold ID for cross-validation.
+A `list` with 3 elements: 1. data prepared for estimation, 2. min and 3. max. Min and Max are range limits for expected changes, based on floor/ceiling if provided, otherwise on observed values. Rounded to nearest granularity.
 }
 \description{
-Prepares indicator data for panel estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
+Prepares indicator data for estimation by computing annualized changes over 5–10 year periods, selecting the shortest available spell, balancing countries by number of rows, and assigning fold IDs for cross-validation.
 }

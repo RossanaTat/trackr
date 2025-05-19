@@ -50,3 +50,68 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 
   return(dt)
 }
+
+# Calculate the future path for each country based on the percentile curves
+
+future_path_pctls <- function(data_fut,
+                              pctlseq     = seq(20,80,20),
+                              predictions_pctl,
+                              target_year = 2030,
+                              granularity = 0.1,
+                              min         = NULL,
+                              max         = NULL) {
+
+  # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
+
+  path_fut_pctl <- expand.grid(code=unique(data_fut$code),
+                               year=seq(min(data_fut$year),
+                                        target_year,
+                                        1),
+                               pctl=pctlseq) |>
+    # Merge in the actual data from WDI
+    joyn::joyn(data_fut,
+               by=c("code","year"),
+               match_type="m:1",
+               keep="left",
+               reportvar=FALSE)
+
+  # Year-by-year, calculate the percentile paths for the last value observed. For future target creation.
+
+  cli::cli_alert_info("Calculating future percentile paths")
+
+  startyear_target = min(path_fut_pctl$year)
+
+  n = startyear_target - min(path_fut_pctl$year) + 1
+
+  # Continue this iteratively until the target year
+  while (n+min(path_fut_pctl$year)-1 <=target_year) {
+    # Year processed concurrently
+    #print(n+min(path_fut_pctl$year)-1)
+    if (verbose) cli::cli_alert_info("Processing year {.strong {(n+min(path_fut_pctl$year)-1}}")
+
+    path_fut_pctl <- path_fut_pctl |>
+      # Merge in data with predicted changes based on initial levels
+      joyn::joyn(predictions_pctl,
+                 match_type="m:1",
+                 keep="left",
+                 by=c("y_fut=initialvalue","pctl"),
+                 reportvar=FALSE,
+                 verbose=FALSE) |>
+      group_by(code,
+               pctl) |>
+      arrange(year) |>
+      # Calculate new level based on the predicted changes.
+      mutate(y_fut = if_else(row_number()==n & !is.na(lag(y_fut)),
+                             round((lag(y_fut)+lag(change))/granularity)*granularity,y_fut)) |>
+      ungroup() |>
+      select(-change)
+
+    n=n+1
+  }
+
+
+  path_fut_pctl <- path_fut_pctl |>
+    filter(!is.na(y_fut)) |>
+    filter(between(y,min,max) | is.na(y))
+
+}

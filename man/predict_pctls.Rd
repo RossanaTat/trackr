@@ -12,7 +12,8 @@ predict_pctls(
   pctlseq = seq(20, 80, 20),
   floor = 0,
   ceiling = 100,
-  verbose = TRUE
+  verbose = TRUE,
+  lambdas = NULL
 )
 }
 \arguments{
@@ -36,6 +37,9 @@ If `NULL`, predictions are unrestricted on the lower end.}
 
 \item{ceiling}{Maximum value of indicator (NA if none).
 If `NULL`, predictions are unrestricted on the upper end.}
+
+\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
+Defaults to `0.1 * 1.148^(0:50)`.}
 }
 \value{
 A data frame with calculated changes by percentiles.
