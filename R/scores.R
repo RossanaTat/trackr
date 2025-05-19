@@ -78,8 +78,8 @@ get_scores_pctl <- function(path_his_pctl,
 #'
 #' Computes a score based on the average annual change in percentile rank over at least 5 years.
 #'
-#' @param path_his_speed Data frame with historical values (`code`, `year`, `y`).
-#' @param path_speed Lookup table mapping `y` to percentiles (`y`, `time`).
+#' @param path_his_speed Result of `project_pctls_path()`
+#' @param path_speed Result of `get_speed_path()`
 #' @param min Minimum valid value for `y`. Default is 0.
 #' @param max Maximum valid value for `y`. Default is 100.
 #' @param granularity Rounding precision for `y`. Default is 0.1.
@@ -91,31 +91,70 @@ get_scores_speed <- function(path_his_speed,
                              path_speed,
                              min = 0,
                              max = 100,
-                             granularity = 0.1){
+                             granularity = 0.1) {
 
-  score_speed <- path_his_speed |>
-    select(code,year,y) |>
-    filter(!is.na(y) & between(y,min,max)) |>
-    mutate(y=round(y/granularity)*granularity) |>
-    group_by(code) |>
-    arrange(year) |>
-    mutate(y_start = first(y),
-           year_start = first(year))|>
-    filter(row_number()==n() & year-year_start>=5) |>
-    ungroup() |>
-    joyn::joyn(path_speed,by="y",match_type="m:1",reportvar=FALSE,keep="left",verbose=FALSE) |>
-    rename("y_end" = "y", "y" = "y_start","time_end" = "time") |>
-    joyn::joyn(path_speed,by="y",match_type="m:1",reportvar=FALSE,keep="left",verbose=FALSE) |>
-    rename("time_start" = "time") |>
-    mutate(score = (time_end-time_start)/(year-year_start)) |>
-    mutate(evaluationperiod = paste0(year_start,"-",year)) |>
-    select(code,score,evaluationperiod) |>
-    filter(!is.na(score))
+  # Ensure data.table
+  path_his_speed <- as.data.table(path_his_speed)
+  path_speed <- as.data.table(path_speed)
 
-  score_speed <- score_speed |> as.data.table()
+  # Filter, round, and keep relevant columns
+  path_his_speed <- path_his_speed[
+    !is.na(y) & between(y, min, max),
+    .(code, year, y = round(y / granularity) * granularity)
+  ]
 
+  # Compute per-code start and end
+  path_his_speed <- path_his_speed[order(code, year)]
 
-  return(score_speed)
+  summary_dt <- path_his_speed[
+    , .(
+      y_start = first(y),
+      year_start = first(year),
+      y_end = last(y),
+      year_end = last(year)
+    ),
+    by = code
+  ][(year_end - year_start) >= 5]
+
+  # First join: match y_end with path_speed$y
+  summary_dt_join1 <- copy(summary_dt)
+  summary_dt_join1[, y := y_end]  # Rename for join
+  join1 <- joyn::joyn(
+    summary_dt_join1,
+    path_speed,
+    by = "y",
+    match_type = "m:1",
+    reportvar = FALSE,
+    keep = "left",
+    verbose = FALSE
+  )
+  setnames(join1, "time", "time_end")
+  join1[, y := NULL]  # Clean up temp column
+
+  # Second join: match y_start with path_speed$y
+  join1[, y := y_start]
+  join2 <- joyn::joyn(
+    join1,
+    path_speed,
+    by = "y",
+    match_type = "m:1",
+    reportvar = FALSE,
+    keep = "left",
+    verbose = FALSE
+  )
+  setnames(join2, "time", "time_start")
+  join2[, y := NULL]  # Clean up again
+
+  # Compute score
+  result <- join2[
+    , .(
+      code,
+      score = (time_end - time_start) / (year_end - year_start),
+      evaluationperiod = paste0(year_start, "-", year_end)
+    )
+  ][!is.na(score)]
+
+  return(result[])
 }
 
 #' Wrapper to calculate percentile-based and/or speed-based scores
@@ -172,4 +211,3 @@ get_scores <- function(speed = FALSE,
   return(out)
 }
 
-# Data table version #### TEST ################################
