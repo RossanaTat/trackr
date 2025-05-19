@@ -9,8 +9,8 @@ get_his_data(
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   code_col = "iso3c",
   year_col = "date",
-  min = NULL,
-  max = NULL,
+  min = 0,
+  max = 100,
   start_year = 2000,
   end_year = 2022,
   granularity = 0.1

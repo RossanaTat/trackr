@@ -215,12 +215,78 @@ test_that("future_path_pctls() works as expected", {
 })
 
 
-
-
-
-
 # -------------------------------------- #
 # TEST | Future path -Speed ####
 # -------------------------------------- #
 
+### Expected ------ ####
+
+predictions_speed <- predict_speed(data_model = data_model)
+path_speed <- get_speed_path(predictions_speed = predictions_speed)
+
+
+
+# Creates dataset with the country-years-speeds where projections are needed
+data_fut <- expand.grid(code=unique(data_fut$code),year=seq(min(data_fut$year),targetyear,1),speed=speedseq) |>
+  rename("yeartemp" = "year") |>
+  joyn::joyn(data_fut,match_type="m:1",by="code",reportvar=FALSE,verbose=FALSE,y_vars_to_keep="year") |>
+  filter(yeartemp>=year) |>
+  select(-year) |>
+  rename("year" = "yeartemp") |>
+  joyn::joyn(data_fut,match_type="m:1",by=c("code","year"),reportvar=FALSE)
+
+# Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
+path_fut_speed <- data_fut |>
+  select(-y) |>
+  filter(!is.na(y_fut)) |>
+  cross_join(path_speed) |>
+  mutate(bst = best) |>
+  filter(if_else(bst=="high",y_fut<=y,y_fut>=y)) |>
+  group_by(code,speed) |>
+  arrange(time) |>
+  mutate(year = year + (time-time[1])/speed) |>
+  ungroup() |>
+  select(-c(y_fut,time,bst)) |>
+  rename("y_fut" = "y") |>
+  joyn::joyn(data_fut,match_type="1:1",by=c("code","year","speed"),reportvar=FALSE,verbose=FALSE,y_vars_to_keep="y") |>
+  group_by(code,speed) |>
+  arrange(year) |>
+  mutate(y_fut = zoo::na.approx(y_fut,year,na.rm=FALSE,rule=2)) |>
+  filter(year %in% seq(min(year),targetyear,1)) |>
+  ungroup() |>
+  filter(!is.na(y_fut)) |>
+  # Only keep cases where target has not been reached
+  filter(between(y,min,max) | is.na(y))
+
+
+### Expected ------ ####
+
+test_that("future_path_speed() works as expected", {
+
+  # Run your function
+  my_path_fut_speed <- future_path_speed(
+    data_fut = prep_data_fut(),
+    path_speed = path_speed
+  )
+
+  # Ensure both are data.tables and sorted the same way
+  setkeyv(my_path_fut_speed, c("code", "year", "speed"))
+  path_fut_speed <- as.data.table(path_fut_speed)
+  setkeyv(path_fut_speed, c("code", "year", "speed"))
+
+  # Main comparison
+  expect_equal(my_path_fut_speed, path_fut_speed)
+
+  # Check expected columns
+  expect_true(all(c("code", "year", "speed", "y_fut", "y") %in% names(my_path_fut_speed)))
+
+  # Check no missing y_fut values
+  expect_false(any(is.na(my_path_fut_speed$y_fut)))
+
+  # Check year is within range
+  expect_true(all(my_path_fut_speed$year >= min(data_fut$year)))
+  expect_true(all(my_path_fut_speed$year <= targetyear))
+
+
+})
 

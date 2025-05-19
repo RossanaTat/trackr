@@ -63,21 +63,21 @@ future_path_pctls <- function(data_fut,
                               granularity = 0.1,
                               min         = 0,
                               max         = 100,
-                              verbose = TRUE) {
+                              verbose     = TRUE) {
 
   # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
 
-  path_fut_pctl <- expand.grid(code=unique(data_fut$code),
-                               year=seq(min(data_fut$year),
+  path_fut_pctl <- expand.grid(code = unique(data_fut$code),
+                               year = seq(min(data_fut$year),
                                         target_year,
                                         1),
-                               pctl=pctlseq) |>
+                               pctl = pctlseq) |>
     # Merge in the actual data from WDI
     joyn::joyn(data_fut,
-               by=c("code","year"),
-               match_type="m:1",
-               keep="left",
-               reportvar=FALSE)
+               by = c("code","year"),
+               match_type ="m:1",
+               keep = "left",
+               reportvar = FALSE)
 
   # Year-by-year, calculate the percentile paths for the last value observed. For future target creation.
 
@@ -122,8 +122,6 @@ future_path_pctls <- function(data_fut,
 # -------------------- #
 # Speed ~~ #
 # -------------------- #
-
-
 future_path_speed <- function(data_fut,
                               speedseq    = c(0.25,0.5,1,2,4),
                               path_speed,

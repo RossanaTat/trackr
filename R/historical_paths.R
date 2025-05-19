@@ -40,8 +40,8 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          data         = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                          code_col     = "iso3c",
                          year_col     = "date",
-                         min          = NULL,
-                         max          = NULL,
+                         min          = 0,
+                         max          = 100,
                          start_year   = 2000,
                          end_year     = 2022,
                          granularity  = 0.1) {
@@ -139,6 +139,9 @@ project_pctls_path <- function(data_his,
   if (is.null(max)) {
     max <- attr(data_his, "max")
   }
+
+  print(min)
+  print(max)
 
 
   # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
