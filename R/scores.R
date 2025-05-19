@@ -16,8 +16,8 @@
 #' @export
 get_scores_pctl <- function(path_his_pctl,
                             best = "high",
-                            min = 0,
-                            max = 100) {
+                            min  = 0,
+                            max  = 100) {
 
   if (!data.table::is.data.table(path_his_pctl)) {
     cli::cli_abort("{.arg path_his_pctl} must be a {.cls data.table}.")
@@ -89,13 +89,13 @@ get_scores_pctl <- function(path_his_pctl,
 #' @export
 get_scores_speed <- function(path_his_speed,
                              path_speed,
-                             min = 0,
-                             max = 100,
+                             min         = 0,
+                             max         = 100,
                              granularity = 0.1) {
 
   # Ensure data.table
   path_his_speed <- as.data.table(path_his_speed)
-  path_speed <- as.data.table(path_speed)
+  path_speed     <- as.data.table(path_speed)
 
   # Filter, round, and keep relevant columns
   path_his_speed <- path_his_speed[
@@ -104,9 +104,9 @@ get_scores_speed <- function(path_his_speed,
   ]
 
   # Compute per-code start and end
-  path_his_speed <- path_his_speed[order(code, year)]
+  path_his_speed   <- path_his_speed[order(code, year)]
 
-  summary_dt <- path_his_speed[
+  summary_dt       <- path_his_speed[
     , .(
       y_start = first(y),
       year_start = first(year),
@@ -118,8 +118,9 @@ get_scores_speed <- function(path_his_speed,
 
   # First join: match y_end with path_speed$y
   summary_dt_join1 <- copy(summary_dt)
+
   summary_dt_join1[, y := y_end]  # Rename for join
-  join1 <- joyn::joyn(
+  join1            <- joyn::joyn(
     summary_dt_join1,
     path_speed,
     by = "y",
@@ -133,7 +134,7 @@ get_scores_speed <- function(path_his_speed,
 
   # Second join: match y_start with path_speed$y
   join1[, y := y_start]
-  join2 <- joyn::joyn(
+  join2            <- joyn::joyn(
     join1,
     path_speed,
     by = "y",
@@ -146,7 +147,7 @@ get_scores_speed <- function(path_his_speed,
   join2[, y := NULL]  # Clean up again
 
   # Compute score
-  result <- join2[
+  result           <- join2[
     , .(
       code,
       score = (time_end - time_start) / (year_end - year_start),

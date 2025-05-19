@@ -40,13 +40,13 @@ predict_speed <- function(data_model,
   # Validation of inputs ####
 
   # If data model is empty
-
-  if (nrow(data_model) == 0) {
-    cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
-
-    return(data.table(initialvalue = NA_real_,
-                      change = NA_real_))
-  }
+#
+#   if (nrow(data_model) == 0) {
+#     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
+#
+#     return(data.table(initialvalue = NA_real_,
+#                       change = NA_real_))
+#   }
 
 
 
@@ -265,7 +265,7 @@ predict_changes <- function(data,
                             best        = "high",
                             speed       = FALSE,
                             percentiles = TRUE,
-                            pctlseq     = NULL,
+                            pctlseq     = seq(20,80,20),
                             verbose     = TRUE) {
 
   # Add validations on inputs

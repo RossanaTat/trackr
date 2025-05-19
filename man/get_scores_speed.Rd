@@ -13,9 +13,9 @@ get_scores_speed(
 )
 }
 \arguments{
-\item{path_his_speed}{Data frame with historical values (`code`, `year`, `y`).}
+\item{path_his_speed}{Result of `project_pctls_path()`}
 
-\item{path_speed}{Lookup table mapping `y` to percentiles (`y`, `time`).}
+\item{path_speed}{Result of `get_speed_path()`}
 
 \item{min}{Minimum valid value for `y`. Default is 0.}
 
