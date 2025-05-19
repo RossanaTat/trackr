@@ -302,11 +302,17 @@ test_that("project_path_speed() works as expected", {
 
 
   # Compare result to expected (sort both before comparison)
-  setDT(result); setDT(expected)
-  setcolorder(expected, names(result))
-  setkeyv(result, c("code", "year", "speed"))
-  setkeyv(expected, c("code", "year", "speed"))
+  setDT(result);
+  setDT(expected)
+  setcolorder(expected,
+              names(result))
+  setkeyv(result,
+          c("code", "year", "speed"))
+  setkeyv(expected,
+          c("code", "year", "speed"))
 
-  expect_equal(result, expected, ignore_attr = TRUE)
+  expect_equal(result,
+               expected,
+               ignore_attr = TRUE)
 
   })

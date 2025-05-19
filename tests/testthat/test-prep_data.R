@@ -15,15 +15,6 @@ ceiling        = 100
 granularity    = 0.1
 lambdas        = 0.1*1.148^(0:50)
 
-min = round(
-  if_else(is.na(floor),
-          min(data_model$initialvalue),
-          floor)/granularity)*granularity
-
-max = round(
-  if_else(is.na(ceiling),
-          max(data_model$initialvalue),
-          ceiling)/granularity)*granularity
 
 # Data model
 
@@ -83,6 +74,16 @@ data_model    <- joyn::joyn(data_model,
                             match_type="m:1",
                             reportvar=FALSE,
                             verbose=FALSE)
+
+min = round(
+  if_else(is.na(floor),
+          min(data_model$initialvalue),
+          floor)/granularity)*granularity
+
+max = round(
+  if_else(is.na(ceiling),
+          max(data_model$initialvalue),
+          ceiling)/granularity)*granularity
 
 # --------------------------- . --------------------------- ####
 
