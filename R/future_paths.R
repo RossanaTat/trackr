@@ -58,8 +58,8 @@ future_path_pctls <- function(data_fut,
                               predictions_pctl,
                               target_year = 2030,
                               granularity = 0.1,
-                              min         = NULL,
-                              max         = NULL) {
+                              min         = 0,
+                              max         = 100) {
 
   # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
 
@@ -87,7 +87,7 @@ future_path_pctls <- function(data_fut,
   while (n+min(path_fut_pctl$year)-1 <=target_year) {
     # Year processed concurrently
     #print(n+min(path_fut_pctl$year)-1)
-    if (verbose) cli::cli_alert_info("Processing year {.strong {(n+min(path_fut_pctl$year)-1}}")
+    if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
 
     path_fut_pctl <- path_fut_pctl |>
       # Merge in data with predicted changes based on initial levels
@@ -109,9 +109,8 @@ future_path_pctls <- function(data_fut,
     n=n+1
   }
 
+  path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))]
 
-  path_fut_pctl <- path_fut_pctl |>
-    filter(!is.na(y_fut)) |>
-    filter(between(y,min,max) | is.na(y))
-
+  # Return ####
+  return(path_fut_pctl)
 }
