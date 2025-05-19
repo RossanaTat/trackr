@@ -62,7 +62,8 @@ future_path_pctls <- function(data_fut,
                               target_year = 2030,
                               granularity = 0.1,
                               min         = 0,
-                              max         = 100) {
+                              max         = 100,
+                              verbose = TRUE) {
 
   # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
 
