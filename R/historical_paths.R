@@ -270,4 +270,77 @@ project_path_speed <- function(data_his,
 
 }
 
+#' Wrapper to compute historical paths by percentiles and/or speed
+#'
+#' @inheritParams predict_changes
+#' @param data_his A data.table containing historical values.
+#' @param start_year First year to include in projections.
+#' @param end_year Last year to include in projections.
+#' @param predictions_pctl A `data.table` with predicted changes by initialvalue and pctl.
+#' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
+#' @param speedseq Numeric vector of XXX
+#' @param path_speed Data table  with xxx
+#'
+#' @return A named list with one or both of `percentile_path` and `speed_path`.
+#' @export
+path_historical <- function(percentiles      = TRUE,
+                            speed            = TRUE,
+                            data_his,
+                            start_year       = 2000,
+                            end_year         = 2022,
+                            granularity      = 0.1,
+                            floor            = 0,
+                            ceiling          = 100,
+                            min              = NULL,
+                            max              = NULL,
+                            pctlseq          = seq(20, 80, 20),
+                            predictions_pctl = NULL,
+                            verbose          = TRUE,
+                            speedseq         = c(0.25, 0.5, 1, 2, 4),
+                            path_speed       = NULL,
+                            best = "high") {
+
+  # Default values for min/max
+  if (is.null(min)) min <- attr(data_his, "min")
+  if (is.null(max)) max <- attr(data_his, "max")
+
+  out <- list()
+
+  if (percentiles) {
+    out$percentile_path <- project_pctls_path(
+      data_his        = data_his,
+      start_year      = start_year,
+      end_year        = end_year,
+      granularity     = granularity,
+      floor           = floor,
+      ceiling         = ceiling,
+      min             = min,
+      max             = max,
+      pctlseq         = pctlseq,
+      predictions_pctl= predictions_pctl,
+      verbose         = verbose
+    )
+  }
+
+  if (speed) {
+    out$speed_path <- project_path_speed(
+      data_his    = data_his,
+      speedseq    = speedseq,
+      path_speed  = path_speed,
+      floor       = floor,
+      ceiling     = ceiling,
+      granularity = granularity,
+      start_year  = start_year,
+      end_year    = end_year,
+      min         = min,
+      max         = max
+    )
+  }
+
+  if (length(out) == 0) {
+    cli::cli_abort("At least one of `percentiles` or `speed` must be TRUE.")
+  }
+
+  return(out)
+}
 

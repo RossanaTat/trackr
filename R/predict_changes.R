@@ -55,6 +55,7 @@ predict_speed <- function(data_model,
                         min(data_model$initialvalue),
                         floor)/granularity)*granularity
 
+
   }
 
   if (is.null(max)) {
@@ -62,7 +63,11 @@ predict_speed <- function(data_model,
                         max(data_model$initialvalue),
                         ceiling)/granularity)*granularity
 
+    #max <- data_model$max
+
+
   }
+
 
   if (is.null(lambdas)) {
     lambdas <<- 0.1*1.148^(0:50)
