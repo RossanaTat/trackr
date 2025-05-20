@@ -77,7 +77,8 @@ future_path_pctls <- function(data_fut,
                by = c("code","year"),
                match_type ="m:1",
                keep = "left",
-               reportvar = FALSE)
+               reportvar = FALSE,
+               verbose = FALSE)
 
   # Year-by-year, calculate the percentile paths for the last value observed. For future target creation.
 
@@ -113,7 +114,9 @@ future_path_pctls <- function(data_fut,
     n=n+1
   }
 
-  path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))]
+  path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))] |>
+    setorder(code, year)
+
 
   # Return ####
   return(path_fut_pctl)
@@ -183,8 +186,77 @@ future_path_speed <- function(data_fut,
     # Only keep cases where target has not been reached
     #filter(between(y,min,max) | is.na(y))
 
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y) | (y >= min & y <= max)]
+  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y) | (y >= min & y <= max)] |>
+    setorder(code, year)
+
 
   return(path_fut_speed)
 }
 
+#' Wrapper to Compute Future Paths Based on Either Percentiles or Speeds method
+#'
+#' Computes future trajectories for each country either based on percentile growth projections
+#' (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+#'
+#' @inheritParams future_path_pctls
+#' @inheritParams future_path_speed
+#' @param speed Logical. If `TRUE`, calls `future_path_speed()`.
+#' @param percentiles Logical. If `TRUE`, calls `future_path_pctls()`.
+#'
+#' @return A `data.table` with projected paths based on selected method.
+#'
+#' @seealso [future_path_pctls()], [future_path_speed()]
+#' @export
+future_path <- function(data_fut,
+                        target_year      = 2030,
+                        min              = 0,
+                        max              = 100,
+                        granularity      = 0.1,
+                        pctlseq          = seq(20, 80, 20),
+                        predictions_pctl = NULL,
+                        speedseq         = c(0.25, 0.5, 1, 2, 4),
+                        path_speed       = NULL,
+                        best             = "high",
+                        verbose          = TRUE,
+                        speed            = FALSE,
+                        percentiles      = FALSE) {
+
+  result <- list(pctls = NULL, speed = NULL)
+
+  if (percentiles) {
+    if (is.null(predictions_pctl)) {
+      cli::cli_abort("`predictions_pctl` must be provided when `percentiles = TRUE`.")
+    }
+    result$pctls <- future_path_pctls(
+      data_fut         = data_fut,
+      pctlseq          = pctlseq,
+      predictions_pctl = predictions_pctl,
+      target_year      = target_year,
+      granularity      = granularity,
+      min              = min,
+      max              = max,
+      verbose          = verbose
+    )
+  }
+
+  if (speed) {
+    if (is.null(path_speed)) {
+      cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
+    }
+    result$speed <- future_path_speed(
+      data_fut     = data_fut,
+      speedseq     = speedseq,
+      path_speed   = path_speed,
+      best         = best,
+      target_year  = target_year,
+      min          = min,
+      max          = max
+    )
+  }
+
+  if (is.null(result$pctls) && is.null(result$speed)) {
+    cli::cli_abort("At least one of `percentiles = TRUE` or `speed = TRUE` must be specified.")
+  }
+
+  return(result)
+}
