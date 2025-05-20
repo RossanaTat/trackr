@@ -55,7 +55,29 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 # Percentiles ~~ #
 # -------------------- #
 
-# Calculate the future path for each country based on the percentile curves
+#' Generate Future Percentile Paths
+#'
+#' Computes projected future paths for given percentiles based on initial levels and predicted changes.
+#'
+#' This function builds a dataset that extends observed data (`data_fut`) forward in time to a target year using
+#' predicted changes at specified percentiles. It iteratively calculates future values by applying changes year-by-year,
+#' starting from the last available observation for each country-percentile pair.
+#'
+#' @param data_fut A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.
+#' @param target_year An integer specifying the year to project to. Default is `2030`.
+#' @inheritParams path_historical
+#' @param verbose Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.
+#'
+#' @return A data.table with the projected values (`y_fut`) by `code`, `year`, and `pctl`, including observed values where available.
+#'
+#' @examples
+#' \dontrun{
+#' data_fut <- data.frame(code = c("A", "A"), year = c(2020, 2021), y = c(50, 52))
+#' predictions_pctl <- data.frame(initialvalue = 52, pctl = 20, change = 1)
+#' future_path_pctls(data_fut = data_fut, predictions_pctl = predictions_pctl, target_year = 2025)
+#' }
+#'
+#' @export
 future_path_pctls <- function(data_fut,
                               pctlseq     = seq(20,80,20),
                               predictions_pctl,
@@ -125,6 +147,27 @@ future_path_pctls <- function(data_fut,
 # -------------------- #
 # Speed ~~ #
 # -------------------- #
+
+#' Project Future Indicator Pathways at Different Speeds
+#'
+#' This function simulates future indicator trajectories under different
+#' speeds of progress, based on current trends and a set of predefined
+#' projection speeds. It generates interpolated yearly projections from
+#' the latest available data point up to a given target year, filtering
+#' for progress scenarios that either increase or decrease the indicator
+#' as specified.
+#'
+#' @param data_fut A data frame or data table containing the historical and/or
+#'   baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
+#'   and optionally `y_fut` and `time` for projections.
+#' @inheritParams future_path_pctls
+#' @inheritParams get_speed_path
+#'
+#' @return A data table with projected indicator values (`y_fut`) for each
+#'   country-year-speed combination from the last available year through
+#'   the `target_year`, respecting the selected progress speeds and
+#'   indicator direction (`best`).
+#' @export
 future_path_speed <- function(data_fut,
                               speedseq    = c(0.25,0.5,1,2,4),
                               path_speed,

@@ -291,8 +291,8 @@ path_historical <- function(percentiles      = TRUE,
                             granularity      = 0.1,
                             floor            = 0,
                             ceiling          = 100,
-                            min              = NULL,
-                            max              = NULL,
+                            min              = 0,
+                            max              = 100,
                             pctlseq          = seq(20, 80, 20),
                             predictions_pctl = NULL,
                             verbose          = TRUE,
@@ -303,6 +303,17 @@ path_historical <- function(percentiles      = TRUE,
   # Default values for min/max
   if (is.null(min)) min <- attr(data_his, "min")
   if (is.null(max)) max <- attr(data_his, "max")
+
+  # Input checks
+  if (speed && is.null(path_speed)) {
+    cli::cli_abort("{.arg path_speed} must be provided when {.arg speed} is TRUE.")
+  }
+
+  if (percentiles && is.null(predictions_pctl)) {
+    cli::cli_abort("{.arg predictions_pctl} must be provided when {.arg percentiles} is TRUE.")
+  }
+
+
 
   out <- list()
 
