@@ -19,11 +19,19 @@ run_method <- function(data,
                        max,
                        lambdas,
                        best,
+                       future         = FALSE,
                        verbose        = TRUE) {
 
   # Input Validation & Checks #
+  if (!data.table::is.data.table(data)) {
+    stop("`data` must be a data.table.")
+  }
 
-  # TODO
+  required_cols <- c(indicator, code_col, year_col)
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop("The following required columns are missing in `data`: ", paste(missing_cols, collapse = ", "))
+  }
 
   # ___________________________ #
   # 1. Prepare Data ####
@@ -95,17 +103,67 @@ run_method <- function(data,
   )
 
 
-
-
-
   # ___________________________ #
   # 4. Future Paths ####
   # ___________________________ #
+
+  future_path_out <- NULL
+
+  if (future == TRUE) {
+
+    data_fut <- prep_data_fut(
+      data        = data,
+      indicator   = indicator,
+      granularity = granularity,
+      code_col    = code_col,
+      year_col    = year_col,
+      verbose     = verbose
+    )
+
+    future_path <- future_path(
+      data_fut         = data_fut,
+      target_year      = target_year,
+      min              = min,
+      max              = max,
+      granularity      = granularity,
+      pctlseq          = pctlseq,
+      predictions_pctl = predicted_changes$predictions_pctls,
+      speedseq         = speedseq,
+      path_speed       = predicted_changes$path_speed,
+      best             = best,
+      verbose          = verbose,
+      speed            = speed,
+      percentiles      = percentiles)
+
+  }
 
 
   # ___________________________ #
   # 5. Scores ####
   # ___________________________ #
+
+  scores <- get_scores(
+    speed = speed,
+    pctl = percentiles,
+    path_his_pctl = path_historical$percentile_path,
+    best = best,
+    path_his_speed = path_historical$speed_path,
+    path_speed = predicted_changes$path_speed,
+    min = min,
+    max = max,
+    granularity = granularity
+  )
+
+
+
+  return(list(
+    data_model        = data_model,
+    predicted_changes = predicted_changes,
+    data_historical   = data_his,
+    path_historical   = path_historical,
+    future_path       = future_path_out,
+    scores            = scores
+  ))
 
 
 
