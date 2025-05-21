@@ -213,11 +213,13 @@ predict_pctls <- function(data_model,
 
   if (verbose) {cli::cli_alert_success(
     "Changes as function of initial vals by percentiles successfully calculated"
-                                       )}
+  )}
   return(predictions_pctl)
 
 
 }
+
+
 
 #' Predict Changes in an indicator Over Time
 #'

@@ -123,67 +123,89 @@ project_pctls_path <- function(data_his,
                                ceiling     = 100,
                                min         = NULL,
                                max         = NULL,
-                               pctlseq     = seq(20,80,20),
+                               pctlseq     = seq(20, 80, 20),
                                predictions_pctl,
                                verbose     = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
-    cli::cli_abort("Input data must be a data table")
+    cli::cli_abort("Input data must be a data.table")
   }
 
+  if (is.null(min)) min <- attr(data_his, "min")
+  if (is.null(max)) max <- attr(data_his, "max")
 
-  if (is.null(min)) {
-    min <- attr(data_his, "min")
+  if (verbose) {
+    cli::cli_alert_info("Using min: {.strong {min}}, max: {.strong {max}}")
   }
 
-  if (is.null(max)) {
-    max <- attr(data_his, "max")
-  }
+  # Create base table: all combinations of code, year, percentile
+  path_his_pctl <- as.data.table(expand.grid(
+    code = unique(data_his$code),
+    year = seq(start_year, end_year),
+    pctl = pctlseq
+  ))
 
-  print(min)
-  print(max)
+  # Merge in the historical y values
+  path_his_pctl <- invisible(joyn::joyn(
+    x          = path_his_pctl,
+    y          = data_his,
+    by         = c("code", "year"),
+    match_type = "m:1",
+    keep       = "left",
+    reportvar  = FALSE
+  ))
 
+  # Initialize y_his with y
+  path_his_pctl[, y_his := y]
 
-  # Create a new dataset which will eventually contain the predicted path from startyear_evaluation to endyear_evaluation.
-  path_his_pctl <- as.data.table(expand.grid(code = unique(data_his$code),year=seq(start_year,
-                                                                   end_year,
-                                                                   1),
-                               pctl = pctlseq)) |>
-    # Merge in the actual data from WDI
-    joyn::joyn(data_his,
-               by=c("code","year"),
-               match_type="m:1",
-               keep="left",
-               reportvar=FALSE)
+  # Sort for reliable row-based operations
+  setorder(path_his_pctl, code, pctl, year)
 
-
-  # Year-by-year, calculate the percentile paths from the first value observed.
   if (verbose) cli::cli_alert_info("Calculating historical percentile paths")
 
-  n=2
-  # Continue iteratively until the end year of evaluation
-  while (n+start_year-1 <= end_year) {
-    # Year processed concurrently
-    if (verbose) cli::cli_alert_info("Processing year {.strong {n + start_year - 1}}")
-    path_his_pctl <- path_his_pctl |>
-      # Merge in data with predicted changes based on initial levels
-      joyn::joyn(predictions_pctl,match_type="m:1",keep="left",by=c("y_his=initialvalue","pctl"),reportvar=FALSE, verbose=FALSE) |>
-      group_by(code,pctl) |>
-      arrange(year) |>
-      # Calculate new level based on the predicted changes.
-      mutate(y_his = if_else(row_number()==n  & !is.na(lag(y_his)),round((lag(y_his)+lag(change))/granularity)*granularity,y_his)) |>
-      ungroup() |>
-      select(-change)
-    # Move to next year
-    n=n+1
+  # Iterate over years, starting from the second
+  for (yr in seq(start_year + 1, end_year)) {
+    if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
+
+    # Create temporary table of values from previous year
+    prev_year_dt <- path_his_pctl[year == yr - 1, .(code, pctl, initialvalue = y_his)]
+
+    # Join with predictions
+    updated_dt <- invisible(joyn::joyn(
+      x          = prev_year_dt,
+      y          = predictions_pctl,
+      by         = c("initialvalue", "pctl"),
+      match_type = "m:1",
+      keep       = "left",
+      reportvar  = FALSE,
+      verbose    = FALSE
+    ))
+
+    # Calculate updated y_his
+    updated_dt[, y_his := round((initialvalue + change) / granularity) * granularity]
+    updated_dt[, year := yr]
+
+    # Join back the updated values into the main path table
+    path_his_pctl <- invisible(joyn::joyn(
+      x          = path_his_pctl,
+      y          = updated_dt[, .(code, pctl, year, y_his_new = y_his)],
+      by         = c("code", "pctl", "year"),
+      match_type = "1:1",
+      keep       = "left",
+      reportvar  = FALSE
+    ))
+
+    # Replace old y_his where new ones exist
+    path_his_pctl[!is.na(y_his_new), y_his := y_his_new]
+    path_his_pctl[, y_his_new := NULL]
   }
 
-  # Only keep cases where target has not been reached
-  path_his_pctl <- as.data.table(path_his_pctl)[y >= min & y <= max]
-
+  # Keep values within desired min/max bounds
+  path_his_pctl <- path_his_pctl[y >= min & y <= max]
 
   return(path_his_pctl)
 }
+
 
 
 #' Project speed path
