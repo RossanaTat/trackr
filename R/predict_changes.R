@@ -37,46 +37,31 @@ predict_speed <- function(data_model,
                           ceiling     = 100,
                           verbose     = TRUE) {
 
-  # Validation of inputs ####
+  # Ensure data_model is a data.table
+  data_model <- as.data.table(data_model)
 
-  # If data model is empty
-#
-#   if (nrow(data_model) == 0) {
-#     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
-#
-#     return(data.table(initialvalue = NA_real_,
-#                       change = NA_real_))
-#   }
+  # Early return if empty
+  if (nrow(data_model) == 0) {
+    cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
+    return(data.table(initialvalue = NA_real_,
+                      change = NA_real_))
+  }
 
-
-
+  # Set min and max
   if (is.null(min)) {
-    min = round(if_else(is.null(floor),
-                        min(data_model$initialvalue),
-                        floor)/granularity)*granularity
-
-
+    min <- round(if (is.null(floor)) min(data_model$initialvalue) else floor / granularity) * granularity
   }
 
   if (is.null(max)) {
-    max = round(if_else(is.null(ceiling),
-                        max(data_model$initialvalue),
-                        ceiling)/granularity)*granularity
-
-    #max <- data_model$max
-
-
+    max <- round(if (is.null(ceiling)) max(data_model$initialvalue) else ceiling / granularity) * granularity
   }
 
-
+  # Set lambdas
   if (is.null(lambdas)) {
-    lambdas <<- 0.1*1.148^(0:50)
+    lambdas <- 0.1 * 1.148^(0:50)
   }
 
-
-  # TO COMPLETE
-
-  # Fit the model (this line stays the same)
+  # Fit model
   fit_speed <- gcrq(change ~ ps(initialvalue, lambda = lambdas),
                     foldid = data_model$fold_id,
                     tau    = 0.5,
@@ -85,24 +70,24 @@ predict_speed <- function(data_model,
   # Generate prediction sequence
   x_seq <- seq(min, max, granularity)
 
-  # Create prediction data
+  # Predict (charts() returns a named vector or data.frame)
   predictions_speed <- charts(fit_speed, k = x_seq)
 
-  # Convert to fdata.frame and assign rounded initial values
-  predictions_speed <- fmutate(data.frame(predictions_speed),
-                               initialvalue = round(x_seq / granularity) * granularity) |>
-    frename("predictions_speed" = "change")
+  # Convert to data.table and compute columns
+  predictions_dt <- data.table(change = as.numeric(predictions_speed))
+  predictions_dt[, initialvalue := round(x_seq / granularity) * granularity]
 
-  predictions_speed <- fmutate(predictions_speed,
-                               change = pmax(change, floor - initialvalue),
-                               change = pmin(change, ceiling - initialvalue)) |>
-    as.data.table()
+  # Apply floor and ceiling constraints
+  predictions_dt[, change := pmax(change, floor - initialvalue)]
+  predictions_dt[, change := pmin(change, ceiling - initialvalue)]
+
+  #setnames(predictions_dt, "change", "predictions_speed")
 
   if (verbose) cli::cli_alert_success("Predictions speed successfully calculated")
 
-  return(predictions_speed)
-
+  return(predictions_dt)
 }
+
 
 #' Get speed paths
 #'

@@ -178,7 +178,7 @@ run_method <- function(data,
 
   if (verbose) {
     cli::cli_alert_info(
-      cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use.")
+      cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use")
     )
   }
 
