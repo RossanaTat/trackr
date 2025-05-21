@@ -1,10 +1,14 @@
 # Wrapper to run whole method #########
 
+# data_wdi <- wbstats::wb_data(indicator = indicator,lang = "en",country="countries_only")
+# indicator      = "EG.ELC.ACCS.ZS"
+
+
 
 run_method <- function(data,
-                       indicator,
-                       speed,
-                       percentiles,
+                       indicator      = NULL,
+                       speed          = FALSE,
+                       percentiles    = TRUE,
                        startyear_data = 2000,
                        start_year     = 2000,
                        end_year       = 2022,
@@ -14,23 +18,26 @@ run_method <- function(data,
                        granularity    = 0.1,
                        code_col       = "iso3c",
                        year_col       = "date",
-                       pctlseq,
-                       min,
-                       max,
-                       lambdas,
-                       best,
+                       pctlseq        = seq(20,80,20),
+                       min            = NULL,
+                       max            = NULL,
+                       lambdas        = 0.1*1.148^(0:50),
+                       best           = "high",
                        future         = FALSE,
                        verbose        = TRUE) {
 
-  # Input Validation & Checks #
-  if (!data.table::is.data.table(data)) {
-    stop("`data` must be a data.table.")
-  }
+  # # Input Validation & Checks #
 
-  required_cols <- c(indicator, code_col, year_col)
-  missing_cols <- setdiff(required_cols, names(data))
+  required_cols <- c(indicator,
+                     code_col,
+                     year_col)
+
+  missing_cols <- setdiff(required_cols,
+                          names(data))
+
   if (length(missing_cols) > 0) {
-    stop("The following required columns are missing in `data`: ", paste(missing_cols, collapse = ", "))
+    cli::cli_abort("The following required columns are missing in `data`: ",
+         paste(missing_cols, collapse = ", "))
   }
 
   # ___________________________ #
@@ -47,6 +54,19 @@ run_method <- function(data,
                           year_col       = year_col,
                           verbose        = verbose
                           )
+
+  # Retrieve min and max from data model
+  if (is.null(min)) {
+    min <- data_model$min
+  }
+
+  if (is.null(max)) {
+    max <- data_model$max
+  }
+
+  print(min)
+  print(max)
+
 
 
   # ___________________________ #
@@ -143,27 +163,34 @@ run_method <- function(data,
   # ___________________________ #
 
   scores <- get_scores(
-    speed = speed,
-    pctl = percentiles,
-    path_his_pctl = path_historical$percentile_path,
-    best = best,
+    speed          = speed,
+    pctl           = percentiles,
+    path_his_pctl  = path_historical$percentile_path,
+    best           = best,
     path_his_speed = path_historical$speed_path,
-    path_speed = predicted_changes$path_speed,
-    min = min,
-    max = max,
-    granularity = granularity
+    path_speed     = predicted_changes$path_speed,
+    min            = min,
+    max            = max,
+    granularity    = granularity,
+    verbose        = verbose
   )
 
 
+  if (verbose) {
+    cli::cli_alert_info(
+      cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use.")
+    )
+  }
 
-  return(list(
+
+  return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
     data_historical   = data_his,
     path_historical   = path_historical,
     future_path       = future_path_out,
     scores            = scores
-  ))
+  )))
 
 
 

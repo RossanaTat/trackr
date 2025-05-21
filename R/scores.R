@@ -175,15 +175,16 @@ get_scores_speed <- function(path_his_speed,
 #' @return A list with `pctl` and/or `speed` elements (data.tables).
 #'
 #' @export
-get_scores <- function(speed = FALSE,
-                       pctl = FALSE,
-                       path_his_pctl = NULL,
-                       best = "high",
+get_scores <- function(speed          = FALSE,
+                       pctl           = FALSE,
+                       path_his_pctl  = NULL,
+                       best           = "high",
                        path_his_speed = NULL,
-                       path_speed = NULL,
-                       min = 0,
-                       max = 100,
-                       granularity = 0.1) {
+                       path_speed     = NULL,
+                       min            = 0,
+                       max            = 100,
+                       granularity    = 0.1,
+                       verbose        = TRUE) {
   if (!speed && !pctl) {
     stop("At least one of `speed` or `pctl` must be TRUE.")
   }
@@ -191,23 +192,32 @@ get_scores <- function(speed = FALSE,
   out <- list()
 
   if (pctl) {
-    if (is.null(path_his_pctl)) stop("`path_his_pctl` must be provided for percentile-based score.")
+    if (is.null(path_his_pctl))  stop("Percentile-based scoring selected, but `path_his_pctl` was not provided.")
+
     out$pctl <- get_scores_pctl(path_his_pctl = path_his_pctl,
                                 best = best,
                                 min = min,
                                 max = max)
+
+    if (verbose) cli::cli_alert_success("Percentile-based scores calculated successfully.")
   }
 
   if (speed) {
+
     if (is.null(path_his_speed) || is.null(path_speed)) {
-      stop("Both `path_his_speed` and `path_speed` must be provided for speed-based score.")
+
+      stop("Speed-based scoring selected, but `path_his_speed` and/or `path_speed` were not provided.")
     }
     out$speed <- get_scores_speed(path_his_speed = path_his_speed,
                                   path_speed = path_speed,
                                   min = min,
                                   max = max,
                                   granularity = granularity)
+
+    if (verbose) cli::cli_alert_success("Speed-based scores calculated successfully.")
+
   }
+
 
   return(out)
 }
