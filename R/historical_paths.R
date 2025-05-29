@@ -134,9 +134,6 @@ project_pctls_path <- function(data_his,
   if (is.null(min)) min <- attr(data_his, "min")
   if (is.null(max)) max <- attr(data_his, "max")
 
-  if (verbose) {
-    cli::cli_alert_info("Using min: {.strong {min}}, max: {.strong {max}}")
-  }
 
   # Create base table: all combinations of code, year, percentile
   path_his_pctl <- as.data.table(expand.grid(

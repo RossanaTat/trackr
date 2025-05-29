@@ -1,12 +1,14 @@
 Package: sdgtrackr
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Track Progress and Forecast Targets for WDI Indicators
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Rossana Tatulli
+Maintainer: Rossana Tatulli <rtatulli@worldbank.org>
+Description: Calculates progress scores and future targets for any WDI indicator of interest. 
+    Users can specify their preferred method and parameters to evaluate and project country performance. 
+    Depending on the settings, the package returns between two and six data frames summarizing percentile-based and 
+    speed-based scores, as well as historical and future indicator trajectories under different assumptions.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/RossanaTat/sdgtrackr
@@ -18,7 +20,8 @@ Imports:
     joyn,
     quantregGrowth,
     wbstats,
-    rlang
+    rlang,
+    cli
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

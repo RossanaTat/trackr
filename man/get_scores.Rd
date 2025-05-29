@@ -13,7 +13,8 @@ get_scores(
   path_speed = NULL,
   min = 0,
   max = 100,
-  granularity = 0.1
+  granularity = 0.1,
+  verbose = TRUE
 )
 }
 \arguments{
