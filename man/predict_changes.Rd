@@ -39,8 +39,9 @@ If `NULL`, predictions are unrestricted on the upper end.}
 \item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 Defaults to `0.1 * 1.148^(0:50)`.}
 
-\item{best}{Character string, either \code{"high"} (default) or \code{"low"}, indicating
-whether higher or lower values of the initial variable are considered better.}
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
 
 \item{speed}{Logical. If TRUE, calculate speed of progress scores.
 Default is FALSE}
@@ -48,6 +49,8 @@ Default is FALSE}
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
 \item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), a success message is displayed after computation.}
 }
 \value{
 A list containing prediction results. The content depends on the selected method:

@@ -59,8 +59,9 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{path_speed}{Data table  with xxx}
 
-\item{best}{Character string, either \code{"high"} (default) or \code{"low"}, indicating
-whether higher or lower values of the initial variable are considered better.}
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
 }
 \value{
 A named list with one or both of `percentile_path` and `speed_path`.

@@ -149,7 +149,8 @@ project_pctls_path <- function(data_his,
     by         = c("code", "year"),
     match_type = "m:1",
     keep       = "left",
-    reportvar  = FALSE
+    reportvar  = FALSE,
+    verbose = FALSE
   ))
 
   # Initialize y_his with y
@@ -189,7 +190,8 @@ project_pctls_path <- function(data_his,
       by         = c("code", "pctl", "year"),
       match_type = "1:1",
       keep       = "left",
-      reportvar  = FALSE
+      reportvar  = FALSE,
+      verbose    = FALSE
     ))
 
     # Replace old y_his where new ones exist
@@ -266,6 +268,7 @@ project_path_speed <- function(data_his,
                match_type="1:1",
                by=c("code","year","speed"),
                reportvar=FALSE,
+               verbose = FALSE,
                y_vars_to_keep="y") |>
     group_by(code,
              speed) |>

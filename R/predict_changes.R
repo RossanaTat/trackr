@@ -58,11 +58,11 @@ predict_speed <- function(data_model,
 
   # Set lambdas
   if (is.null(lambdas)) {
-    lambdas <- 0.1 * 1.148^(0:50)
+    lambdas <<- 0.1 * 1.148^(0:50)
   }
 
   # Fit model
-  fit_speed <- gcrq(change ~ ps(initialvalue, lambda = lambdas),
+  fit_speed <- gcrq(change ~ ps(initialvalue, lambda = 0.1 * 1.148^(0:50)),
                     foldid = data_model$fold_id,
                     tau    = 0.5,
                     data   = data_model)
@@ -89,15 +89,33 @@ predict_speed <- function(data_model,
 }
 
 
-#' Get speed paths
+#' Generate Speed Path from Predicted Changes
 #'
-#' Calculates the expected path over time from the worst value to the best value.
+#' Computes the expected trajectory (or "speed path") of a variable over time,
+#' based on predicted annualized changes as a function of the variable's initial value.
+#' This is typically used to simulate progress from the worst to the best value
+#' of an indicator
 #'
-#' @inheritParams predict_speed
-#' @param best Character string, either \code{"high"} (default) or \code{"low"}, indicating
-#'   whether higher or lower values of the initial variable are considered better.
-#' @return data frame with speed path
 #'
+#' @param predictions_speed A data.table containing two columns:
+#'   \code{initialvalue} (the starting level of the indicator) and
+#'   \code{change} (the expected annualized change from that level).
+#' @param granularity A numeric value indicating the step size used when
+#'   computing the trajectory over time. Smaller values produce smoother curves.
+#'   Defaults to \code{0.1}.
+#' @param best A character string indicating the direction of improvement.
+#'   Use \code{"high"} (default) if higher values of the indicator are better,
+#'   or \code{"low"} if lower values are better. This affects the direction of the path.
+#' @param verbose Logical. If \code{TRUE} (default), a success message is displayed after computation.
+#'
+#' @return A \code{data.table} with two columns:
+#'   \item{time}{Cumulative time (in years) needed to reach each step in the path.}
+#'   \item{y}{The corresponding value of the indicator at each time step.}
+#'
+#'
+#' get_speed_path(predictions_speed, granularity = 1, best = "high")
+#'
+#' @export
 get_speed_path <- function(predictions_speed,
                            granularity = 0.1,
                            best        = "high",
@@ -185,7 +203,7 @@ predict_pctls <- function(data_model,
   # Inject lambdas into the data_model so gcrq can find it
 
   # Use formula with lambda as a name
-  fit_pctl <- gcrq(change ~ ps(initialvalue, lambda = lambdas),
+  fit_pctl <- gcrq(change ~ ps(initialvalue, lambda = 0.1 * 1.148^(0:50)),
                    foldid = data_model$fold_id,
                    tau = pctlseq / 100,
                    data = data_model)

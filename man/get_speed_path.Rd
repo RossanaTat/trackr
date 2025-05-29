@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict_changes.R
 \name{get_speed_path}
 \alias{get_speed_path}
-\title{Get speed paths}
+\title{Generate Speed Path from Predicted Changes}
 \usage{
 get_speed_path(
   predictions_speed,
@@ -12,14 +12,31 @@ get_speed_path(
 )
 }
 \arguments{
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{predictions_speed}{A data.table containing two columns:
+\code{initialvalue} (the starting level of the indicator) and
+\code{change} (the expected annualized change from that level).}
 
-\item{best}{Character string, either \code{"high"} (default) or \code{"low"}, indicating
-whether higher or lower values of the initial variable are considered better.}
+\item{granularity}{A numeric value indicating the step size used when
+computing the trajectory over time. Smaller values produce smoother curves.
+Defaults to \code{0.1}.}
+
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), a success message is displayed after computation.}
 }
 \value{
-data frame with speed path
+A \code{data.table} with two columns:
+  \item{time}{Cumulative time (in years) needed to reach each step in the path.}
+  \item{y}{The corresponding value of the indicator at each time step.}
+
+
+get_speed_path(predictions_speed, granularity = 1, best = "high")
 }
 \description{
-Calculates the expected path over time from the worst value to the best value.
+Computes the expected trajectory (or "speed path") of a variable over time,
+based on predicted annualized changes as a function of the variable's initial value.
+This is typically used to simulate progress from the worst to the best value
+of an indicator
 }

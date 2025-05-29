@@ -5,28 +5,29 @@
 
 
 
-run_method <- function(data,
-                       indicator      = NULL,
-                       speed          = FALSE,
-                       percentiles    = TRUE,
-                       startyear_data = 2000,
-                       start_year     = 2000,
-                       end_year       = 2022,
-                       target_year    = 2030,
-                       floor          = 0,
-                       ceiling        = 100,
-                       granularity    = 0.1,
-                       code_col       = "iso3c",
-                       year_col       = "date",
-                       pctlseq        = seq(20,80,20),
-                       min            = NULL,
-                       max            = NULL,
-                       lambdas        = 0.1*1.148^(0:50),
-                       best           = "high",
-                       future         = FALSE,
-                       verbose        = TRUE) {
+track_indicator <- function(data,
+                           indicator      = NULL,
+                           speed          = FALSE,
+                           percentiles    = TRUE,
+                           startyear_data = 2000,
+                           start_year     = 2000,
+                           end_year       = 2022,
+                           target_year    = 2030,
+                           floor          = 0,
+                           ceiling        = 100,
+                           granularity    = 0.1,
+                           code_col       = "iso3c",
+                           year_col       = "date",
+                           pctlseq        = seq(20,80,20),
+                           min            = NULL,
+                           max            = NULL,
+                           lambdas        = 0.1*1.148^(0:50),
+                           best           = "high",
+                           future         = FALSE,
+                           verbose        = TRUE) {
 
   # # Input Validation & Checks #
+  # To add here ##
 
   required_cols <- c(indicator,
                      code_col,
@@ -63,11 +64,6 @@ run_method <- function(data,
   if (is.null(max)) {
     max <- data_model$max
   }
-
-  print(min)
-  print(max)
-
-
 
   # ___________________________ #
   # 2. Predict Changes ####

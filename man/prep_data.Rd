@@ -21,7 +21,7 @@ prep_data(
 
 \item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
 
-\item{startyear_data}{Integer. Minimum year to include. Defaults to 2000.}
+\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
 
 \item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
 

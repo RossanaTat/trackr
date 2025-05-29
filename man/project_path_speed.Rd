@@ -28,7 +28,9 @@ If `NULL`, predictions are unrestricted on the lower end.}
 \item{ceiling}{Maximum value of indicator (NA if none).
 If `NULL`, predictions are unrestricted on the upper end.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{A numeric value indicating the step size used when
+computing the trajectory over time. Smaller values produce smoother curves.
+Defaults to \code{0.1}.}
 
 \item{start_year}{The first year to include in the analysis}
 

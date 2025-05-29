@@ -8,7 +8,7 @@
 #'
 #' @param indicator Character. Indicator code or name (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.
 #' @param data Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.
-#' @param startyear_data Integer. Minimum year to include. Defaults to 2000.
+#' @param startyear_data Integer. Minimum year to include in the data. Defaults to 2000.
 #' @param code_col Character. Name of the column with country codes. Defaults to `"iso3c"`.
 #' @param year_col Character. Name of the column with years. Defaults to `"date"`.
 #' @param verbose Logical. If TRUE print messages in console. Default is TRUE
@@ -26,6 +26,7 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       code_col       = "iso3c",
                       year_col       = "date",
                       verbose = TRUE) {
+
 
   # ________________________________
   # Start formatting the data ####
@@ -126,15 +127,14 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
            ceiling) / granularity
   ) * granularity
 
-  return(list(
+  return(
+    invisible(list(
     data_model  = res_data,
     min = min_val,
     max = max_val
-  ))
+  )))
 
 
   if (verbose) cli::cli_alert_success("user data successfuly formatted")
-
-  return(res_data)
 
 }

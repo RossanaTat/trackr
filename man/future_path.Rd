@@ -37,8 +37,9 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{best}{Character string, either \code{"high"} (default) or \code{"low"}, indicating
-whether higher or lower values of the initial variable are considered better.}
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
 
 \item{verbose}{Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.}
 
