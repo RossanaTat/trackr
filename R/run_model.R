@@ -5,8 +5,9 @@
 
 
 
-track_indicator <- function(data,
-                           indicator      = NULL,
+track_indicator <- function(indicator      = NULL,
+                           data            = wbstats::wb_data(indicator = indicator,
+                                                   lang = "en", country = "countries_only"),
                            speed          = FALSE,
                            percentiles    = TRUE,
                            startyear_data = 2000,

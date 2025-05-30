@@ -38,6 +38,8 @@ If `NULL`, predictions are unrestricted on the lower end.}
 \item{ceiling}{Maximum value of indicator (NA if none).
 If `NULL`, predictions are unrestricted on the upper end.}
 
+\item{verbose}{Logical. If TRUE, prints info messages in console}
+
 \item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 Defaults to `0.1 * 1.148^(0:50)`.}
 }

@@ -160,6 +160,7 @@ get_speed_path <- function(predictions_speed,
 #' This function calculates the changes as a function of initial values by percentile
 #'
 #' @inheritParams predict_speed
+#' @param verbose Logical. If TRUE, prints info messages in console
 #' @param pctlseq Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.
 #' @return A data frame with calculated changes by percentiles.
 #' @export
@@ -244,7 +245,8 @@ predict_pctls <- function(data_model,
 #' This function calculates projected changes in an indicator based on its initial value.
 #' Two methods are available: `"speed"` and `"percentiles"`.
 #'
-#' @param data A data frame or list representing the input data model to be used for the prediction
+#' @param data A data frame or list representing the input data model to be used for the prediction.
+#' This should be the output of the [`prep_data()`] function, which prepares the data in the required format.
 #' @param speed Logical. If TRUE, calculate speed of progress scores.
 #' Default is FALSE
 #' @param percentiles Logical. If TRUE, calculate percentile scores. Default is TRUE

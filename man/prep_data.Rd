@@ -17,7 +17,7 @@ prep_data(
 )
 }
 \arguments{
-\item{indicator}{Character. Indicator code or name (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
+\item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
 
 \item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
 

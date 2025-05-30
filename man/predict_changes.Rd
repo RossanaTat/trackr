@@ -20,7 +20,8 @@ predict_changes(
 )
 }
 \arguments{
-\item{data}{A data frame or list representing the input data model to be used for the prediction}
+\item{data}{A data frame or list representing the input data model to be used for the prediction.
+This should be the output of the [`prep_data()`] function, which prepares the data in the required format.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
 it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
@@ -50,7 +51,7 @@ Default is FALSE}
 
 \item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
-\item{verbose}{Logical. If \code{TRUE} (default), a success message is displayed after computation.}
+\item{verbose}{Logical. If TRUE, prints info messages in console}
 }
 \value{
 A list containing prediction results. The content depends on the selected method:
