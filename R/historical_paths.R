@@ -163,7 +163,13 @@ project_pctls_path <- function(data_his,
 
   # Iterate over years, starting from the second
   for (yr in seq(start_year + 1, end_year)) {
-    if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
+
+    #if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
+
+    if (verbose) cli::cli_alert_info(
+      paste0("Processing year: ",
+             cli::col_green("{.strong {yr}}")))
+
 
     # Create temporary table of values from previous year
     prev_year_dt <- path_his_pctl[year == yr - 1, .(code, pctl, initialvalue = y_his)]

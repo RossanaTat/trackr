@@ -4,7 +4,27 @@
 # indicator      = "EG.ELC.ACCS.ZS"
 
 
-
+#' Track Progress on an Indicator Over Time
+#'
+#' Calculates progress scores and future targets for a WDI indicator of choice, depending on user selection of speed, percentiles, and future projections.
+#'
+#' @inheritParams prep_data
+#' @inheritParams predict_changes
+#' @inheritParams future_path
+#' @inheritParams get_scores
+#'
+#' @return An (invisible) list containing:
+#' \describe{
+#'   \item{data_model}{Cleaned and normalized indicator data.}
+#'   \item{predicted_changes}{Output from `predict_changes()`.}
+#'   \item{data_historical}{Subset of original data used for historical paths.}
+#'   \item{path_historical}{Historical percentile and speed paths.}
+#'   \item{future_path}{(Optional) Projected future paths; `NULL` if `future = FALSE`.}
+#'   \item{scores}{Performance scores based on historical and projected trends.}
+#' }
+#'
+#' @seealso [prep_data()], [predict_changes()], [future_path()], [get_scores()]
+#' @export
 track_indicator <- function(indicator      = NULL,
                            data            = wbstats::wb_data(indicator = indicator,
                                                    lang = "en", country = "countries_only"),
@@ -173,11 +193,37 @@ track_indicator <- function(indicator      = NULL,
   )
 
 
+  # if (verbose) {
+  #   cli::cli_alert_success(
+  #     cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use")
+  #   )
+  # }
+
   if (verbose) {
-    cli::cli_alert_info(
-      cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use")
+    components <- c()
+
+    if (percentiles) {
+      components <- c(components, "percentile scores")
+    }
+
+    if (speed) {
+      components <- c(components, "speed scores")
+    }
+
+    if (future) {
+      components <- c(components, "future path")
+    }
+
+    # Always include these
+    components <- c("data model", "historical paths", "predicted changes", components)
+
+    cli::cli_alert_success(
+      cli::col_blue(
+        paste0("Method run completed.\n• Output includes: ",
+               paste(components, collapse = ", "), ".")
+      )
     )
-  }
+  } ### Messages completed
 
 
   return(invisible(list(
