@@ -233,7 +233,8 @@ project_path_speed <- function(data_his,
                                start_year  = 2000,
                                end_year    = 2022,
                                min         = NULL,
-                               max         = NULL) {
+                               max         = NULL,
+                               best = "high") {
 
   # Validate input
 
@@ -259,8 +260,8 @@ project_path_speed <- function(data_his,
            year,
            speed) |>
     cross_join(path_speed) |>
-    mutate(bst = best) |>
-    filter(if_else(bst=="high",
+    mutate(best = best) |>
+    filter(if_else(best=="high",
                    y_his<=y,
                    y_his>=y)) |>
     group_by(code,
@@ -268,7 +269,7 @@ project_path_speed <- function(data_his,
     arrange(time) |>
     mutate(year = year + (time-time[1])/speed) |>
     ungroup() |>
-    select(-c(y_his,time,bst)) |>
+    select(-c(y_his,time,best)) |>
     rename("y_his" = "y") |>
     joyn::joyn(data_his,
                match_type="1:1",
@@ -372,7 +373,8 @@ path_historical <- function(percentiles      = TRUE,
       start_year  = start_year,
       end_year    = end_year,
       min         = min,
-      max         = max
+      max         = max,
+      best = best
     )
   }
 

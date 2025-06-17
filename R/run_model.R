@@ -40,6 +40,7 @@ track_indicator <- function(indicator      = NULL,
                            code_col       = "iso3c",
                            year_col       = "date",
                            pctlseq        = seq(20,80,20),
+                           speedseq       = c(0.25, 0.5, 1, 2, 4),
                            min            = NULL,
                            max            = NULL,
                            lambdas        = 0.1*1.148^(0:50),
@@ -157,7 +158,7 @@ track_indicator <- function(indicator      = NULL,
       verbose     = verbose
     )
 
-    future_path <- future_path(
+    future_path_out <- future_path(
       data_fut         = data_fut,
       target_year      = target_year,
       min              = min,
@@ -233,7 +234,7 @@ track_indicator <- function(indicator      = NULL,
     predicted_changes = predicted_changes,
     data_historical   = data_his,
     path_historical   = path_historical,
-    future_path       = future_path,
+    future_path       = future_path_out,
     scores            = scores
   )))
 

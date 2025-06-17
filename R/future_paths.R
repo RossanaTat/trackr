@@ -197,7 +197,8 @@ future_path_speed <- function(data_fut,
                match_type      = "m:1",
                by              = c("code",
                     "year"),
-               reportvar       = FALSE)
+               reportvar       = FALSE,
+               verbose = FALSE)
 
   # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
   path_fut_speed <- data_fut |>
