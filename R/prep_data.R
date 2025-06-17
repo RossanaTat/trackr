@@ -131,7 +131,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
     invisible(list(
     data_model  = res_data,
     min = min_val,
-    max = max_val
+    max = max_val,
+    indicator = indicator
   )))
 
 

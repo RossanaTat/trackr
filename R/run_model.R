@@ -219,9 +219,11 @@ track_indicator <- function(indicator      = NULL,
 
     cli::cli_alert_success(
       cli::col_blue(
-        paste0("Method run completed.\n• Output includes: ",
+        paste0("Method run completed for indicator: '", indicator, "'.\n• Output includes: ",
                paste(components, collapse = ", "), ".")
       )
+
+
     )
   } ### Messages completed
 
@@ -231,7 +233,7 @@ track_indicator <- function(indicator      = NULL,
     predicted_changes = predicted_changes,
     data_historical   = data_his,
     path_historical   = path_historical,
-    future_path       = future_path_out,
+    future_path       = future_path,
     scores            = scores
   )))
 
