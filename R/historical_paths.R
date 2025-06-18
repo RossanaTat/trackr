@@ -118,7 +118,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
 #'
 #' @export
-project_pctls_path <- function(data_his,
+old_project_pctls_path <- function(data_his,
                                start_year  = 2000,
                                end_year    = 2022,
                                granularity = 0.1,
@@ -355,8 +355,8 @@ path_historical <- function(percentiles      = TRUE,
       start_year      = start_year,
       end_year        = end_year,
       granularity     = granularity,
-      floor           = floor,
-      ceiling         = ceiling,
+      #floor           = floor,
+      #ceiling         = ceiling,
       min             = min,
       max             = max,
       pctlseq         = pctlseq,
@@ -392,16 +392,31 @@ path_historical <- function(percentiles      = TRUE,
 ## TESTING NEW PROJECT PCTLS PATHS ####
 # Filter early to only include cases where target is not yet met
 
-new_project_pctls_path <- function(data_his,
+#' Project percentiles paths
+#'
+#' Simulates year-by-year projected paths of a variable across percentiles,
+#' based on historical values and predicted changes.
+#'
+#' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
+#' @inheritParams get_his_data
+#' @inheritParams predict_pctls
+#' @param pctlseq Numeric vector. Sequence of percentiles
+#' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
+#' @param verbose Logical. Whether to print progress messages.
+#'
+#' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+#'
+#' @export
+project_pctls_path <- function(data_his,
                                start_year  = 2000,
                                end_year    = 2022,
                                granularity = 0.1,
-                               floor       = 0,
-                               ceiling     = 100,
+                               #floor       = 0,
+                               #ceiling     = 100,
                                min         = NULL,
                                max         = NULL,
                                pctlseq     = seq(20, 80, 20),
-                               predictions_pctl = perc_path,
+                               predictions_pctl,
                                verbose     = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
@@ -453,12 +468,23 @@ new_project_pctls_path <- function(data_his,
 
 
     # Assign updated y_his to this year
-    dt_expanded[year == this_year, y_his := prev[.SD, on = .(code, pctl), x.new_y]]
+    dt_expanded[year == this_year,
+                y_his := prev[.SD, on = .(code, pctl),
+                              x.new_y]]
 
     setorder(dt_expanded, code, year)
 
   }
 
-  return(dt_expanded)
+  dt_expanded <- joyn::left_join(
+    dt_expanded,
+    data_his[, .(code, year, y)],  # only merge 'y'
+    by           = c("code", "year"),
+    relationship = "many-to-one",
+    verbose      = FALSE,
+    reportvar    = FALSE
+  )
+
+  return(dt_expanded[])
 
 }

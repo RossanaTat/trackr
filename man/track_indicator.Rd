@@ -19,6 +19,7 @@ track_indicator(
   code_col = "iso3c",
   year_col = "date",
   pctlseq = seq(20, 80, 20),
+  speedseq = c(0.25, 0.5, 1, 2, 4),
   min = NULL,
   max = NULL,
   lambdas = 0.1 * 1.148^(0:50),
