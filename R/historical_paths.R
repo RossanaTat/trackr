@@ -55,7 +55,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
             granularity > 0)
 
   # Convert to data.table
-  dt <- data.table::as.data.table(data)
+  dt <- qDT(data) #qDT
 
   # Standardize column names
   data.table::setnames(dt,
@@ -96,6 +96,9 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
   setattr(dt,
        "max",
        max)
+
+  setorder(dt,
+           code, year)
 
   return(dt)
 }
@@ -385,3 +388,77 @@ path_historical <- function(percentiles      = TRUE,
   return(out)
 }
 
+
+## TESTING NEW PROJECT PCTLS PATHS ####
+# Filter early to only include cases where target is not yet met
+
+new_project_pctls_path <- function(data_his,
+                               start_year  = 2000,
+                               end_year    = 2022,
+                               granularity = 0.1,
+                               floor       = 0,
+                               ceiling     = 100,
+                               min         = NULL,
+                               max         = NULL,
+                               pctlseq     = seq(20, 80, 20),
+                               predictions_pctl = perc_path,
+                               verbose     = TRUE) {
+  # Input validation
+  if (!inherits(data_his, "data.table")) {
+    cli::cli_abort("Input data must be a data.table")
+  }
+
+  if (is.null(min)) {
+    min <- attr(data_his, "min")
+    data_his[y >= min]
+  }
+
+  if (is.null(max)) {
+    max <- attr(data_his, "max")
+    data_his[y <= max]
+  }
+
+
+  # Step 1: Expand data_his at start_year by pctl
+  dt_expanded <- data_his[year == start_year, .(code, year, y_his)]
+  dt_expanded <- dt_expanded[, .(pctl = pctlseq), by = .(code, year, y_his)]
+
+  # Step 2: Add rows for future years
+  all_years <- seq(start_year, end_year)
+
+  dt_expanded <- dt_expanded[, .(year = all_years), by = .(code, pctl)][
+    dt_expanded, on = .(code, pctl, year), y_his := i.y_his]
+
+  setorder(dt_expanded, code, pctl, year)
+
+  # Step 3: Project year by year
+  for (i in 2:length(all_years)) {
+
+    prev_year <- all_years[i - 1]
+    this_year <- all_years[i]
+
+
+    prev <- dt_expanded[year == prev_year, .(code, pctl, y_his)]
+
+    prev <- joyn::left_join(prev,
+                            predictions_pctl,
+                            by = c("y_his = initialvalue", "pctl"),
+                            relationship = "many-to-many",
+                            verbose = FALSE)
+
+    qDT(prev)
+
+    # Apply change and granularity, and floor/ceiling bounds
+    prev[, new_y := round((y_his + change) / granularity) * granularity]
+
+
+    # Assign updated y_his to this year
+    dt_expanded[year == this_year, y_his := prev[.SD, on = .(code, pctl), x.new_y]]
+
+    setorder(dt_expanded, code, year)
+
+  }
+
+  return(dt_expanded)
+
+}
