@@ -327,15 +327,14 @@ predict_changes <- function(data,
 
   if (percentiles) {
 
-    predictions_pctls <- predict_pctls(data_model  = data,
-                                             min         = min,
-                                             max         = max,
-                                             granularity = granularity,
-                                             floor       = floor,
-                                             ceiling     = ceiling,
-                                             sequence_pctl = sequence_pctl,
-                                             verbose     = verbose
-                                             )
+    predictions_pctls <- predict_pctls(data_model    = data,
+                                       min           = min,
+                                       max           = max,
+                                       granularity   = granularity,
+                                       floor         = floor,
+                                       ceiling       = ceiling,
+                                       sequence_pctl = sequence_pctl,
+                                       verbose       = verbose)
 
     res_list$predictions_pctls <- predictions_pctls
   }
