@@ -23,12 +23,6 @@ project_path_speed(
 
 \item{speedseq}{numeric vector of speed paths to calculate}
 
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
-
 \item{granularity}{A numeric value indicating the step size used when
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}

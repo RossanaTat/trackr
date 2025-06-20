@@ -7,6 +7,8 @@
 track_indicator(
   indicator = NULL,
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+  code_col = "iso3c",
+  year_col = "date",
   speed = FALSE,
   percentiles = TRUE,
   startyear_data = 2000,
@@ -16,8 +18,6 @@ track_indicator(
   floor = 0,
   ceiling = 100,
   granularity = 0.1,
-  code_col = "iso3c",
-  year_col = "date",
   pctlseq = seq(20, 80, 20),
   speedseq = c(0.25, 0.5, 1, 2, 4),
   min = NULL,
@@ -32,6 +32,10 @@ track_indicator(
 \item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
 
 \item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
+
+\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
+
+\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
 
 \item{speed}{Logical. If TRUE, calculate speed of progress scores.
 Default is FALSE}
@@ -49,10 +53,6 @@ If `NULL`, predictions are unrestricted on the lower end.}
 If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
-
-\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
-
-\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
 
 \item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
