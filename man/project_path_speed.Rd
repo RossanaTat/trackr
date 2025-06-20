@@ -11,8 +11,8 @@ project_path_speed(
   floor = 0,
   ceiling = 100,
   granularity = 0.1,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   min = NULL,
   max = NULL,
   best = "high"
@@ -27,9 +27,9 @@ project_path_speed(
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{The first year to include in the analysis}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{The last year to include in the analysis}
 
 \item{min}{A numeric value indicating the minimum bound,
 typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).

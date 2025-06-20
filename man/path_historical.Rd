@@ -8,8 +8,8 @@ path_historical(
   percentiles = TRUE,
   speed = TRUE,
   data_his,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   granularity = 0.1,
   floor = 0,
   ceiling = 100,
@@ -31,9 +31,9 @@ Default is FALSE}
 
 \item{data_his}{A data.table containing historical values.}
 
-\item{start_year}{First year to include in projections.}
+\item{eval_from}{First year to include in projections.}
 
-\item{end_year}{Last year to include in projections.}
+\item{eval_to}{Last year to include in projections.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 

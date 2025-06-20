@@ -11,8 +11,8 @@ get_his_data(
   year_col = "date",
   min = 0,
   max = 100,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   granularity = 0.1
 )
 }
@@ -33,9 +33,9 @@ This value is stored as an attribute of the returned object for later reference 
 typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
 This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{The first year to include in the analysis}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{The last year to include in the analysis}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 }

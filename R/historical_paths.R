@@ -19,8 +19,8 @@
 #' @param max A numeric value indicating the maximum bound,
 #'   typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
 #'   This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).
-#' @param start_year The first year to include in the analysis
-#' @param end_year The last year to include in the analysis
+#' @param eval_from The first year to include in the analysis
+#' @param eval_to The last year to include in the analysis
 #' @return A `data.table` containing the following columns:
 #'   \item{code}{Country code (standardized).}
 #'   \item{year}{Year of observation.}
@@ -43,7 +43,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          min          = 0,
                          max          = 100,
                          eval_from   = 2000,
-                         end_year     = 2022,
+                         eval_to     = 2022,
                          granularity  = 0.1) {
 
   # Input validation
@@ -234,7 +234,7 @@ project_path_speed <- function(data_his,
                                ceiling     = 100,
                                granularity = 0.1,
                                eval_from  = 2000,
-                               end_year    = 2022,
+                               eval_to    = 2022,
                                min         = NULL,
                                max         = NULL,
                                best = "high") {
@@ -306,8 +306,8 @@ project_path_speed <- function(data_his,
 #'
 #' @inheritParams predict_changes
 #' @param data_his A data.table containing historical values.
-#' @param start_year First year to include in projections.
-#' @param end_year Last year to include in projections.
+#' @param eval_from First year to include in projections.
+#' @param eval_to Last year to include in projections.
 #' @param predictions_pctl A `data.table` with predicted changes by initialvalue and pctl.
 #' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
 #' @param speedseq Numeric vector of XXX

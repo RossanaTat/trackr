@@ -6,8 +6,8 @@
 \usage{
 project_pctls_path(
   data_his,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   granularity = 0.1,
   min = NULL,
   max = NULL,
@@ -19,9 +19,9 @@ project_pctls_path(
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{The first year to include in the analysis}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{The last year to include in the analysis}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
