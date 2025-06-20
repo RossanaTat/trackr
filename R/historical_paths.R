@@ -42,14 +42,14 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          year_col     = "date",
                          min          = 0,
                          max          = 100,
-                         start_year   = 2000,
+                         eval_from   = 2000,
                          end_year     = 2022,
                          granularity  = 0.1) {
 
   # Input validation
-  stopifnot(is.numeric(start_year),
-            is.numeric(end_year),
-            start_year <= end_year)
+  stopifnot(is.numeric(eval_from),
+            is.numeric(eval_to),
+            start_year <= eval_to)
 
   stopifnot(is.numeric(granularity),
             granularity > 0)
@@ -65,7 +65,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 
   # Keep relevant columns and filter years
   dt <- dt[
-    year >= start_year
+    year >= eval_from
   ][
     , .(code, year, y)
   ]
@@ -75,7 +75,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 
   # Filter to evaluation period and remove leading NAs
   dt <- dt[
-    between(year, start_year, end_year)
+    between(year, eval_from, end_year)
   ][
     , cum_nm := cumsum(!is.na(y)), by = code
   ][
@@ -119,7 +119,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #'
 #' @export
 old_project_pctls_path <- function(data_his,
-                               start_year  = 2000,
+                                   eval_from  = 2000,
                                end_year    = 2022,
                                granularity = 0.1,
                                floor       = 0,
@@ -141,7 +141,7 @@ old_project_pctls_path <- function(data_his,
   # Create base table: all combinations of code, year, percentile
   path_his_pctl <- as.data.table(expand.grid(
     code = unique(data_his$code),
-    year = seq(start_year, end_year),
+    year = seq(eval_from, eval_to),
     pctl = pctlseq
   ))
 
@@ -165,7 +165,7 @@ old_project_pctls_path <- function(data_his,
   if (verbose) cli::cli_alert_info("Calculating historical percentile paths")
 
   # Iterate over years, starting from the second
-  for (yr in seq(start_year + 1, end_year)) {
+  for (yr in seq(eval_from + 1, eval_to)) {
 
     #if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
 
@@ -233,7 +233,7 @@ project_path_speed <- function(data_his,
                                floor       = 0,
                                ceiling     = 100,
                                granularity = 0.1,
-                               start_year  = 2000,
+                               eval_from  = 2000,
                                end_year    = 2022,
                                min         = NULL,
                                max         = NULL,
@@ -287,8 +287,8 @@ project_path_speed <- function(data_his,
                                   year,
                                   na.rm=FALSE,
                                   rule=2)) |>
-    filter(year %in% seq(start_year,
-                         end_year,
+    filter(year %in% seq(eval_from,
+                         eval_to,
                          1)) |>
     ungroup() |>
     # Only keep cases where target has not been reached
@@ -318,8 +318,8 @@ project_path_speed <- function(data_his,
 path_historical <- function(percentiles      = TRUE,
                             speed            = TRUE,
                             data_his,
-                            start_year       = 2000,
-                            end_year         = 2022,
+                            eval_from       = 2000,
+                            eval_to         = 2022,
                             granularity      = 0.1,
                             floor            = 0,
                             ceiling          = 100,
@@ -352,8 +352,8 @@ path_historical <- function(percentiles      = TRUE,
   if (percentiles) {
     out$percentile_path <- project_pctls_path(
       data_his        = data_his,
-      start_year      = start_year,
-      end_year        = end_year,
+      eval_from      = eval_from,
+      eval_to        = eval_to,
       granularity     = granularity,
       #floor           = floor,
       #ceiling         = ceiling,
@@ -373,8 +373,8 @@ path_historical <- function(percentiles      = TRUE,
       floor       = floor,
       ceiling     = ceiling,
       granularity = granularity,
-      start_year  = start_year,
-      end_year    = end_year,
+      eval_from  = eval_from,
+      eval_to    = eval_to,
       min         = min,
       max         = max,
       best = best
@@ -408,8 +408,8 @@ path_historical <- function(percentiles      = TRUE,
 #'
 #' @export
 project_pctls_path <- function(data_his,
-                               start_year  = 2000,
-                               end_year    = 2022,
+                               eval_from  = 2000,
+                               eval_to    = 2022,
                                granularity = 0.1,
                                #floor       = 0,
                                #ceiling     = 100,
@@ -435,11 +435,11 @@ project_pctls_path <- function(data_his,
 
 
   # Step 1: Expand data_his at start_year by pctl
-  dt_expanded <- data_his[year == start_year, .(code, year, y_his)]
+  dt_expanded <- data_his[year == eval_from, .(code, year, y_his)]
   dt_expanded <- dt_expanded[, .(pctl = pctlseq), by = .(code, year, y_his)]
 
   # Step 2: Add rows for future years
-  all_years <- seq(start_year, end_year)
+  all_years <- seq(eval_from, eval_to)
 
   dt_expanded <- dt_expanded[, .(year = all_years), by = .(code, pctl)][
     dt_expanded, on = .(code, pctl, year), y_his := i.y_his]
@@ -478,7 +478,7 @@ project_pctls_path <- function(data_his,
 
   dt_expanded <- joyn::left_join(
     dt_expanded,
-    data_his[, .(code, year, y)],  # only merge 'y'
+    data_his[, .(code, year, y)],       # only merge 'y'
     by           = c("code", "year"),
     relationship = "many-to-one",
     verbose      = FALSE,
