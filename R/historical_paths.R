@@ -111,7 +111,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
 #' @inheritParams get_his_data
 #' @inheritParams predict_pctls
-#' @param pctlseq Numeric vector. Sequence of percentiles
+#' @param sequence_pctl Numeric vector. Sequence of percentiles
 #' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
 #'
@@ -119,16 +119,16 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #'
 #' @export
 old_project_pctls_path <- function(data_his,
-                                   eval_from  = 2000,
-                               end_year    = 2022,
-                               granularity = 0.1,
-                               floor       = 0,
-                               ceiling     = 100,
-                               min         = NULL,
-                               max         = NULL,
-                               pctlseq     = seq(20, 80, 20),
-                               predictions_pctl,
-                               verbose     = TRUE) {
+                                   eval_from         = 2000,
+                                   end_year          = 2022,
+                                   granularity       = 0.1,
+                                   floor             = 0,
+                                   ceiling           = 100,
+                                   min               = NULL,
+                                   max               = NULL,
+                                   sequence_pctl     = seq(20, 80, 20),
+                                   predictions_pctl,
+                                   verbose           = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
     cli::cli_abort("Input data must be a data.table")
@@ -142,7 +142,7 @@ old_project_pctls_path <- function(data_his,
   path_his_pctl <- as.data.table(expand.grid(
     code = unique(data_his$code),
     year = seq(eval_from, eval_to),
-    pctl = pctlseq
+    pctl = sequence_pctl
   ))
 
   # Merge in the historical y values
@@ -318,14 +318,14 @@ project_path_speed <- function(data_his,
 path_historical <- function(percentiles      = TRUE,
                             speed            = TRUE,
                             data_his,
-                            eval_from       = 2000,
-                            eval_to         = 2022,
+                            eval_from        = 2000,
+                            eval_to          = 2022,
                             granularity      = 0.1,
                             floor            = 0,
                             ceiling          = 100,
                             min              = 0,
                             max              = 100,
-                            pctlseq          = seq(20, 80, 20),
+                            sequence_pctl    = seq(20, 80, 20),
                             predictions_pctl = NULL,
                             verbose          = TRUE,
                             speedseq         = c(0.25, 0.5, 1, 2, 4),
@@ -351,17 +351,17 @@ path_historical <- function(percentiles      = TRUE,
 
   if (percentiles) {
     out$percentile_path <- project_pctls_path(
-      data_his        = data_his,
-      eval_from      = eval_from,
-      eval_to        = eval_to,
-      granularity     = granularity,
+      data_his         = data_his,
+      eval_from        = eval_from,
+      eval_to          = eval_to,
+      granularity      = granularity,
       #floor           = floor,
       #ceiling         = ceiling,
-      min             = min,
-      max             = max,
-      pctlseq         = pctlseq,
-      predictions_pctl= predictions_pctl,
-      verbose         = verbose
+      min              = min,
+      max              = max,
+      sequence_pctl    = sequence_pctl,
+      predictions_pctl = predictions_pctl,
+      verbose          = verbose
     )
   }
 
@@ -373,11 +373,11 @@ path_historical <- function(percentiles      = TRUE,
       floor       = floor,
       ceiling     = ceiling,
       granularity = granularity,
-      eval_from  = eval_from,
-      eval_to    = eval_to,
+      eval_from   = eval_from,
+      eval_to     = eval_to,
       min         = min,
       max         = max,
-      best = best
+      best        = best
     )
   }
 
@@ -400,7 +400,7 @@ path_historical <- function(percentiles      = TRUE,
 #' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
 #' @inheritParams get_his_data
 #' @inheritParams predict_pctls
-#' @param pctlseq Numeric vector. Sequence of percentiles
+#' @param sequence_pctl Numeric vector. Sequence of percentiles
 #' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
 #'
@@ -408,16 +408,16 @@ path_historical <- function(percentiles      = TRUE,
 #'
 #' @export
 project_pctls_path <- function(data_his,
-                               eval_from  = 2000,
-                               eval_to    = 2022,
-                               granularity = 0.1,
-                               #floor       = 0,
-                               #ceiling     = 100,
-                               min         = NULL,
-                               max         = NULL,
-                               pctlseq     = seq(20, 80, 20),
+                               eval_from      = 2000,
+                               eval_to        = 2022,
+                               granularity    = 0.1,
+                               #floor         = 0,
+                               #ceiling       = 100,
+                               min            = NULL,
+                               max            = NULL,
+                               sequence_pctl  = seq(20, 80, 20),
                                predictions_pctl,
-                               verbose     = TRUE) {
+                               verbose        = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
     cli::cli_abort("Input data must be a data.table")
@@ -436,15 +436,22 @@ project_pctls_path <- function(data_his,
 
   # Step 1: Expand data_his at start_year by pctl
   dt_expanded <- data_his[year == eval_from, .(code, year, y_his)]
-  dt_expanded <- dt_expanded[, .(pctl = pctlseq), by = .(code, year, y_his)]
+
+  dt_expanded <- dt_expanded[, .(pctl = sequence_pctl),
+                             by = .(code, year, y_his)]
 
   # Step 2: Add rows for future years
-  all_years <- seq(eval_from, eval_to)
+  all_years <- seq(eval_from,
+                   eval_to)
 
-  dt_expanded <- dt_expanded[, .(year = all_years), by = .(code, pctl)][
+  dt_expanded <- dt_expanded[, .(year = all_years),
+                             by = .(code, pctl)][
     dt_expanded, on = .(code, pctl, year), y_his := i.y_his]
 
-  setorder(dt_expanded, code, pctl, year)
+  setorder(dt_expanded,
+           code,
+           pctl,
+           year)
 
   # Step 3: Project year by year
   for (i in 2:length(all_years)) {
@@ -472,11 +479,14 @@ project_pctls_path <- function(data_his,
                 y_his := prev[.SD, on = .(code, pctl),
                               x.new_y]]
 
-    setorder(dt_expanded, code, year)
+    setorder(dt_expanded,
+             code,
+             year)
 
   }
 
   dt_expanded <- joyn::left_join(
+
     dt_expanded,
     data_his[, .(code, year, y)],       # only merge 'y'
     by           = c("code", "year"),

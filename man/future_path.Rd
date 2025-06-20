@@ -10,7 +10,7 @@ future_path(
   min = 0,
   max = 100,
   granularity = 0.1,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   predictions_pctl = NULL,
   speedseq = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
@@ -33,7 +33,7 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 

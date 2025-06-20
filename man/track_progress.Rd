@@ -18,7 +18,7 @@ track_progress(
   floor = 0,
   ceiling = 100,
   granularity = 0.1,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   speedseq = c(0.25, 0.5, 1, 2, 4),
   min = NULL,
   max = NULL,
@@ -54,7 +54,7 @@ If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
 it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}

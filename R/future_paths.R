@@ -79,7 +79,7 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 #'
 #' @export
 future_path_pctls <- function(data_fut,
-                              pctlseq     = seq(20,80,20),
+                              sequence_pctl     = seq(20,80,20),
                               predictions_pctl,
                               target_year = 2030,
                               granularity = 0.1,
@@ -93,7 +93,7 @@ future_path_pctls <- function(data_fut,
                                year = seq(min(data_fut$year),
                                         target_year,
                                         1),
-                               pctl = pctlseq) |>
+                               pctl = sequence_pctl) |>
     # Merge in the actual data from WDI
     joyn::joyn(data_fut,
                by = c("code","year"),
@@ -256,7 +256,7 @@ future_path <- function(data_fut,
                         min              = 0,
                         max              = 100,
                         granularity      = 0.1,
-                        pctlseq          = seq(20, 80, 20),
+                        sequence_pctl    = seq(20, 80, 20),
                         predictions_pctl = NULL,
                         speedseq         = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
@@ -273,7 +273,7 @@ future_path <- function(data_fut,
     }
     result$pctls <- future_path_pctls(
       data_fut         = data_fut,
-      pctlseq          = pctlseq,
+      sequence_pctl    = sequence_pctl,
       predictions_pctl = predictions_pctl,
       target_year      = target_year,
       granularity      = granularity,
@@ -308,7 +308,7 @@ future_path <- function(data_fut,
 
 ## TESTING NEW FUNCTIONS ####
 new_future_path_pctls <- function(data_fut,
-                              pctlseq     = seq(20, 80, 20),
+                                  sequence_pctl     = seq(20, 80, 20),
                               predictions_pctl,
                               target_year = 2030,
                               granularity = 0.1,
@@ -319,7 +319,7 @@ new_future_path_pctls <- function(data_fut,
 
   # Step 1: Start from observed data_fut at the base year
   dt_start <- data_fut[, .(code, year, y, y_fut)]
-  dt_start <- dt_start[, .(pctl = pctlseq), by = .(code, year, y, y_fut)]
+  dt_start <- dt_start[, .(pctl = sequence_pctl), by = .(code, year, y, y_fut)]
 
   # Step 2: Expand to all years forward
   all_years <- seq(min(dt_start$year), target_year)

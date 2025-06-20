@@ -15,7 +15,7 @@ predict_changes(
   best = "high",
   speed = FALSE,
   percentiles = TRUE,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   verbose = TRUE
 )
 }
@@ -49,7 +49,7 @@ Default is FALSE}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{verbose}{Logical. If TRUE, prints info messages in console}
 }

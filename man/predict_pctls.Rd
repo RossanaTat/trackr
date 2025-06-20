@@ -9,7 +9,7 @@ predict_pctls(
   min = NULL,
   max = NULL,
   granularity = 0.1,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   floor = 0,
   ceiling = 100,
   verbose = TRUE,
@@ -30,7 +30,7 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{floor}{Numeric or `NULL`.Minimum value of indicator.
 If `NULL`, predictions are unrestricted on the lower end.}

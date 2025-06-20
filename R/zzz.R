@@ -7,7 +7,7 @@
     sgtrackr.pctl        = FALSE,
     sgtrackr.speed       = TRUE,
     sgtrackr.future      = TRUE,
-    sgtrackr.default_pctlseq     = seq(20, 80, 20),
+    sgtrackr.default_sequence_pctl     = seq(20, 80, 20),
     sgtrackr.default_speedseq    = c(0.25, 0.5, 1, 2, 4)
   )
   toset <- !(names(op.sgtrackr) %in% names(op))

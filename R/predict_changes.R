@@ -161,18 +161,18 @@ get_speed_path <- function(predictions_speed,
 #'
 #' @inheritParams predict_speed
 #' @param verbose Logical. If TRUE, prints info messages in console
-#' @param pctlseq Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.
+#' @param sequence_pctl Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.
 #' @return A data frame with calculated changes by percentiles.
 #' @export
 predict_pctls <- function(data_model,
-                          min         = NULL,
-                          max         = NULL,
-                          granularity = 0.1,
-                          pctlseq     = seq(20,80,20),
-                          floor       = 0,
-                          ceiling     = 100,
-                          verbose     = TRUE,
-                          lambdas     = NULL) {
+                          min           = NULL,
+                          max           = NULL,
+                          granularity   = 0.1,
+                          sequence_pctl = seq(20,80,20),
+                          floor         = 0,
+                          ceiling       = 100,
+                          verbose       = TRUE,
+                          lambdas       = NULL) {
 
   # __________________________________ #
   # Validate input ~~~~~ ####
@@ -206,7 +206,7 @@ predict_pctls <- function(data_model,
   # Use formula with lambda as a name
   fit_pctl <- gcrq(change ~ ps(initialvalue, lambda = 0.1 * 1.148^(0:50)),
                    foldid = data_model$fold_id,
-                   tau = pctlseq / 100,
+                   tau = sequence_pctl / 100,
                    data = data_model)
 
 
@@ -268,17 +268,17 @@ predict_pctls <- function(data_model,
 #'
 #' @export
 predict_changes <- function(data,
-                            min         = NULL,
-                            max         = NULL,
-                            floor       = 0,
-                            ceiling     = 100,
-                            granularity = 0.1,
-                            lambdas     = NULL,
-                            best        = "high",
-                            speed       = FALSE,
-                            percentiles = TRUE,
-                            pctlseq     = seq(20,80,20),
-                            verbose     = TRUE) {
+                            min           = NULL,
+                            max           = NULL,
+                            floor         = 0,
+                            ceiling       = 100,
+                            granularity   = 0.1,
+                            lambdas       = NULL,
+                            best          = "high",
+                            speed         = FALSE,
+                            percentiles   = TRUE,
+                            sequence_pctl = seq(20,80,20),
+                            verbose       = TRUE) {
 
   # Add validations on inputs
 
@@ -333,7 +333,7 @@ predict_changes <- function(data,
                                              granularity = granularity,
                                              floor       = floor,
                                              ceiling     = ceiling,
-                                             pctlseq     = pctlseq,
+                                             sequence_pctl = sequence_pctl,
                                              verbose     = verbose
                                              )
 

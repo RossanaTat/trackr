@@ -6,7 +6,7 @@
 \usage{
 future_path_pctls(
   data_fut,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   predictions_pctl,
   target_year = 2030,
   granularity = 0.1,
@@ -18,7 +18,7 @@ future_path_pctls(
 \arguments{
 \item{data_fut}{A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 

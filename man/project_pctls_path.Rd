@@ -11,7 +11,7 @@ project_pctls_path(
   granularity = 0.1,
   min = NULL,
   max = NULL,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = seq(20, 80, 20),
   predictions_pctl,
   verbose = TRUE
 )
@@ -33,7 +33,7 @@ This value is stored as an attribute of the returned object for later reference 
 typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
 This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
 
-\item{pctlseq}{Numeric vector. Sequence of percentiles}
+\item{sequence_pctl}{Numeric vector. Sequence of percentiles}
 
 \item{predictions_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
 
