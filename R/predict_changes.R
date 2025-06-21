@@ -320,7 +320,7 @@ predict_changes <- function(data,
                                  best              = best,
                                  verbose           = verbose)
 
-    res_list$predictions_speed <- predictions_speed
+    res_list$changes_speed <- predictions_speed
     res_list$path_speed        <- path_speed
 
   }
@@ -336,7 +336,7 @@ predict_changes <- function(data,
                                        sequence_pctl = sequence_pctl,
                                        verbose       = verbose)
 
-    res_list$predictions_pctls <- predictions_pctls
+    res_list$changes_pctl <- predictions_pctls
   }
 
   return(
