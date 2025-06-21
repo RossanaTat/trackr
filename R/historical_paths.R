@@ -127,7 +127,7 @@ old_project_pctls_path <- function(data_his,
                                    min               = NULL,
                                    max               = NULL,
                                    sequence_pctl     = seq(20, 80, 20),
-                                   predictions_pctl,
+                                   changes_pctl,
                                    verbose           = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
@@ -140,8 +140,10 @@ old_project_pctls_path <- function(data_his,
 
   # Create base table: all combinations of code, year, percentile
   path_his_pctl <- as.data.table(expand.grid(
+
     code = unique(data_his$code),
-    year = seq(eval_from, eval_to),
+    year = seq(eval_from,
+               eval_to),
     pctl = sequence_pctl
   ))
 
@@ -178,22 +180,22 @@ old_project_pctls_path <- function(data_his,
     prev_year_dt <- path_his_pctl[year == yr - 1, .(code, pctl, initialvalue = y_his)]
 
     # Join with predictions
-    updated_dt <- invisible(joyn::joyn(
+    updated_dt <- joyn::joyn(
       x          = prev_year_dt,
-      y          = predictions_pctl,
+      y          = changes_pctl,
       by         = c("initialvalue", "pctl"),
       match_type = "m:1",
       keep       = "left",
       reportvar  = FALSE,
       verbose    = FALSE
-    ))
+    )
 
     # Calculate updated y_his
     updated_dt[, y_his := round((initialvalue + change) / granularity) * granularity]
     updated_dt[, year := yr]
 
     # Join back the updated values into the main path table
-    path_his_pctl <- invisible(joyn::joyn(
+    path_his_pctl <- joyn::joyn(
       x          = path_his_pctl,
       y          = updated_dt[, .(code, pctl, year, y_his_new = y_his)],
       by         = c("code", "pctl", "year"),
@@ -201,7 +203,7 @@ old_project_pctls_path <- function(data_his,
       keep       = "left",
       reportvar  = FALSE,
       verbose    = FALSE
-    ))
+    )
 
     # Replace old y_his where new ones exist
     path_his_pctl[!is.na(y_his_new), y_his := y_his_new]
@@ -264,9 +266,9 @@ project_path_speed <- function(data_his,
            speed) |>
     cross_join(path_speed) |>
     mutate(best = best) |>
-    filter(if_else(best=="high",
-                   y_his<=y,
-                   y_his>=y)) |>
+    filter(if_else(best == "high",
+                   y_his <= y,
+                   y_his >= y)) |>
     group_by(code,
              speed) |>
     arrange(time) |>
@@ -275,11 +277,11 @@ project_path_speed <- function(data_his,
     select(-c(y_his,time,best)) |>
     rename("y_his" = "y") |>
     joyn::joyn(data_his,
-               match_type="1:1",
-               by=c("code","year","speed"),
-               reportvar=FALSE,
+               match_type = "1:1",
+               by = c("code","year","speed"),
+               reportvar = FALSE,
                verbose = FALSE,
-               y_vars_to_keep="y") |>
+               y_vars_to_keep = "y") |>
     group_by(code,
              speed) |>
     arrange(year) |>
@@ -326,7 +328,7 @@ path_historical <- function(percentiles      = TRUE,
                             min              = 0,
                             max              = 100,
                             sequence_pctl    = seq(20, 80, 20),
-                            predictions_pctl = NULL,
+                            changes_pctl = NULL,
                             verbose          = TRUE,
                             speedseq         = c(0.25, 0.5, 1, 2, 4),
                             path_speed       = NULL,
@@ -341,8 +343,8 @@ path_historical <- function(percentiles      = TRUE,
     cli::cli_abort("{.arg path_speed} must be provided when {.arg speed} is TRUE.")
   }
 
-  if (percentiles && is.null(predictions_pctl)) {
-    cli::cli_abort("{.arg predictions_pctl} must be provided when {.arg percentiles} is TRUE.")
+  if (percentiles && is.null(changes_pctl)) {
+    cli::cli_abort("{.arg changes_pctl} must be provided when {.arg percentiles} is TRUE.")
   }
 
 
@@ -350,7 +352,7 @@ path_historical <- function(percentiles      = TRUE,
   out <- list()
 
   if (percentiles) {
-    out$percentile_path <- project_pctls_path(
+    out$pctl <- project_pctls_path(
       data_his         = data_his,
       eval_from        = eval_from,
       eval_to          = eval_to,
@@ -360,7 +362,7 @@ path_historical <- function(percentiles      = TRUE,
       min              = min,
       max              = max,
       sequence_pctl    = sequence_pctl,
-      predictions_pctl = predictions_pctl,
+      changes_pctl = changes_pctl,
       verbose          = verbose
     )
   }
@@ -416,7 +418,7 @@ project_pctls_path <- function(data_his,
                                min            = NULL,
                                max            = NULL,
                                sequence_pctl  = seq(20, 80, 20),
-                               predictions_pctl,
+                               changes_pctl,
                                verbose        = TRUE) {
   # Input validation
   if (!inherits(data_his, "data.table")) {
@@ -463,7 +465,7 @@ project_pctls_path <- function(data_his,
     prev <- dt_expanded[year == prev_year, .(code, pctl, y_his)]
 
     prev <- joyn::left_join(prev,
-                            predictions_pctl,
+                            changes_pctl,
                             by = c("y_his = initialvalue", "pctl"),
                             relationship = "many-to-many",
                             verbose = FALSE)

@@ -80,7 +80,7 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 #' @export
 future_path_pctls <- function(data_fut,
                               sequence_pctl     = seq(20,80,20),
-                              predictions_pctl,
+                              changes_pctl,
                               target_year = 2030,
                               granularity = 0.1,
                               min         = 0,
@@ -111,19 +111,20 @@ future_path_pctls <- function(data_fut,
   n = startyear_target - min(path_fut_pctl$year) + 1
 
   # Continue this iteratively until the target year
-  while (n+min(path_fut_pctl$year)-1 <=target_year) {
+  while (n + min(path_fut_pctl$year) - 1 <= target_year) {
     # Year processed concurrently
     #print(n+min(path_fut_pctl$year)-1)
+
     if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
 
     path_fut_pctl <- path_fut_pctl |>
       # Merge in data with predicted changes based on initial levels
-      joyn::joyn(predictions_pctl,
-                 match_type="m:1",
-                 keep="left",
-                 by=c("y_fut=initialvalue","pctl"),
-                 reportvar=FALSE,
-                 verbose=FALSE) |>
+      joyn::joyn(changes_pctl,
+                 match_type = "m:1",
+                 keep = "left",
+                 by = c("y_fut=initialvalue","pctl"),
+                 reportvar = FALSE,
+                 verbose = FALSE) |>
       group_by(code,
                pctl) |>
       arrange(year) |>
@@ -137,7 +138,8 @@ future_path_pctls <- function(data_fut,
   }
 
   path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))] |>
-    setorder(code, year)
+    setorder(code,
+             year)
 
 
   # Return ####
@@ -179,7 +181,7 @@ future_path_speed <- function(data_fut,
 
   # Creates dataset with the country-years-speeds where projections are needed
   data_fut <- expand.grid(code = unique(data_fut$code),
-                          year =seq(min(data_fut$year),
+                          year = seq( min (data_fut$year),
                                    target_year,
                                    1),
                           speed = speedseq) |>
@@ -190,9 +192,11 @@ future_path_speed <- function(data_fut,
                reportvar       = FALSE,
                verbose         = FALSE,
                y_vars_to_keep  = "year") |>
+
     filter(yeartemp >= year) |>
     select(-year) |>
     rename("year"              = "yeartemp") |>
+
     joyn::joyn(data_fut,
                match_type      = "m:1",
                by              = c("code",
@@ -206,24 +210,34 @@ future_path_speed <- function(data_fut,
     filter(!is.na(y_fut)) |>
     cross_join(path_speed) |>
     mutate(bst = best) |>
-    filter(if_else(bst=="high",y_fut<=y,y_fut>=y)) |>
-    group_by(code,speed) |>
+    filter(if_else(best == "high",
+                   y_fut <= y,
+                   y_fut >= y)) |>
+    group_by(code,
+             speed) |>
     arrange(time) |>
     mutate(year = year + (time-time[1])/speed) |>
     ungroup() |>
-    select(-c(y_fut,time,bst)) |>
+    select(-c(y_fut,
+              time,
+              best)) |>
     rename("y_fut" = "y") |>
+
     joyn::joyn(data_fut,
-               match_type="1:1",
-               by=c("code","year","speed"),
-               reportvar=FALSE,
-               verbose=FALSE,
-               y_vars_to_keep="y") |>
+               match_type = "1:1",
+               by = c("code","year","speed"),
+               reportvar = FALSE,
+               verbose = FALSE,
+               y_vars_to_keep = "y") |>
     group_by(code,
              speed) |>
     arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_fut,year,na.rm=FALSE,rule=2)) |>
-    filter(year %in% seq(min(year), target_year, 1)) |>
+    mutate(y_fut = zoo::na.approx(y_fut,
+                                  year,
+                                  na.rm = FALSE,
+                                  rule=2)) |>
+    filter(year %in% seq(min(year),
+                         target_year, 1)) |>
     ungroup() |>
     filter(!is.na(y_fut))
 
@@ -257,7 +271,7 @@ future_path <- function(data_fut,
                         max              = 100,
                         granularity      = 0.1,
                         sequence_pctl    = seq(20, 80, 20),
-                        predictions_pctl = NULL,
+                        changes_pctl = NULL,
                         speedseq         = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
                         best             = "high",
@@ -265,16 +279,16 @@ future_path <- function(data_fut,
                         speed            = FALSE,
                         percentiles      = FALSE) {
 
-  result <- list(pctls = NULL, speed = NULL)
+  result <- list(pctl = NULL, speed = NULL)
 
   if (percentiles) {
-    if (is.null(predictions_pctl)) {
+    if (is.null(changes_pctl)) {
       cli::cli_abort("`predictions_pctl` must be provided when `percentiles = TRUE`.")
     }
-    result$pctls <- future_path_pctls(
+    result$pctl <- future_path_pctls(
       data_fut         = data_fut,
       sequence_pctl    = sequence_pctl,
-      predictions_pctl = predictions_pctl,
+      predictions_pctl = changes_pctl,
       target_year      = target_year,
       granularity      = granularity,
       min              = min,
@@ -298,7 +312,7 @@ future_path <- function(data_fut,
     )
   }
 
-  if (is.null(result$pctls) && is.null(result$speed)) {
+  if (is.null(result$pctl) && is.null(result$speed)) {
     cli::cli_abort("At least one of `percentiles = TRUE` or `speed = TRUE` must be specified.")
   }
 
@@ -309,12 +323,12 @@ future_path <- function(data_fut,
 ## TESTING NEW FUNCTIONS ####
 new_future_path_pctls <- function(data_fut,
                                   sequence_pctl     = seq(20, 80, 20),
-                              predictions_pctl,
-                              target_year = 2030,
-                              granularity = 0.1,
-                              min         = 0,
-                              max         = 100,
-                              verbose     = TRUE) {
+                                  changes_pctl,
+                                  target_year = 2030,
+                                  granularity = 0.1,
+                                  min         = 0,
+                                  max         = 100,
+                                  verbose     = TRUE) {
 
 
   # Step 1: Start from observed data_fut at the base year
@@ -322,15 +336,22 @@ new_future_path_pctls <- function(data_fut,
   dt_start <- dt_start[, .(pctl = sequence_pctl), by = .(code, year, y, y_fut)]
 
   # Step 2: Expand to all years forward
-  all_years <- seq(min(dt_start$year), target_year)
-  path_fut_pctl <- dt_start[, .(year = all_years), by = .(code, pctl, y, y_fut)]
+  all_years <- seq(min(dt_start$year),
+                   target_year)
+
+  path_fut_pctl <- dt_start[, .(year = all_years),
+                            by = .(code, pctl, y, y_fut)]
 
   # Step 3: Keep y_fut only for start year
   base_year <- min(all_years)
-  path_fut_pctl[, y_fut := fifelse(year == base_year, y_fut, NA_real_)]
+
+  path_fut_pctl[, y_fut := fifelse(year == base_year,
+                                   y_fut,
+                                   NA_real_)]
 
   # Step 4: Pre-sort for fast group operations
   setorder(path_fut_pctl, code, pctl, year)
+
   years_to_project <- all_years[all_years > base_year]
 
   if (verbose) cli::cli_alert_info("Calculating future percentile paths")
@@ -342,7 +363,7 @@ new_future_path_pctls <- function(data_fut,
     # Merge predictions based on last year’s value
     path_fut_pctl <- joyn::joyn(
       path_fut_pctl,
-      predictions_pctl,
+      changes_pctl,
       by = c("y_fut = initialvalue", "pctl"),
       match_type = "m:1",
       keep = "left",

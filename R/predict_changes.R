@@ -327,7 +327,7 @@ predict_changes <- function(data,
 
   if (percentiles) {
 
-    predictions_pctls <- predict_pctls(data_model    = data,
+    changes_pctl <- predict_pctls(data_model    = data,
                                        min           = min,
                                        max           = max,
                                        granularity   = granularity,
@@ -336,7 +336,7 @@ predict_changes <- function(data,
                                        sequence_pctl = sequence_pctl,
                                        verbose       = verbose)
 
-    res_list$changes_pctl <- predictions_pctls
+    res_list$changes_pctl <- changes_pctl
   }
 
   return(
