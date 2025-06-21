@@ -366,7 +366,7 @@ path_historical <- function(percentiles      = TRUE,
   }
 
   if (speed) {
-    out$speed_path <- project_path_speed(
+    out$speed <- project_path_speed(
       data_his    = data_his,
       speedseq    = speedseq,
       path_speed  = path_speed,
