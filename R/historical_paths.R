@@ -30,8 +30,8 @@
 #' @examples
 #' \dontrun{
 #'   his_data <- get_his_data(indicator = "EG.ELC.ACCS.ZS",
-#'                            start_year = 2000,
-#'                            end_year = 2022,
+#'                            eval_from = 2000,
+#'                            eval_to = 2022,
 #'                            granularity = 0.1)
 #' }
 #'
@@ -49,7 +49,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
   # Input validation
   stopifnot(is.numeric(eval_from),
             is.numeric(eval_to),
-            start_year <= eval_to)
+            eval_from <= eval_to)
 
   stopifnot(is.numeric(granularity),
             granularity > 0)
@@ -75,7 +75,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 
   # Filter to evaluation period and remove leading NAs
   dt <- dt[
-    between(year, eval_from, end_year)
+    between(year, eval_from, eval_to)
   ][
     , cum_nm := cumsum(!is.na(y)), by = code
   ][
@@ -103,118 +103,118 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
   return(dt)
 }
 
-#' Project percentiles paths
+#' #' Old Project percentiles paths
+#' #'
+#' #' Simulates year-by-year projected paths of a variable across percentiles,
+#' #' based on historical values and predicted changes.
+#' #'
+#' #' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
+#' #' @inheritParams get_his_data
+#' #' @inheritParams predict_pctls
+#' #' @param sequence_pctl Numeric vector. Sequence of percentiles
+#' #' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
+#' #' @param verbose Logical. Whether to print progress messages.
+#' #'
+#' #' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+#' #'
+#' #' @export
+#' old_project_pctls_path <- function(data_his,
+#'                                    eval_from         = 2000,
+#'                                    end_year          = 2022,
+#'                                    granularity       = 0.1,
+#'                                    floor             = 0,
+#'                                    ceiling           = 100,
+#'                                    min               = NULL,
+#'                                    max               = NULL,
+#'                                    sequence_pctl     = seq(20, 80, 20),
+#'                                    changes_pctl,
+#'                                    verbose           = TRUE) {
+#'   # Input validation
+#'   if (!inherits(data_his, "data.table")) {
+#'     cli::cli_abort("Input data must be a data.table")
+#'   }
 #'
-#' Simulates year-by-year projected paths of a variable across percentiles,
-#' based on historical values and predicted changes.
+#'   if (is.null(min)) min <- attr(data_his, "min")
+#'   if (is.null(max)) max <- attr(data_his, "max")
 #'
-#' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
-#' @inheritParams get_his_data
-#' @inheritParams predict_pctls
-#' @param sequence_pctl Numeric vector. Sequence of percentiles
-#' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
-#' @param verbose Logical. Whether to print progress messages.
 #'
-#' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+#'   # Create base table: all combinations of code, year, percentile
+#'   path_his_pctl <- as.data.table(expand.grid(
 #'
-#' @export
-old_project_pctls_path <- function(data_his,
-                                   eval_from         = 2000,
-                                   end_year          = 2022,
-                                   granularity       = 0.1,
-                                   floor             = 0,
-                                   ceiling           = 100,
-                                   min               = NULL,
-                                   max               = NULL,
-                                   sequence_pctl     = seq(20, 80, 20),
-                                   changes_pctl,
-                                   verbose           = TRUE) {
-  # Input validation
-  if (!inherits(data_his, "data.table")) {
-    cli::cli_abort("Input data must be a data.table")
-  }
-
-  if (is.null(min)) min <- attr(data_his, "min")
-  if (is.null(max)) max <- attr(data_his, "max")
-
-
-  # Create base table: all combinations of code, year, percentile
-  path_his_pctl <- as.data.table(expand.grid(
-
-    code = unique(data_his$code),
-    year = seq(eval_from,
-               eval_to),
-    pctl = sequence_pctl
-  ))
-
-  # Merge in the historical y values
-  path_his_pctl <- invisible(joyn::joyn(
-    x          = path_his_pctl,
-    y          = data_his,
-    by         = c("code", "year"),
-    match_type = "m:1",
-    keep       = "left",
-    reportvar  = FALSE,
-    verbose = FALSE
-  ))
-
-  # Initialize y_his with y
-  path_his_pctl[, y_his := y]
-
-  # Sort for reliable row-based operations
-  setorder(path_his_pctl, code, pctl, year)
-
-  if (verbose) cli::cli_alert_info("Calculating historical percentile paths")
-
-  # Iterate over years, starting from the second
-  for (yr in seq(eval_from + 1, eval_to)) {
-
-    #if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
-
-    if (verbose) cli::cli_alert_info(
-      paste0("Processing year: ",
-             cli::col_green("{.strong {yr}}")))
-
-
-    # Create temporary table of values from previous year
-    prev_year_dt <- path_his_pctl[year == yr - 1, .(code, pctl, initialvalue = y_his)]
-
-    # Join with predictions
-    updated_dt <- joyn::joyn(
-      x          = prev_year_dt,
-      y          = changes_pctl,
-      by         = c("initialvalue", "pctl"),
-      match_type = "m:1",
-      keep       = "left",
-      reportvar  = FALSE,
-      verbose    = FALSE
-    )
-
-    # Calculate updated y_his
-    updated_dt[, y_his := round((initialvalue + change) / granularity) * granularity]
-    updated_dt[, year := yr]
-
-    # Join back the updated values into the main path table
-    path_his_pctl <- joyn::joyn(
-      x          = path_his_pctl,
-      y          = updated_dt[, .(code, pctl, year, y_his_new = y_his)],
-      by         = c("code", "pctl", "year"),
-      match_type = "1:1",
-      keep       = "left",
-      reportvar  = FALSE,
-      verbose    = FALSE
-    )
-
-    # Replace old y_his where new ones exist
-    path_his_pctl[!is.na(y_his_new), y_his := y_his_new]
-    path_his_pctl[, y_his_new := NULL]
-  }
-
-  # Keep values within desired min/max bounds
-  path_his_pctl <- path_his_pctl[y >= min & y <= max]
-
-  return(path_his_pctl)
-}
+#'     code = unique(data_his$code),
+#'     year = seq(eval_from,
+#'                eval_to),
+#'     pctl = sequence_pctl
+#'   ))
+#'
+#'   # Merge in the historical y values
+#'   path_his_pctl <- invisible(joyn::joyn(
+#'     x          = path_his_pctl,
+#'     y          = data_his,
+#'     by         = c("code", "year"),
+#'     match_type = "m:1",
+#'     keep       = "left",
+#'     reportvar  = FALSE,
+#'     verbose = FALSE
+#'   ))
+#'
+#'   # Initialize y_his with y
+#'   path_his_pctl[, y_his := y]
+#'
+#'   # Sort for reliable row-based operations
+#'   setorder(path_his_pctl, code, pctl, year)
+#'
+#'   if (verbose) cli::cli_alert_info("Calculating historical percentile paths")
+#'
+#'   # Iterate over years, starting from the second
+#'   for (yr in seq(eval_from + 1, eval_to)) {
+#'
+#'     #if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
+#'
+#'     if (verbose) cli::cli_alert_info(
+#'       paste0("Processing year: ",
+#'              cli::col_green("{.strong {yr}}")))
+#'
+#'
+#'     # Create temporary table of values from previous year
+#'     prev_year_dt <- path_his_pctl[year == yr - 1, .(code, pctl, initialvalue = y_his)]
+#'
+#'     # Join with predictions
+#'     updated_dt <- joyn::joyn(
+#'       x          = prev_year_dt,
+#'       y          = changes_pctl,
+#'       by         = c("initialvalue", "pctl"),
+#'       match_type = "m:1",
+#'       keep       = "left",
+#'       reportvar  = FALSE,
+#'       verbose    = FALSE
+#'     )
+#'
+#'     # Calculate updated y_his
+#'     updated_dt[, y_his := round((initialvalue + change) / granularity) * granularity]
+#'     updated_dt[, year := yr]
+#'
+#'     # Join back the updated values into the main path table
+#'     path_his_pctl <- joyn::joyn(
+#'       x          = path_his_pctl,
+#'       y          = updated_dt[, .(code, pctl, year, y_his_new = y_his)],
+#'       by         = c("code", "pctl", "year"),
+#'       match_type = "1:1",
+#'       keep       = "left",
+#'       reportvar  = FALSE,
+#'       verbose    = FALSE
+#'     )
+#'
+#'     # Replace old y_his where new ones exist
+#'     path_his_pctl[!is.na(y_his_new), y_his := y_his_new]
+#'     path_his_pctl[, y_his_new := NULL]
+#'   }
+#'
+#'   # Keep values within desired min/max bounds
+#'   path_his_pctl <- path_his_pctl[y >= min & y <= max]
+#'
+#'   return(path_his_pctl)
+#' }
 
 
 
@@ -274,7 +274,9 @@ project_path_speed <- function(data_his,
     arrange(time) |>
     mutate(year = year + (time-time[1])/speed) |>
     ungroup() |>
-    select(-c(y_his,time,best)) |>
+    select(-c(y_his,
+              time,
+              best)) |>
     rename("y_his" = "y") |>
     joyn::joyn(data_his,
                match_type = "1:1",
@@ -287,8 +289,8 @@ project_path_speed <- function(data_his,
     arrange(year) |>
     mutate(y_his = zoo::na.approx(y_his,
                                   year,
-                                  na.rm=FALSE,
-                                  rule=2)) |>
+                                  na.rm = FALSE,
+                                  rule = 2)) |>
     filter(year %in% seq(eval_from,
                          eval_to,
                          1)) |>
@@ -310,7 +312,7 @@ project_path_speed <- function(data_his,
 #' @param data_his A data.table containing historical values.
 #' @param eval_from First year to include in projections.
 #' @param eval_to Last year to include in projections.
-#' @param predictions_pctl A `data.table` with predicted changes by initialvalue and pctl.
+#' @param changes_pctl A `data.table` with predicted changes by initialvalue and pctl.
 #' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
 #' @param speedseq Numeric vector of XXX
 #' @param path_speed Data table  with xxx
@@ -328,7 +330,7 @@ path_historical <- function(percentiles      = TRUE,
                             min              = 0,
                             max              = 100,
                             sequence_pctl    = seq(20, 80, 20),
-                            changes_pctl = NULL,
+                            changes_pctl     = NULL,
                             verbose          = TRUE,
                             speedseq         = c(0.25, 0.5, 1, 2, 4),
                             path_speed       = NULL,
@@ -352,6 +354,7 @@ path_historical <- function(percentiles      = TRUE,
   out <- list()
 
   if (percentiles) {
+
     out$pctl <- project_pctls_path(
       data_his         = data_his,
       eval_from        = eval_from,
@@ -362,12 +365,13 @@ path_historical <- function(percentiles      = TRUE,
       min              = min,
       max              = max,
       sequence_pctl    = sequence_pctl,
-      changes_pctl = changes_pctl,
+      changes_pctl     = changes_pctl,
       verbose          = verbose
     )
   }
 
   if (speed) {
+
     out$speed <- project_path_speed(
       data_his    = data_his,
       speedseq    = speedseq,
@@ -403,7 +407,7 @@ path_historical <- function(percentiles      = TRUE,
 #' @inheritParams get_his_data
 #' @inheritParams predict_pctls
 #' @param sequence_pctl Numeric vector. Sequence of percentiles
-#' @param predictions_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
+#' @param changes_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
 #'
 #' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
@@ -466,9 +470,9 @@ project_pctls_path <- function(data_his,
 
     prev <- joyn::left_join(prev,
                             changes_pctl,
-                            by = c("y_his = initialvalue", "pctl"),
+                            by           = c("y_his = initialvalue", "pctl"),
                             relationship = "many-to-many",
-                            verbose = FALSE)
+                            verbose      = FALSE)
 
     qDT(prev)
 

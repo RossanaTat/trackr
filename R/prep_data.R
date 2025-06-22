@@ -19,12 +19,12 @@
 #' @export
 prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+                      code_col       = "iso3c",
+                      year_col       = "date",
                       startyear_data = 2000,
                       floor          = 0,
                       ceiling        = 100,
                       granularity    = 0.1,
-                      code_col       = "iso3c",
-                      year_col       = "date",
                       verbose = TRUE) {
 
 
@@ -33,7 +33,7 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   # ________________________________
 
   # Convert to data.table
-  dt <- data.table::as.data.table(data)
+  dt <- qDT(data)
 
   # Standardize column names
   data.table::setnames(dt,
@@ -76,7 +76,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
     fmutate(duration       = as.numeric(gsub("^c", "", duration)),
             year_end       = year_start + duration) |>
     fselect(-duration) |>
-    group_by(code,year_start) |>
+    group_by(code,
+             year_start) |>
     # TODO move to collapse
     # The line below imply that we only use 6-year spells if there is no 5-year spell, and only use 7-year spells if there is no 5 and 6-year spell etc.
     # The advantage of doing so is that we rely more consistently on spells of the same length.
@@ -84,7 +85,9 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
     ungroup() |>
 
     # Multiply the rows of countries with little data so they have about as many rows as countries with a lot of data
-    fcount(code, name = "n", add = TRUE) |>
+    fcount(code,
+           name = "n",
+           add = TRUE) |>
     #add_count(code) |>
     fmutate(expansion = round(max(n)/n)) |>
     splitstackshape::expandRows('expansion')
@@ -107,15 +110,16 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
 
 
   res_data    <- joyn::joyn(dt,
-                              folds,
-                              by         = "code",
-                              match_type = "m:1",
-                              reportvar  = FALSE,
-                              verbose    = FALSE) |>
-    as.data.table()
+                            folds,
+                            by         = "code",
+                            match_type = "m:1",
+                            reportvar  = FALSE,
+                            verbose    = FALSE)
+    #qDT()
 
   # Calculate floor/ceiling adjusted bounds
   min_val <- round(
+
     ifelse(is.na(floor),
            min(dt$initialvalue, na.rm = TRUE),
            floor) / granularity
@@ -130,9 +134,9 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   return(
     invisible(list(
     data_model  = res_data,
-    min = min_val,
-    max = max_val,
-    indicator = indicator
+    min         = min_val,
+    max         = max_val,
+    indicator   = indicator
   )))
 
 

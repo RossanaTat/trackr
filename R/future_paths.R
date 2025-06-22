@@ -209,7 +209,7 @@ future_path_speed <- function(data_fut,
     select(-y) |>
     filter(!is.na(y_fut)) |>
     cross_join(path_speed) |>
-    mutate(bst = best) |>
+    mutate(best = best) |>
     filter(if_else(best == "high",
                    y_fut <= y,
                    y_fut >= y)) |>
@@ -237,7 +237,8 @@ future_path_speed <- function(data_fut,
                                   na.rm = FALSE,
                                   rule=2)) |>
     filter(year %in% seq(min(year),
-                         target_year, 1)) |>
+                         target_year,
+                         1)) |>
     ungroup() |>
     filter(!is.na(y_fut))
 
@@ -271,7 +272,7 @@ future_path <- function(data_fut,
                         max              = 100,
                         granularity      = 0.1,
                         sequence_pctl    = seq(20, 80, 20),
-                        changes_pctl = NULL,
+                        changes_pctl     = NULL,
                         speedseq         = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
                         best             = "high",
@@ -283,12 +284,13 @@ future_path <- function(data_fut,
 
   if (percentiles) {
     if (is.null(changes_pctl)) {
-      cli::cli_abort("`predictions_pctl` must be provided when `percentiles = TRUE`.")
+      cli::cli_abort("`changes_pctl` must be provided when `percentiles = TRUE`.")
     }
+
     result$pctl <- future_path_pctls(
       data_fut         = data_fut,
       sequence_pctl    = sequence_pctl,
-      predictions_pctl = changes_pctl,
+      changes_pctl     = changes_pctl,
       target_year      = target_year,
       granularity      = granularity,
       min              = min,
@@ -301,6 +303,7 @@ future_path <- function(data_fut,
     if (is.null(path_speed)) {
       cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
     }
+
     result$speed <- future_path_speed(
       data_fut     = data_fut,
       speedseq     = speedseq,

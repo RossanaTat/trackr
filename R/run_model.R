@@ -30,22 +30,22 @@ track_progress <- function(indicator      = NULL,
                                                    lang = "en", country = "countries_only"),
                            code_col       = "iso3c",
                            year_col       = "date",
-                           speed          = FALSE,
-                           percentiles    = TRUE,
                            startyear_data = 2000,
                            eval_from      = 2000,
                            eval_to        = 2022,
+                           speed          = FALSE,
+                           percentiles    = TRUE,
+                           future         = FALSE,
+                           sequence_pctl  = seq(20,80,20),
+                           speedseq       = c(0.25, 0.5, 1, 2, 4),
+                           best           = NULL,
                            target_year    = 2030,
                            floor          = 0,
                            ceiling        = 100,
                            granularity    = 0.1,
-                           sequence_pctl  = seq(20,80,20),
-                           speedseq       = c(0.25, 0.5, 1, 2, 4),
                            min            = NULL,
                            max            = NULL,
                            lambdas        = 0.1*1.148^(0:50),
-                           best           = NULL,
-                           future         = FALSE,
                            verbose        = TRUE) {
 
   # # Input Validation & Checks #
@@ -59,8 +59,10 @@ track_progress <- function(indicator      = NULL,
                           names(data))
 
   if (length(missing_cols) > 0) {
+
     cli::cli_abort("The following required columns are missing in `data`: ",
-         paste(missing_cols, collapse = ", "))
+         paste(missing_cols,
+               collapse = ", "))
   }
 
   # Validate `best` argument
@@ -125,7 +127,7 @@ track_progress <- function(indicator      = NULL,
     min         = min,
     max         = max,
     eval_from   = eval_from,
-    eval_to    = eval_to,
+    eval_to     = eval_to,
     granularity = granularity
   )
 
@@ -201,13 +203,6 @@ track_progress <- function(indicator      = NULL,
     verbose        = verbose
   )
 
-
-  # if (verbose) {
-  #   cli::cli_alert_success(
-  #     cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use")
-  #   )
-  # }
-
   if (verbose) {
     components <- c()
 
@@ -227,7 +222,7 @@ track_progress <- function(indicator      = NULL,
     components <- c("data model", "historical paths", "predicted changes", components)
 
     cli::cli_alert_success(
-      cli::col_blue(
+      cli::col_cyan(
         paste0("Method run completed for indicator: '", indicator, "'.\n• Output includes: ",
                paste(components, collapse = ", "), ".")
       )

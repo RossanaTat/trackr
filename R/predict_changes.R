@@ -26,7 +26,7 @@
 #'
 #' @return A data frame with:
 #'   - `initialvalue`: sequence of values used for prediction.
-#'   - `predictions_speed`: predicted change.
+#'   - `changes_speed`: predicted change.
 #'
 predict_speed <- function(data_model,
                           min         = NULL,
@@ -37,14 +37,12 @@ predict_speed <- function(data_model,
                           ceiling     = 100,
                           verbose     = TRUE) {
 
-  # Ensure data_model is a data.table
-  data_model <- as.data.table(data_model)
-
   # Early return if empty
   if (nrow(data_model) == 0) {
+
     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
     return(data.table(initialvalue = NA_real_,
-                      change = NA_real_))
+                      change       = NA_real_))
   }
 
   # Set min and max
@@ -68,18 +66,24 @@ predict_speed <- function(data_model,
                     data   = data_model)
 
   # Generate prediction sequence
-  x_seq <- seq(min, max, granularity)
+  x_seq <- seq(min,
+               max,
+               granularity)
 
   # Predict (charts() returns a named vector or data.frame)
-  predictions_speed <- charts(fit_speed, k = x_seq)
+  changes_speed <- charts(fit_speed,
+                              k = x_seq)
 
   # Convert to data.table and compute columns
-  predictions_dt <- data.table(change = as.numeric(predictions_speed))
+  predictions_dt <- data.table(change = as.numeric(changes_speed))
+
   predictions_dt[, initialvalue := round(x_seq / granularity) * granularity]
 
   # Apply floor and ceiling constraints
-  predictions_dt[, change := pmax(change, floor - initialvalue)]
-  predictions_dt[, change := pmin(change, ceiling - initialvalue)]
+  predictions_dt[,
+                 change := pmax(change, floor - initialvalue)]
+  predictions_dt[,
+                 change := pmin(change, ceiling - initialvalue)]
 
   #setnames(predictions_dt, "change", "predictions_speed")
 
@@ -97,7 +101,7 @@ predict_speed <- function(data_model,
 #' of an indicator
 #'
 #'
-#' @param predictions_speed A data.table containing two columns:
+#' @param changes_speed A data.table containing two columns:
 #'   \code{initialvalue} (the starting level of the indicator) and
 #'   \code{change} (the expected annualized change from that level).
 #' @param granularity A numeric value indicating the step size used when
@@ -113,25 +117,24 @@ predict_speed <- function(data_model,
 #'   \item{y}{The corresponding value of the indicator at each time step.}
 #'
 #'
-#' get_speed_path(predictions_speed, granularity = 1, best = "high")
 #'
 #' @export
-get_speed_path <- function(predictions_speed,
+get_speed_path <- function(changes_speed,
                            granularity = 0.1,
                            best        = "high",
                            verbose     = TRUE) {
 
   # Add validations on inputs ####
 
-  if (best=="low") {
+  if (best == "low") {
 
-    predictions_speed <- predictions_speed |>
+    changes_speed <- changes_speed |>
       roworder(-initialvalue) |>
-      fmutate(change=-change)
+      fmutate(change = -change)
 
   }
 
-  path_speed <- predictions_speed |>
+  path_speed <- changes_speed |>
     ftransform(
       y    = initialvalue,
       time = change
@@ -210,30 +213,37 @@ predict_pctls <- function(data_model,
                    data = data_model)
 
 
-  predictions_pctl <- as.data.frame(charts(fit_pctl,
-                                           k = seq(min, max, granularity))) |>
+  changes_pctl <- qDT(charts(fit_pctl,
+                                 k = seq(min,
+                                         max,
+                                         granularity))) |>
 
-    mutate(initialvalue = round(seq(min,max,granularity)/granularity)*granularity) |>
+    mutate(initialvalue = round(seq(min,
+                                    max,
+                                    granularity)/granularity)*granularity) |>
     tidyr::pivot_longer(-initialvalue,
-                        names_to="pctl",
-                        values_to="change") |>
+                        names_to  = "pctl",
+                        values_to = "change") |>
     mutate(pctl = 100*as.numeric(pctl)) |>
     rowwise() |>
     # Expected changes can never give an outcome lower than the floor
     mutate(change = if_else(!is.na(floor),
-                            max(change, floor-initialvalue), change),
+                            max(change,
+                                floor-initialvalue),
+                            change),
            # Expected changes can never give an outcome higher than the ceiling
-           change = if_else(!is.na(ceiling), min(change,
-                                                 ceiling-initialvalue),
+           change = if_else(!is.na(ceiling),
+                            min(change,
+                                ceiling-initialvalue),
                             change)) |>
-    ungroup() |>
-    as.data.table()
+    ungroup()
 
 
   if (verbose) {cli::cli_alert_success(
     "Changes as function of initial vals by percentiles successfully calculated"
   )}
-  return(predictions_pctl)
+
+  return(changes_pctl)
 
 
 }
@@ -255,9 +265,9 @@ predict_pctls <- function(data_model,
 #' @inheritParams get_speed_path
 #' @return A list containing prediction results. The content depends on the selected method:
 #' \describe{
-#'   \item{`predictions_speed`}{Predicted changes using the `"speed"` method (if selected).}
+#'   \item{`changes_speed`}{Predicted changes using the `"speed"` method (if selected).}
 #'   \item{`path_speed`}{The path or trajectory of predictions based on the `"speed"` method (if selected).}
-#'   \item{`predictions_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
+#'   \item{`changes_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
 #' }
 #'
 #' @details
@@ -282,12 +292,15 @@ predict_changes <- function(data,
 
   # Add validations on inputs
 
-  # at least one between speed and percentiles should be true
+  # At least one between speed and percentiles should be true
+
   if(speed == FALSE && percentiles == FALSE) {
+
     cli::cli_abort("At least one between speed and percentiles should be TRUE")
   }
 
-  if(percentiles == TRUE & is.null(pctlseq)) {
+  if(percentiles == TRUE & is.null(sequence_pctl)) {
+
     cli::cli_abort("If percentiles method is selected, need to provide pctls sequence")
   }
 
@@ -296,8 +309,8 @@ predict_changes <- function(data,
     cli::cli_abort("`best` must be either 'high' or 'low'")
   }
 
-  if (verbose) {cli::cli_alert_info("Selected speed method for computations: {.strong {speed}}")}
-  if (verbose) {cli::cli_alert_info("Selected pctls method for computations: {.strong {percentiles}}")}
+  if (verbose) {cli::cli_alert_info("Speed method for computations: {.strong {speed}}")}
+  if (verbose) {cli::cli_alert_info("Percentiles method for computations: {.strong {percentiles}}")}
 
 
   res_list <- list()
@@ -305,23 +318,23 @@ predict_changes <- function(data,
   if (speed) {
 
     # Predict speed
-    predictions_speed <- predict_speed(data_model  = data,
-                                       min         = min,
-                                       max         = max,
-                                       lambdas     = lambdas,
-                                       granularity = granularity,
-                                       floor       = floor,
-                                       ceiling     = ceiling,
-                                       verbose     = verbose)
+    changes_speed <- predict_speed(data_model  = data,
+                                   min         = min,
+                                   max         = max,
+                                   lambdas     = lambdas,
+                                   granularity = granularity,
+                                   floor       = floor,
+                                   ceiling     = ceiling,
+                                   verbose     = verbose)
 
     # Get speed paths
-    path_speed <- get_speed_path(predictions_speed = predictions_speed,
+    path_speed <- get_speed_path(changes_speed     = changes_speed,
                                  granularity       = granularity,
                                  best              = best,
                                  verbose           = verbose)
 
-    res_list$changes_speed <- predictions_speed
-    res_list$path_speed        <- path_speed
+    res_list$changes_speed <- changes_speed
+    res_list$path_speed    <- path_speed
 
   }
 
