@@ -95,15 +95,15 @@ track_progress <- function(indicator      = NULL,
   # 2. Predict Changes ####
   # ___________________________ #
 
-  predicted_changes <- predict_changes(data        = data_model$data_model,
-                                       min         = min,
-                                       max         = max,
-                                       granularity = granularity,
-                                       best        = best,
-                                       speed       = speed,
-                                       percentiles = percentiles,
+  predicted_changes <- predict_changes(data           = data_model$data_model,
+                                       min            = min,
+                                       max            = max,
+                                       granularity    = granularity,
+                                       best           = best,
+                                       speed          = speed,
+                                       percentiles    = percentiles,
                                        sequence_pctl  = sequence_pctl,
-                                       verbose     = verbose)
+                                       verbose        = verbose)
 
 
   # ___________________________ #

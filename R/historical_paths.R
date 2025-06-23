@@ -109,10 +109,10 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #' @param sequence_speed numeric vector of speed paths to calculate
 #'
 #'
-#' @return A data frame of projected values under different speeds
+#' @return A data table of projected values under different speeds
 #'
 project_path_speed <- function(data_his,
-                               sequence_speed = c(0.25,0.5,1,2,4),
+                               sequence_speed = c(0.25, 0.5, 1, 2, 4),
                                path_speed,
                                granularity    = 0.1,
                                eval_from      = 2000,
