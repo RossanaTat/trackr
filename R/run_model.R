@@ -10,6 +10,7 @@
 #'
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
+#' @inheritParams path_historical
 #' @inheritParams future_path
 #' @inheritParams get_scores
 #'
@@ -31,6 +32,7 @@ track_progress <- function(indicator      = NULL,
                            code_col       = "iso3c",
                            year_col       = "date",
                            startyear_data = 2000,
+                           endyear_data   = 2023,
                            eval_from      = 2000,
                            eval_to        = 2022,
                            speed          = FALSE,
@@ -80,6 +82,7 @@ track_progress <- function(indicator      = NULL,
   data_model <- prep_data(indicator      = indicator,
                           data           = data,
                           startyear_data = startyear_data,
+                          endyear_data   = endyear_data,
                           floor          = floor,
                           ceiling        = ceiling,
                           granularity    = granularity,

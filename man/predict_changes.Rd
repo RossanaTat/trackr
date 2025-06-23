@@ -56,9 +56,9 @@ Default is FALSE}
 \value{
 A list containing prediction results. The content depends on the selected method:
 \describe{
-  \item{`predictions_speed`}{Predicted changes using the `"speed"` method (if selected).}
+  \item{`changes_speed`}{Predicted changes using the `"speed"` method (if selected).}
   \item{`path_speed`}{The path or trajectory of predictions based on the `"speed"` method (if selected).}
-  \item{`predictions_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
+  \item{`changes_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
 }
 }
 \description{

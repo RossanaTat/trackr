@@ -12,7 +12,7 @@ project_pctls_path(
   min = NULL,
   max = NULL,
   sequence_pctl = seq(20, 80, 20),
-  predictions_pctl,
+  changes_pctl,
   verbose = TRUE
 )
 }
@@ -35,7 +35,7 @@ This value is stored as an attribute of the returned object for later reference 
 
 \item{sequence_pctl}{Numeric vector. Sequence of percentiles}
 
-\item{predictions_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
+\item{changes_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
 
 \item{verbose}{Logical. Whether to print progress messages.}
 }

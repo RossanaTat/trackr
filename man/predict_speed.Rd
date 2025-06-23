@@ -43,7 +43,7 @@ If `NULL`, predictions are unrestricted on the upper end.}
 \value{
 A data frame with:
   - `initialvalue`: sequence of values used for prediction.
-  - `predictions_speed`: predicted change.
+  - `changes_speed`: predicted change.
 }
 \description{
 Fits a generalized constrained regression quantile model (`gcrq`) to estimate

@@ -7,12 +7,13 @@
 prep_data(
   indicator = "EG.ELC.ACCS.ZS",
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+  code_col = "iso3c",
+  year_col = "date",
   startyear_data = 2000,
+  endyear_data = 2023,
   floor = 0,
   ceiling = 100,
   granularity = 0.1,
-  code_col = "iso3c",
-  year_col = "date",
   verbose = TRUE
 )
 }
@@ -21,11 +22,13 @@ prep_data(
 
 \item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
 
-\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
-
 \item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
 
 \item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+
+\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
+
+\item{endyear_data}{Integer. Maximum year to include in the data. Defaults to 2023.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }

@@ -9,22 +9,23 @@ track_progress(
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   code_col = "iso3c",
   year_col = "date",
-  speed = FALSE,
-  percentiles = TRUE,
   startyear_data = 2000,
+  endyear_data = 2023,
   eval_from = 2000,
   eval_to = 2022,
+  speed = FALSE,
+  percentiles = TRUE,
+  future = FALSE,
+  sequence_pctl = seq(20, 80, 20),
+  speedseq = c(0.25, 0.5, 1, 2, 4),
+  best = NULL,
   target_year = 2030,
   floor = 0,
   ceiling = 100,
   granularity = 0.1,
-  sequence_pctl = seq(20, 80, 20),
-  speedseq = c(0.25, 0.5, 1, 2, 4),
   min = NULL,
   max = NULL,
   lambdas = 0.1 * 1.148^(0:50),
-  best = NULL,
-  future = FALSE,
   verbose = TRUE
 )
 }
@@ -37,12 +38,26 @@ track_progress(
 
 \item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
 
+\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
+
+\item{endyear_data}{Integer. Maximum year to include in the data. Defaults to 2023.}
+
+\item{eval_from}{First year to include in projections.}
+
+\item{eval_to}{Last year to include in projections.}
+
 \item{speed}{Logical. If TRUE, calculate speed of progress scores.
 Default is FALSE}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
+\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+
+\item{speedseq}{Numeric vector of XXX}
+
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
 
 \item{target_year}{An integer specifying the year to project to. Default is `2030`.}
 
@@ -54,8 +69,6 @@ If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
-
 \item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
 it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
 
@@ -64,10 +77,6 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 Defaults to `0.1 * 1.148^(0:50)`.}
-
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }

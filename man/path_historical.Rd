@@ -16,7 +16,7 @@ path_historical(
   min = 0,
   max = 100,
   sequence_pctl = seq(20, 80, 20),
-  predictions_pctl = NULL,
+  changes_pctl = NULL,
   verbose = TRUE,
   speedseq = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
@@ -51,7 +51,7 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
-\item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
+\item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
 \item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
 

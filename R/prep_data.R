@@ -9,6 +9,7 @@
 #' @param indicator Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.
 #' @param data Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.
 #' @param startyear_data Integer. Minimum year to include in the data. Defaults to 2000.
+#' @param endyear_data Integer. Maximum year to include in the data. Defaults to 2023.
 #' @param code_col Character. Name of the column with country codes. Defaults to `"iso3c"`.
 #' @param year_col Character. Name of the column with years. Defaults to `"date"`.
 #' @param verbose Logical. If TRUE print messages in console. Default is TRUE
@@ -22,6 +23,7 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       code_col       = "iso3c",
                       year_col       = "date",
                       startyear_data = 2000,
+                      endyear_data   = 2023,
                       floor          = 0,
                       ceiling        = 100,
                       granularity    = 0.1,
@@ -43,7 +45,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
 
   dt <- dt |>
     fselect(code, year, y) |>
-    fsubset(year >= startyear_data)
+    fsubset(year >= startyear_data,
+            year <= endyear_data)
 
   data.table::setorder(dt,
                        code,

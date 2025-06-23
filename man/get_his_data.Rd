@@ -55,8 +55,8 @@ rounded to a specified granularity—as the baseline value (`y_his`).
 \examples{
 \dontrun{
   his_data <- get_his_data(indicator = "EG.ELC.ACCS.ZS",
-                           start_year = 2000,
-                           end_year = 2022,
+                           eval_from = 2000,
+                           eval_to = 2022,
                            granularity = 0.1)
 }
 
