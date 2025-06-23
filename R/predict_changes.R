@@ -158,39 +158,48 @@ predict_pctls <- function(data_model,
   # Validate input ~~~~~ ####
   # __________________________________ #
 
+  # if (is.null(min)) min <- min(data_model$min)
+  #
+  # if (is.null(max)) max <- max(data_model$max)
+
+  # Prediction grid
+  x_seq <- seq(min, max, by = granularity)
+
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
 
-  # Use formula with lambda as a name
   fit_pctl <- gcrq(change ~ ps(initialvalue,
                                lambda = 0.1 * 1.148^(0:50)),
-                   foldid             = data_model$fold_id,
-                   tau                = sequence_pctl / 100,
-                   data               = data_model)
+                   foldid = data_model$fold_id,
+                   tau    = sequence_pctl / 100,
+                   data   = data_model)
 
 
-  changes_pctl <- qDT(charts(fit_pctl,
-                                 k = seq(min,
-                                         max,
-                                         granularity))) |>
+  # Predict changes at each initial value for each percentile
+  changes_mat <- charts(fit_pctl, k = x_seq)  # matrix with cols = percentiles
 
-    mutate(y = round(seq(min,
-                         max,
-                         granularity)/granularity)*granularity) |>
+  # Convert to data.table and reshape long
+  changes_dt <- qDT(changes_mat)
 
-    tidyr::pivot_longer(-y,
-                        names_to  = "pctl",
-                        values_to = "change") |>
+  changes_dt[, y := round(x_seq / granularity) * granularity]
 
-    mutate(pctl = 100*as.numeric(pctl)) |>
-    ungroup()
+  changes_dt <- melt(changes_dt,
+                     id.vars = "y",
+                     variable.name = "pctl",
+                     value.name = "change")
 
-  if (verbose) {cli::cli_alert_success(
-    "Changes as function of initial vals by percentiles successfully calculated"
-  )}
+  # Convert factor or character percentile labels to numeric percentiles
+  changes_dt[,
+             pctl := as.numeric(gsub("[^0-9.]", "", pctl)) * 100]
 
-  return(changes_pctl)
+  # Optional: sort for nicer output
+  setorder(changes_dt, y, pctl)
 
+  if (verbose) {
+    cli::cli_alert_success("Changes as function of initial values by percentiles successfully calculated")
+  }
+
+  return(changes_dt)
 
 }
 
