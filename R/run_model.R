@@ -38,20 +38,19 @@ track_progress <- function(indicator      = NULL,
                            speed          = FALSE,
                            percentiles    = TRUE,
                            future         = FALSE,
+                           target_year    = 2030,
                            sequence_pctl  = seq(20,80,20),
                            sequence_speed = c(0.25, 0.5, 1, 2, 4),
                            best           = NULL,
-                           target_year    = 2030,
-                           floor          = 0,
-                           ceiling        = 100,
                            granularity    = 0.1,
                            min            = NULL,
                            max            = NULL,
                            lambdas        = 0.1*1.148^(0:50),
                            verbose        = TRUE) {
 
-  # # Input Validation & Checks #
-  # To add here ##
+  # ___________________________ #
+  # Validation of Inputs ####
+  # ___________________________ #
 
   required_cols <- c(indicator,
                      code_col,
@@ -73,8 +72,6 @@ track_progress <- function(indicator      = NULL,
     cli::cli_abort("`best` must be provided: either 'high' or 'low'")
   }
 
-
-
   # ___________________________ #
   # 1. Prepare Data ####
   # ___________________________ #
@@ -83,22 +80,17 @@ track_progress <- function(indicator      = NULL,
                           data           = data,
                           startyear_data = startyear_data,
                           endyear_data   = endyear_data,
-                          floor          = floor,
-                          ceiling        = ceiling,
                           granularity    = granularity,
                           code_col       = code_col,
                           year_col       = year_col,
+                          min            = min,
+                          max            = max,
                           verbose        = verbose
                           )
 
   # Retrieve min and max from data model
-  if (is.null(min)) {
-    min <- data_model$min
-  }
-
-  if (is.null(max)) {
-    max <- data_model$max
-  }
+  min <- data_model$min
+  max <- data_model$max
 
   # ___________________________ #
   # 2. Predict Changes ####

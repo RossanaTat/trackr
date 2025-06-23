@@ -16,12 +16,10 @@ track_progress(
   speed = FALSE,
   percentiles = TRUE,
   future = FALSE,
+  target_year = 2030,
   sequence_pctl = seq(20, 80, 20),
   sequence_speed = c(0.25, 0.5, 1, 2, 4),
   best = NULL,
-  target_year = 2030,
-  floor = 0,
-  ceiling = 100,
   granularity = 0.1,
   min = NULL,
   max = NULL,
@@ -51,27 +49,21 @@ Default is FALSE}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
+\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+
 \item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+
+\item{sequence_speed}{Numeric vector of speed paths to calculate}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,
 or \code{"low"} if lower values are better. This affects the direction of the path.}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
-
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
 \item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 Defaults to `0.1 * 1.148^(0:50)`.}

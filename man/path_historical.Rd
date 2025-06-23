@@ -55,13 +55,13 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
 
+\item{sequence_speed}{Numeric vector of speed paths to calculate}
+
 \item{path_speed}{Data table  with xxx}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,
 or \code{"low"} if lower values are better. This affects the direction of the path.}
-
-\item{speedseq}{Numeric vector of speed paths to calculate}
 }
 \value{
 A named list with one or both of `percentile_path` and `speed_path`.

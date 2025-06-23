@@ -11,8 +11,8 @@ prep_data(
   year_col = "date",
   startyear_data = 2000,
   endyear_data = 2023,
-  floor = 0,
-  ceiling = 100,
+  min = NULL,
+  max = NULL,
   granularity = 0.1,
   verbose = TRUE
 )
@@ -29,6 +29,10 @@ prep_data(
 \item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
 
 \item{endyear_data}{Integer. Maximum year to include in the data. Defaults to 2023.}
+
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
+
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }

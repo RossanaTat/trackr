@@ -201,7 +201,7 @@ project_path_speed <- function(data_his,
 #' @param eval_to Last year to include in projections.
 #' @param changes_pctl A `data.table` with predicted changes by initialvalue and pctl.
 #' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
-#' @param speedseq Numeric vector of speed paths to calculate
+#' @param sequence_speed Numeric vector of speed paths to calculate
 #' @param path_speed Data table  with xxx
 #'
 #' @return A named list with one or both of `percentile_path` and `speed_path`.

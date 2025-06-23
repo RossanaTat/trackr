@@ -12,6 +12,8 @@
 #' @param endyear_data Integer. Maximum year to include in the data. Defaults to 2023.
 #' @param code_col Character. Name of the column with country codes. Defaults to `"iso3c"`.
 #' @param year_col Character. Name of the column with years. Defaults to `"date"`.
+#' @param min Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+#' @param max Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.
 #' @param verbose Logical. If TRUE print messages in console. Default is TRUE
 #'
 #' @return A `list` with 3 elements: 1. data prepared for estimation, 2. min and 3. max. Min and Max are range limits for expected changes, based on floor/ceiling if provided, otherwise on observed values. Rounded to nearest granularity.
@@ -24,8 +26,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       year_col       = "date",
                       startyear_data = 2000,
                       endyear_data   = 2023,
-                      floor          = 0,
-                      ceiling        = 100,
+                      min            = NULL,
+                      max            = NULL,
                       granularity    = 0.1,
                       verbose = TRUE) {
 
@@ -34,7 +36,10 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   # Start formatting the data ####
   # ________________________________
 
+
+
   dt <- qDT(data)
+
 
   setnames(dt,
            old         = c(code_col, year_col, indicator),
@@ -47,19 +52,13 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   ][
     order(code, year)
   ]
+
+
   # _______________________________________________________
   # Compute annualized changes from 5 to 10 years ah.  ####
   # _______________________________________________________
 
   # To optimize with collapse
-
-  # dt <- dt |>
-  #   fmutate(c5   = (lead(y,5)-y)/5,
-  #            c6  = (lead(y,6)-y)/6,
-  #            c7  = (lead(y,7)-y)/7,
-  #            c8  = (lead(y,8)-y)/8,
-  #            c9  = (lead(y,9)-y)/9,
-  #            c10 = (lead(y,10)-y)/10)
 
   dt[, `:=`(
     c5   = (shift(y, type = "lead", n = 5) - y) / 5,
@@ -113,6 +112,23 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                           size          = nrow(folds),
                           replace       = TRUE)
 
+  # _____________________________________________
+  # Handle min and max ####
+  # _____________________________________________
+
+  min_val <- if (!is.null(min)) {
+    round(min / granularity) * granularity
+  } else {
+    round(min(dt$initialvalue, na.rm = TRUE) / granularity) * granularity
+  }
+
+  max_val <- if (!is.null(max)) {
+    round(max / granularity) * granularity
+  } else {
+    round(max(dt$initialvalue, na.rm = TRUE) / granularity) * granularity
+  }
+
+
   # ________________________________
   # Return ####
   # ________________________________
@@ -129,8 +145,8 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   return(
     invisible(list(
     data_model  = res_data,
-    min         = min,
-    max         = max,
+    min         = min_val,
+    max         = max_val,
     indicator   = indicator
   )))
 
