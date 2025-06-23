@@ -8,8 +8,6 @@ project_path_speed(
   data_his,
   sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed,
-  floor = 0,
-  ceiling = 100,
   granularity = 0.1,
   eval_from = 2000,
   eval_to = 2022,
@@ -31,13 +29,9 @@ Defaults to \code{0.1}.}
 
 \item{eval_to}{The last year to include in the analysis}
 
-\item{min}{A numeric value indicating the minimum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{min}{A numeric value indicating the minimum bound,}
 
-\item{max}{A numeric value indicating the maximum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{max}{A numeric value indicating the maximum bound,}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,

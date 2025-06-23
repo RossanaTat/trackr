@@ -8,8 +8,6 @@ predict_changes(
   data,
   min = NULL,
   max = NULL,
-  floor = 0,
-  ceiling = 100,
   granularity = 0.1,
   lambdas = NULL,
   best = "high",
@@ -28,12 +26,6 @@ it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
 
 \item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
 it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 

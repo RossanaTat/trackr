@@ -8,10 +8,7 @@ predict_speed(
   data_model,
   min = NULL,
   max = NULL,
-  lambdas = NULL,
   granularity = 0.1,
-  floor = 0,
-  ceiling = 100,
   verbose = TRUE
 )
 }
@@ -27,10 +24,10 @@ it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
 \item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
 it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+
 \item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
 Defaults to `0.1 * 1.148^(0:50)`.}
-
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
 \item{floor}{Numeric or `NULL`.Minimum value of indicator.
 If `NULL`, predictions are unrestricted on the lower end.}

@@ -13,12 +13,7 @@
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
 #' @param min A numeric value indicating the minimum bound,
-#'   typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-#'   This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).
-#'
 #' @param max A numeric value indicating the maximum bound,
-#'   typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-#'   This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).
 #' @param eval_from The first year to include in the analysis
 #' @param eval_to The last year to include in the analysis
 #' @return A `data.table` containing the following columns:
@@ -40,10 +35,10 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          data         = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                          code_col     = "iso3c",
                          year_col     = "date",
-                         min          = 0,
-                         max          = 100,
-                         eval_from   = 2000,
-                         eval_to     = 2022,
+                         min          = NULL,
+                         max          = NULL,
+                         eval_from    = 2000,
+                         eval_to      = 2022,
                          granularity  = 0.1) {
 
   # Input validation
@@ -98,12 +93,11 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
        max)
 
   setorder(dt,
-           code, year)
+           code,
+           year)
 
   return(dt)
 }
-
-
 
 
 #' Project speed path
@@ -120,25 +114,12 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 project_path_speed <- function(data_his,
                                sequence_speed = c(0.25,0.5,1,2,4),
                                path_speed,
-                               floor          = 0,
-                               ceiling        = 100,
                                granularity    = 0.1,
                                eval_from      = 2000,
                                eval_to        = 2022,
                                min            = NULL,
                                max            = NULL,
                                best           = "high") {
-
-  # Validate input
-
-  if (is.null(min)) {
-    min <- attr(data_his, "min")
-  }
-
-  if (is.null(max)) {
-    max <- attr(data_his, "max")
-  }
-
 
 
   data_his <- cross_join(data_his,
@@ -212,20 +193,15 @@ path_historical <- function(percentiles      = TRUE,
                             eval_from        = 2000,
                             eval_to          = 2022,
                             granularity      = 0.1,
-                            floor            = 0,
-                            ceiling          = 100,
                             min              = 0,
                             max              = 100,
+                            best             = NULL,
                             sequence_pctl    = seq(20, 80, 20),
                             changes_pctl     = NULL,
-                            verbose          = TRUE,
                             sequence_speed   = c(0.25, 0.5, 1, 2, 4),
                             path_speed       = NULL,
-                            best = "high") {
+                            verbose          = TRUE) {
 
-  # Default values for min/max
-  if (is.null(min)) min <- attr(data_his, "min")
-  if (is.null(max)) max <- attr(data_his, "max")
 
   # Input checks
   if (speed && is.null(path_speed)) {
@@ -237,7 +213,6 @@ path_historical <- function(percentiles      = TRUE,
   }
 
 
-
   out <- list()
 
   if (percentiles) {
@@ -247,8 +222,6 @@ path_historical <- function(percentiles      = TRUE,
       eval_from        = eval_from,
       eval_to          = eval_to,
       granularity      = granularity,
-      #floor           = floor,
-      #ceiling         = ceiling,
       min              = min,
       max              = max,
       sequence_pctl    = sequence_pctl,
@@ -260,17 +233,15 @@ path_historical <- function(percentiles      = TRUE,
   if (speed) {
 
     out$speed <- project_path_speed(
-      data_his    = data_his,
+      data_his          = data_his,
       sequence_speed    = sequence_speed,
-      path_speed  = path_speed,
-      floor       = floor,
-      ceiling     = ceiling,
-      granularity = granularity,
-      eval_from   = eval_from,
-      eval_to     = eval_to,
-      min         = min,
-      max         = max,
-      best        = best
+      path_speed        = path_speed,
+      granularity       = granularity,
+      eval_from         = eval_from,
+      eval_to           = eval_to,
+      min               = min,
+      max               = max,
+      best              = best
     )
   }
 
@@ -304,8 +275,6 @@ project_pctls_path <- function(data_his,
                                eval_from      = 2000,
                                eval_to        = 2022,
                                granularity    = 0.1,
-                               #floor         = 0,
-                               #ceiling       = 100,
                                min            = NULL,
                                max            = NULL,
                                sequence_pctl  = seq(20, 80, 20),
@@ -316,16 +285,10 @@ project_pctls_path <- function(data_his,
     cli::cli_abort("Input data must be a data.table")
   }
 
-  if (is.null(min)) {
-    min <- attr(data_his, "min")
-    data_his[y >= min]
-  }
 
-  if (is.null(max)) {
-    max <- attr(data_his, "max")
-    data_his[y <= max]
-  }
+  data_his[y >= min]
 
+  data_his[y <= max]
 
   # Step 1: Expand data_his at start_year by pctl
   dt_expanded <- data_his[year == eval_from, .(code, year, y_his)]
@@ -353,7 +316,8 @@ project_pctls_path <- function(data_his,
     this_year <- all_years[i]
 
 
-    prev <- dt_expanded[year == prev_year, .(code, pctl, y_his)]
+    prev <- dt_expanded[year == prev_year,
+                        .(code, pctl, y_his)]
 
     prev <- joyn::left_join(prev,
                             changes_pctl,
@@ -388,7 +352,9 @@ project_pctls_path <- function(data_his,
     reportvar    = FALSE
   )
 
-  setnames(dt_expanded, "y_his", "y_pctl")
+  setnames(dt_expanded,
+           "y_his",
+           "y_pctl")
 
   return(dt_expanded[])
 

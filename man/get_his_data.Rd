@@ -9,8 +9,8 @@ get_his_data(
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   code_col = "iso3c",
   year_col = "date",
-  min = 0,
-  max = 100,
+  min = NULL,
+  max = NULL,
   eval_from = 2000,
   eval_to = 2022,
   granularity = 0.1
@@ -25,13 +25,9 @@ get_his_data(
 
 \item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
 
-\item{min}{A numeric value indicating the minimum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{min}{A numeric value indicating the minimum bound,}
 
-\item{max}{A numeric value indicating the maximum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{max}{A numeric value indicating the maximum bound,}
 
 \item{eval_from}{The first year to include in the analysis}
 

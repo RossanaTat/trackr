@@ -7,8 +7,8 @@
 get_scores_speed(
   path_his_speed,
   path_speed,
-  min = 0,
-  max = 100,
+  min = NULL,
+  max = NULL,
   granularity = 0.1
 )
 }
@@ -17,9 +17,9 @@ get_scores_speed(
 
 \item{path_speed}{Result of `get_speed_path()`}
 
-\item{min}{Minimum valid value for `y`. Default is 0.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
-\item{max}{Maximum valid value for `y`. Default is 100.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
 \item{granularity}{Rounding precision for `y`. Default is 0.1.}
 }

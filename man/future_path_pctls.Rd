@@ -10,8 +10,8 @@ future_path_pctls(
   changes_pctl,
   target_year = 2030,
   granularity = 0.1,
-  min = 0,
-  max = 100,
+  min = NULL,
+  max = NULL,
   verbose = TRUE
 )
 }

@@ -10,8 +10,8 @@ future_path_speed(
   path_speed,
   best = "high",
   target_year = 2030,
-  min = 0,
-  max = 100
+  min = NULL,
+  max = NULL
 )
 }
 \arguments{

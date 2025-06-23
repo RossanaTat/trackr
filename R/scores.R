@@ -16,8 +16,8 @@
 #' @export
 get_scores_pctl <- function(path_his_pctl,
                             best = "high",
-                            min  = 0,
-                            max  = 100) {
+                            min  = NULL,
+                            max  = NULL) {
 
   if (!data.table::is.data.table(path_his_pctl)) {
     cli::cli_abort("{.arg path_his_pctl} must be a {.cls data.table}.")
@@ -30,7 +30,9 @@ get_scores_pctl <- function(path_his_pctl,
 
   # Create firstobs and firstyear per group
   setorder(dt, code, pctl, year)
+
   dt[, firstobs := y[1L], by = .(code, pctl)]
+
   dt[, firstyear := year[1L], by = .(code, pctl)]
 
   # Keep only the last observation in the group
@@ -80,8 +82,7 @@ get_scores_pctl <- function(path_his_pctl,
 #'
 #' @param path_his_speed Result of `project_pctls_path()`
 #' @param path_speed Result of `get_speed_path()`
-#' @param min Minimum valid value for `y`. Default is 0.
-#' @param max Maximum valid value for `y`. Default is 100.
+#' @inheritParams prep_data
 #' @param granularity Rounding precision for `y`. Default is 0.1.
 #'
 #' @return A data.table with `code`, `score`, and `evaluationperiod`.
@@ -89,8 +90,8 @@ get_scores_pctl <- function(path_his_pctl,
 #' @export
 get_scores_speed <- function(path_his_speed,
                              path_speed,
-                             min         = 0,
-                             max         = 100,
+                             min         = NULL,
+                             max         = NULL,
                              granularity = 0.1) {
 
   # Ensure data.table

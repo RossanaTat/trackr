@@ -31,10 +31,7 @@
 predict_speed <- function(data_model,
                           min         = NULL,
                           max         = NULL,
-                          lambdas     = NULL,
                           granularity = 0.1,
-                          floor       = 0,
-                          ceiling     = 100,
                           verbose     = TRUE) {
 
   # Early return if empty
@@ -164,9 +161,7 @@ predict_pctls <- function(data_model,
                           min           = NULL,
                           max           = NULL,
                           granularity   = 0.1,
-                          sequence_pctl = seq(20,80,20),
-                          floor         = 0,
-                          ceiling       = 100,
+                          sequence_pctl = seq(20, 80, 20),
                           verbose       = TRUE,
                           lambdas       = NULL) {
 
@@ -180,10 +175,11 @@ predict_pctls <- function(data_model,
   # Inject lambdas into the data_model so gcrq can find it
 
   # Use formula with lambda as a name
-  fit_pctl <- gcrq(change ~ ps(initialvalue, lambda = 0.1 * 1.148^(0:50)),
-                   foldid = data_model$fold_id,
-                   tau = sequence_pctl / 100,
-                   data = data_model)
+  fit_pctl <- gcrq(change ~ ps(initialvalue,
+                               lambda = 0.1 * 1.148^(0:50)),
+                   foldid             = data_model$fold_id,
+                   tau                = sequence_pctl / 100,
+                   data               = data_model)
 
 
   changes_pctl <- qDT(charts(fit_pctl,
@@ -194,18 +190,13 @@ predict_pctls <- function(data_model,
     mutate(y = round(seq(min,
                          max,
                          granularity)/granularity)*granularity) |>
+
     tidyr::pivot_longer(-y,
                         names_to  = "pctl",
                         values_to = "change") |>
+
     mutate(pctl = 100*as.numeric(pctl)) |>
     ungroup()
-
-#
-#   setnames(changes_pctl,
-#            "initialvalue",
-#            "y")
-
-
 
   if (verbose) {cli::cli_alert_success(
     "Changes as function of initial vals by percentiles successfully calculated"
@@ -248,8 +239,6 @@ predict_pctls <- function(data_model,
 predict_changes <- function(data,
                             min           = NULL,
                             max           = NULL,
-                            floor         = 0,
-                            ceiling       = 100,
                             granularity   = 0.1,
                             lambdas       = NULL,
                             best          = "high",
@@ -293,8 +282,6 @@ predict_changes <- function(data,
                                    max         = max,
                                    lambdas     = lambdas,
                                    granularity = granularity,
-                                   floor       = floor,
-                                   ceiling     = ceiling,
                                    verbose     = verbose)
 
     # Get speed paths
@@ -311,13 +298,11 @@ predict_changes <- function(data,
   if (percentiles) {
 
     changes_pctl <- predict_pctls(data_model    = data,
-                                       min           = min,
-                                       max           = max,
-                                       granularity   = granularity,
-                                       floor         = floor,
-                                       ceiling       = ceiling,
-                                       sequence_pctl = sequence_pctl,
-                                       verbose       = verbose)
+                                  min           = min,
+                                  max           = max,
+                                  granularity   = granularity,
+                                  sequence_pctl = sequence_pctl,
+                                  verbose       = verbose)
 
     res_list$changes_pctl <- changes_pctl
   }

@@ -4,7 +4,7 @@
 \alias{get_scores_pctl}
 \title{Calculate percentile-based score over a historical evaluation period}
 \usage{
-get_scores_pctl(path_his_pctl, best = "high", min = 0, max = 100)
+get_scores_pctl(path_his_pctl, best = "high", min = NULL, max = NULL)
 }
 \arguments{
 \item{path_his_pctl}{A data frame containing columns: `code`, `year`, `y`, `y_his`, and `pctl`}

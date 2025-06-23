@@ -11,16 +11,14 @@ path_historical(
   eval_from = 2000,
   eval_to = 2022,
   granularity = 0.1,
-  floor = 0,
-  ceiling = 100,
   min = 0,
   max = 100,
+  best = NULL,
   sequence_pctl = seq(20, 80, 20),
   changes_pctl = NULL,
-  verbose = TRUE,
   sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
-  best = "high"
+  verbose = TRUE
 )
 }
 \arguments{
@@ -37,31 +35,25 @@ Default is FALSE}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
-
 \item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
 it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
 
 \item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
 it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
+\item{best}{A character string indicating the direction of improvement.
+Use \code{"high"} (default) if higher values of the indicator are better,
+or \code{"low"} if lower values are better. This affects the direction of the path.}
+
 \item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
-
-\item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
 
 \item{sequence_speed}{Numeric vector of speed paths to calculate}
 
 \item{path_speed}{Data table  with xxx}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
 }
 \value{
 A named list with one or both of `percentile_path` and `speed_path`.

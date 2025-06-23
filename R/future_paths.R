@@ -83,8 +83,8 @@ future_path_pctls <- function(data_fut,
                               changes_pctl,
                               target_year = 2030,
                               granularity = 0.1,
-                              min         = 0,
-                              max         = 100,
+                              min         = NULL,
+                              max         = NULL,
                               verbose     = TRUE) {
 
   # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
@@ -179,8 +179,8 @@ future_path_speed <- function(data_fut,
                               path_speed,
                               best        = "high",
                               target_year = 2030,
-                              min         = 0,
-                              max         = 100) {
+                              min         = NULL,
+                              max         = NULL) {
 
 
   # Creates dataset with the country-years-speeds where projections are needed
@@ -278,14 +278,15 @@ future_path <- function(data_fut,
                         granularity      = 0.1,
                         sequence_pctl    = seq(20, 80, 20),
                         changes_pctl     = NULL,
-                        sequence_speed         = c(0.25, 0.5, 1, 2, 4),
+                        sequence_speed   = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
                         best             = "high",
                         verbose          = TRUE,
                         speed            = FALSE,
                         percentiles      = FALSE) {
 
-  result <- list(pctl = NULL, speed = NULL)
+  result <- list(pctl  = NULL,
+                 speed = NULL)
 
   if (percentiles) {
     if (is.null(changes_pctl)) {
@@ -310,13 +311,13 @@ future_path <- function(data_fut,
     }
 
     result$speed <- future_path_speed(
-      data_fut     = data_fut,
-      sequence_speed     = sequence_speed,
-      path_speed   = path_speed,
-      best         = best,
-      target_year  = target_year,
-      min          = min,
-      max          = max
+      data_fut       = data_fut,
+      sequence_speed = sequence_speed,
+      path_speed     = path_speed,
+      best           = best,
+      target_year    = target_year,
+      min            = min,
+      max            = max
     )
   }
 
