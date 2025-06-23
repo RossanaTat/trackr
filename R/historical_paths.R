@@ -470,7 +470,7 @@ project_pctls_path <- function(data_his,
 
     prev <- joyn::left_join(prev,
                             changes_pctl,
-                            by           = c("y_his = initialvalue", "pctl"),
+                            by           = c("y_his = y", "pctl"),
                             relationship = "many-to-many",
                             verbose      = FALSE)
 

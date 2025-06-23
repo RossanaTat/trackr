@@ -118,24 +118,24 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
     #qDT()
 
   # Calculate floor/ceiling adjusted bounds
-  min_val <- round(
-
-    ifelse(is.na(floor),
-           min(dt$initialvalue, na.rm = TRUE),
-           floor) / granularity
-  ) * granularity
-
-  max_val <- round(
-    ifelse(is.na(ceiling),
-           max(dt$initialvalue, na.rm = TRUE),
-           ceiling) / granularity
-  ) * granularity
+  # min_val <- round(
+  #
+  #   ifelse(is.na(floor),
+  #          min(dt$initialvalue, na.rm = TRUE),
+  #          floor) / granularity
+  # ) * granularity
+  #
+  # max_val <- round(
+  #   ifelse(is.na(ceiling),
+  #          max(dt$initialvalue, na.rm = TRUE),
+  #          ceiling) / granularity
+  # ) * granularity
 
   return(
     invisible(list(
     data_model  = res_data,
-    min         = min_val,
-    max         = max_val,
+    min         = min,
+    max         = max,
     indicator   = indicator
   )))
 

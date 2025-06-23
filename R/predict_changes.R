@@ -41,26 +41,23 @@ predict_speed <- function(data_model,
   if (nrow(data_model) == 0) {
 
     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
-    return(data.table(initialvalue = NA_real_,
+
+    return(data.table(y            = NA_real_,
                       change       = NA_real_))
   }
 
   # Set min and max
-  if (is.null(min)) {
-    min <- round(if (is.null(floor)) min(data_model$initialvalue) else floor / granularity) * granularity
-  }
-
-  if (is.null(max)) {
-    max <- round(if (is.null(ceiling)) max(data_model$initialvalue) else ceiling / granularity) * granularity
-  }
-
-  # Set lambdas
-  if (is.null(lambdas)) {
-    lambdas <<- 0.1 * 1.148^(0:50)
-  }
+  # if (is.null(min)) {
+  #   min <- round(if (is.null(floor)) min(data_model$initialvalue) else floor / granularity) * granularity
+  # }
+  #
+  # if (is.null(max)) {
+  #   max <- round(if (is.null(ceiling)) max(data_model$initialvalue) else ceiling / granularity) * granularity
+  # }
 
   # Fit model
-  fit_speed <- gcrq(change ~ ps(initialvalue, lambda = 0.1 * 1.148^(0:50)),
+  fit_speed <- gcrq(change ~ ps(initialvalue,
+                                lambda = 0.1 * 1.148^(0:50)),
                     foldid = data_model$fold_id,
                     tau    = 0.5,
                     data   = data_model)
@@ -80,14 +77,18 @@ predict_speed <- function(data_model,
   predictions_dt[, initialvalue := round(x_seq / granularity) * granularity]
 
   # Apply floor and ceiling constraints
-  predictions_dt[,
-                 change := pmax(change, floor - initialvalue)]
-  predictions_dt[,
-                 change := pmin(change, ceiling - initialvalue)]
+  # predictions_dt[,
+  #                change := pmax(change, floor - initialvalue)]
+  # predictions_dt[,
+  #                change := pmin(change, ceiling - initialvalue)]
 
-  #setnames(predictions_dt, "change", "predictions_speed")
 
-  if (verbose) cli::cli_alert_success("Predictions speed successfully calculated")
+
+  setnames(predictions_dt,
+           "initialvalue",
+           "y")
+
+  if (verbose) cli::cli_alert_success("Changes speed successfully calculated")
 
   return(predictions_dt)
 }
@@ -129,14 +130,14 @@ get_speed_path <- function(changes_speed,
   if (best == "low") {
 
     changes_speed <- changes_speed |>
-      roworder(-initialvalue) |>
+      roworder(-y) |>
       fmutate(change = -change)
 
   }
 
   path_speed <- changes_speed |>
     ftransform(
-      y    = initialvalue,
+      #y    = initialvalue,
       time = change
     ) |>
     ftransform(
@@ -149,8 +150,7 @@ get_speed_path <- function(changes_speed,
     ) |>
     fsubset(!is.infinite(time) & !is.nan(time)) |>
     fselect(time,
-            y) |>
-    as.data.table()
+            y)
 
   if (verbose) cli::cli_alert_success("Path speed successfully calculated")
 
@@ -182,19 +182,19 @@ predict_pctls <- function(data_model,
   # __________________________________ #
 
 
-  if (is.null(min)) {
-    min = round(if_else(is.null(floor),
-                        min(data_model$initialvalue),
-                        floor)/granularity)*granularity
-
-  }
-
-  if (is.null(max)) {
-    max = round(if_else(is.null(ceiling),
-                        max(data_model$initialvalue),
-                        ceiling)/granularity)*granularity
-
-  }
+  # if (is.null(min)) {
+  #   min = round(if_else(is.null(floor),
+  #                       min(data_model$initialvalue),
+  #                       floor)/granularity)*granularity
+  #
+  # }
+  #
+  # if (is.null(max)) {
+  #   max = round(if_else(is.null(ceiling),
+  #                       max(data_model$initialvalue),
+  #                       ceiling)/granularity)*granularity
+  #
+  # }
 
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
@@ -218,25 +218,20 @@ predict_pctls <- function(data_model,
                                          max,
                                          granularity))) |>
 
-    mutate(initialvalue = round(seq(min,
-                                    max,
-                                    granularity)/granularity)*granularity) |>
-    tidyr::pivot_longer(-initialvalue,
+    mutate(y = round(seq(min,
+                         max,
+                         granularity)/granularity)*granularity) |>
+    tidyr::pivot_longer(-y,
                         names_to  = "pctl",
                         values_to = "change") |>
     mutate(pctl = 100*as.numeric(pctl)) |>
-    rowwise() |>
-    # Expected changes can never give an outcome lower than the floor
-    mutate(change = if_else(!is.na(floor),
-                            max(change,
-                                floor-initialvalue),
-                            change),
-           # Expected changes can never give an outcome higher than the ceiling
-           change = if_else(!is.na(ceiling),
-                            min(change,
-                                ceiling-initialvalue),
-                            change)) |>
     ungroup()
+
+#
+#   setnames(changes_pctl,
+#            "initialvalue",
+#            "y")
+
 
 
   if (verbose) {cli::cli_alert_success(
@@ -299,14 +294,16 @@ predict_changes <- function(data,
     cli::cli_abort("At least one between speed and percentiles should be TRUE")
   }
 
-  if(percentiles == TRUE & is.null(sequence_pctl)) {
+  if (percentiles == TRUE & is.null(sequence_pctl)) {
 
     cli::cli_abort("If percentiles method is selected, need to provide pctls sequence")
   }
 
   # Validate 'best'
   if (!best %in% c("high", "low")) {
+
     cli::cli_abort("`best` must be either 'high' or 'low'")
+
   }
 
   if (verbose) {cli::cli_alert_info("Speed method for computations: {.strong {speed}}")}
