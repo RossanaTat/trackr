@@ -17,7 +17,7 @@ track_progress(
   percentiles = TRUE,
   future = FALSE,
   sequence_pctl = seq(20, 80, 20),
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   best = NULL,
   target_year = 2030,
   floor = 0,
@@ -52,8 +52,6 @@ Default is FALSE}
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
 \item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
-
-\item{speedseq}{Numeric vector of XXX}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,

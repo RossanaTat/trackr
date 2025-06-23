@@ -18,7 +18,7 @@ path_historical(
   sequence_pctl = seq(20, 80, 20),
   changes_pctl = NULL,
   verbose = TRUE,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
   best = "high"
 )
@@ -55,13 +55,13 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
 
-\item{speedseq}{Numeric vector of XXX}
-
 \item{path_speed}{Data table  with xxx}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,
 or \code{"low"} if lower values are better. This affects the direction of the path.}
+
+\item{speedseq}{Numeric vector of speed paths to calculate}
 }
 \value{
 A named list with one or both of `percentile_path` and `speed_path`.

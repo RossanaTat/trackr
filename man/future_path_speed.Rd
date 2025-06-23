@@ -6,7 +6,7 @@
 \usage{
 future_path_speed(
   data_fut,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed,
   best = "high",
   target_year = 2030,

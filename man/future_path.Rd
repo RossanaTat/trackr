@@ -12,7 +12,7 @@ future_path(
   granularity = 0.1,
   sequence_pctl = seq(20, 80, 20),
   changes_pctl = NULL,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
   best = "high",
   verbose = TRUE,

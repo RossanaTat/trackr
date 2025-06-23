@@ -34,36 +34,42 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   # Start formatting the data ####
   # ________________________________
 
-  # Convert to data.table
   dt <- qDT(data)
 
-  # Standardize column names
-  data.table::setnames(dt,
-                       old         = c(code_col, year_col, indicator),
-                       new         = c("code", "year", "y"),
-                       skip_absent = FALSE)
+  setnames(dt,
+           old         = c(code_col, year_col, indicator),
+           new         = c("code", "year", "y"),
+           skip_absent = FALSE)
 
-  dt <- dt |>
-    fselect(code, year, y) |>
-    fsubset(year >= startyear_data,
-            year <= endyear_data)
-
-  data.table::setorder(dt,
-                       code,
-                       year)
+  dt <- dt[
+    year >= startyear_data & year <= endyear_data,
+    .(code, year, y)
+  ][
+    order(code, year)
+  ]
   # _______________________________________________________
   # Compute annualized changes from 5 to 10 years ah.  ####
   # _______________________________________________________
 
   # To optimize with collapse
 
-  dt <- dt |>
-    fmutate(c5   = (lead(y,5)-y)/5,
-             c6  = (lead(y,6)-y)/6,
-             c7  = (lead(y,7)-y)/7,
-             c8  = (lead(y,8)-y)/8,
-             c9  = (lead(y,9)-y)/9,
-             c10 = (lead(y,10)-y)/10)
+  # dt <- dt |>
+  #   fmutate(c5   = (lead(y,5)-y)/5,
+  #            c6  = (lead(y,6)-y)/6,
+  #            c7  = (lead(y,7)-y)/7,
+  #            c8  = (lead(y,8)-y)/8,
+  #            c9  = (lead(y,9)-y)/9,
+  #            c10 = (lead(y,10)-y)/10)
+
+  dt[, `:=`(
+    c5   = (shift(y, type = "lead", n = 5) - y) / 5,
+    c6   = (shift(y, type = "lead", n = 6) - y) / 6,
+    c7   = (shift(y, type = "lead", n = 7) - y) / 7,
+    c8   = (shift(y, type = "lead", n = 8) - y) / 8,
+    c9   = (shift(y, type = "lead", n = 9) - y) / 9,
+    c10  = (shift(y, type = "lead", n = 10) - y) / 10
+  )]
+
 
   # Reshape to long format
 
@@ -119,20 +125,6 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                             reportvar  = FALSE,
                             verbose    = FALSE)
     #qDT()
-
-  # Calculate floor/ceiling adjusted bounds
-  # min_val <- round(
-  #
-  #   ifelse(is.na(floor),
-  #          min(dt$initialvalue, na.rm = TRUE),
-  #          floor) / granularity
-  # ) * granularity
-  #
-  # max_val <- round(
-  #   ifelse(is.na(ceiling),
-  #          max(dt$initialvalue, na.rm = TRUE),
-  #          ceiling) / granularity
-  # ) * granularity
 
   return(
     invisible(list(

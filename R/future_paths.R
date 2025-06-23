@@ -175,7 +175,7 @@ future_path_pctls <- function(data_fut,
 #'   indicator direction (`best`).
 #' @export
 future_path_speed <- function(data_fut,
-                              speedseq    = c(0.25,0.5,1,2,4),
+                              sequence_speed    = c(0.25,0.5,1,2,4),
                               path_speed,
                               best        = "high",
                               target_year = 2030,
@@ -188,7 +188,7 @@ future_path_speed <- function(data_fut,
                           year = seq( min (data_fut$year),
                                    target_year,
                                    1),
-                          speed = speedseq) |>
+                          speed = sequence_speed) |>
     rename("yeartemp"          = "year") |>
     joyn::joyn(data_fut,
                match_type      = "m:1",
@@ -278,7 +278,7 @@ future_path <- function(data_fut,
                         granularity      = 0.1,
                         sequence_pctl    = seq(20, 80, 20),
                         changes_pctl     = NULL,
-                        speedseq         = c(0.25, 0.5, 1, 2, 4),
+                        sequence_speed         = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
                         best             = "high",
                         verbose          = TRUE,
@@ -311,7 +311,7 @@ future_path <- function(data_fut,
 
     result$speed <- future_path_speed(
       data_fut     = data_fut,
-      speedseq     = speedseq,
+      sequence_speed     = sequence_speed,
       path_speed   = path_speed,
       best         = best,
       target_year  = target_year,

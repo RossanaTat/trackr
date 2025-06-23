@@ -112,22 +112,22 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 #'
 #' @inheritParams get_speed_path
 #' @inheritParams project_pctls_path
-#' @param speedseq numeric vector of speed paths to calculate
+#' @param sequence_speed numeric vector of speed paths to calculate
 #'
 #'
 #' @return A data frame of projected values under different speeds
 #'
 project_path_speed <- function(data_his,
-                               speedseq    = c(0.25,0.5,1,2,4),
+                               sequence_speed = c(0.25,0.5,1,2,4),
                                path_speed,
-                               floor       = 0,
-                               ceiling     = 100,
-                               granularity = 0.1,
-                               eval_from  = 2000,
-                               eval_to    = 2022,
-                               min         = NULL,
-                               max         = NULL,
-                               best = "high") {
+                               floor          = 0,
+                               ceiling        = 100,
+                               granularity    = 0.1,
+                               eval_from      = 2000,
+                               eval_to        = 2022,
+                               min            = NULL,
+                               max            = NULL,
+                               best           = "high") {
 
   # Validate input
 
@@ -142,8 +142,8 @@ project_path_speed <- function(data_his,
 
 
   data_his <- cross_join(data_his,
-                         as.data.table(speedseq)) |>
-    rename("speed" = "speedseq")
+                         as.data.table(sequence_speed)) |>
+    rename("speed" = "sequence_speed")
 
   # Create a new data set which will contain the path a country would have taken with various speeds
   path_his_speed <- data_his |>
@@ -201,7 +201,7 @@ project_path_speed <- function(data_his,
 #' @param eval_to Last year to include in projections.
 #' @param changes_pctl A `data.table` with predicted changes by initialvalue and pctl.
 #' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
-#' @param speedseq Numeric vector of XXX
+#' @param speedseq Numeric vector of speed paths to calculate
 #' @param path_speed Data table  with xxx
 #'
 #' @return A named list with one or both of `percentile_path` and `speed_path`.
@@ -219,7 +219,7 @@ path_historical <- function(percentiles      = TRUE,
                             sequence_pctl    = seq(20, 80, 20),
                             changes_pctl     = NULL,
                             verbose          = TRUE,
-                            speedseq         = c(0.25, 0.5, 1, 2, 4),
+                            sequence_speed   = c(0.25, 0.5, 1, 2, 4),
                             path_speed       = NULL,
                             best = "high") {
 
@@ -261,7 +261,7 @@ path_historical <- function(percentiles      = TRUE,
 
     out$speed <- project_path_speed(
       data_his    = data_his,
-      speedseq    = speedseq,
+      sequence_speed    = sequence_speed,
       path_speed  = path_speed,
       floor       = floor,
       ceiling     = ceiling,

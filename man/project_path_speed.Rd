@@ -6,7 +6,7 @@
 \usage{
 project_path_speed(
   data_his,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed,
   floor = 0,
   ceiling = 100,
@@ -21,7 +21,7 @@ project_path_speed(
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{speedseq}{numeric vector of speed paths to calculate}
+\item{sequence_speed}{numeric vector of speed paths to calculate}
 
 \item{granularity}{A numeric value indicating the step size used when
 computing the trajectory over time. Smaller values produce smoother curves.

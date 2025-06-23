@@ -76,13 +76,6 @@ predict_speed <- function(data_model,
 
   predictions_dt[, initialvalue := round(x_seq / granularity) * granularity]
 
-  # Apply floor and ceiling constraints
-  # predictions_dt[,
-  #                change := pmax(change, floor - initialvalue)]
-  # predictions_dt[,
-  #                change := pmin(change, ceiling - initialvalue)]
-
-
 
   setnames(predictions_dt,
            "initialvalue",
@@ -181,28 +174,8 @@ predict_pctls <- function(data_model,
   # Validate input ~~~~~ ####
   # __________________________________ #
 
-
-  # if (is.null(min)) {
-  #   min = round(if_else(is.null(floor),
-  #                       min(data_model$initialvalue),
-  #                       floor)/granularity)*granularity
-  #
-  # }
-  #
-  # if (is.null(max)) {
-  #   max = round(if_else(is.null(ceiling),
-  #                       max(data_model$initialvalue),
-  #                       ceiling)/granularity)*granularity
-  #
-  # }
-
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
-
-
-  if (is.null(lambdas)) {
-    lambdas <<- 0.1 * 1.148^(0:50)
-  }
 
   # Inject lambdas into the data_model so gcrq can find it
 
