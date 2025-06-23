@@ -29,7 +29,7 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
                           verbose = TRUE) {
 
   # Convert to data.table
-  dt <- data.table::as.data.table(data)
+  dt <- qDT(data)
 
   # Standardize column names
   data.table::setnames(dt,
@@ -130,18 +130,21 @@ future_path_pctls <- function(data_fut,
                pctl) |>
       arrange(year) |>
       # Calculate new level based on the predicted changes.
-      mutate(y_fut = if_else(row_number()==n & !is.na(lag(y_fut)),
-                             round((lag(y_fut)+lag(change))/granularity)*granularity,y_fut)) |>
+      mutate(y_pctl = if_else(row_number()==n & !is.na(lag(y_fut)),
+                             round((lag(y_fut)+lag(change))/granularity)*granularity, y_fut)) |>
       ungroup() |>
       select(-change)
 
     n=n+1
   }
 
-  path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))] |>
-    setorder(code,
-             year)
-
+  path_fut_pctl <- qDT(path_fut_pctl)[
+    !is.na(y_pctl) & (is.na(y) | (y >= min & y <= max))
+  ][
+    , y_fut := NULL
+  ][
+    , setorder(.SD, code, year)
+  ]
 
   # Return ####
   return(path_fut_pctl)
@@ -222,7 +225,7 @@ future_path_speed <- function(data_fut,
     select(-c(y_fut,
               time,
               best)) |>
-    rename("y_fut" = "y") |>
+    rename("y_speed" = "y") |>
 
     joyn::joyn(data_fut,
                match_type = "1:1",
@@ -233,7 +236,7 @@ future_path_speed <- function(data_fut,
     group_by(code,
              speed) |>
     arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_fut,
+    mutate(y_fut = zoo::na.approx(y_speed,
                                   year,
                                   na.rm = FALSE,
                                   rule=2)) |>
@@ -241,7 +244,8 @@ future_path_speed <- function(data_fut,
                          target_year,
                          1)) |>
     ungroup() |>
-    filter(!is.na(y_fut))
+    select(-y_fut) |>
+    filter(!is.na(y_speed))
 
     # Only keep cases where target has not been reached
     #filter(between(y,min,max) | is.na(y))

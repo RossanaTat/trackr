@@ -254,7 +254,7 @@ project_path_speed <- function(data_his,
 
 
   data_his <- cross_join(data_his,
-                         as.data.frame(speedseq)) |>
+                         as.data.table(speedseq)) |>
     rename("speed" = "speedseq")
 
   # Create a new data set which will contain the path a country would have taken with various speeds
@@ -277,7 +277,7 @@ project_path_speed <- function(data_his,
     select(-c(y_his,
               time,
               best)) |>
-    rename("y_his" = "y") |>
+    rename("y_speed" = "y") |>
     joyn::joyn(data_his,
                match_type = "1:1",
                by = c("code","year","speed"),
@@ -287,7 +287,7 @@ project_path_speed <- function(data_his,
     group_by(code,
              speed) |>
     arrange(year) |>
-    mutate(y_his = zoo::na.approx(y_his,
+    mutate(y_speed = zoo::na.approx(y_speed,
                                   year,
                                   na.rm = FALSE,
                                   rule = 2)) |>
@@ -298,8 +298,7 @@ project_path_speed <- function(data_his,
     # Only keep cases where target has not been reached
     filter(between(y,
                    min,
-                   max)) |>
-    as.data.table()
+                   max))
 
   return(path_his_speed)
 
@@ -500,6 +499,8 @@ project_pctls_path <- function(data_his,
     verbose      = FALSE,
     reportvar    = FALSE
   )
+
+  setnames(dt_expanded, "y_his", "y_pctl")
 
   return(dt_expanded[])
 

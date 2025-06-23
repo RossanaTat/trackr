@@ -235,7 +235,7 @@ track_progress <- function(indicator      = NULL,
   return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
-    data_historical   = data_his,
+    #data_historical   = data_his,
     path_historical   = path_historical,
     path_future       = future_path_out,
     scores            = scores

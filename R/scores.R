@@ -49,21 +49,21 @@ get_scores_pctl <- function(path_his_pctl,
   setorder(dt, code, pctl)
 
   dt[, score := fifelse(
-    (best == "low" & y >= y_his & .I == .I[1L]) | (best == "high" & y <= y_his & .I == .I[1L]),
+    (best == "low" & y >= y_pctl & .I == .I[1L]) | (best == "high" & y <= y_pctl & .I == .I[1L]),
     paste0(0, "-", pctl),
     NA_character_
   ), by = code]
 
   dt[, score := fifelse(
-    (best == "low" & y < y_his & y >= shift(y_his, type = "lead")) |
-      (best == "high" & y > y_his & y <= shift(y_his, type = "lead")),
+    (best == "low" & y < y_pctl & y >= shift(y_pctl, type = "lead")) |
+      (best == "high" & y > y_pctl & y <= shift(y_pctl, type = "lead")),
     paste0(pctl, "-", shift(pctl, type = "lead")),
     score
   ), by = code]
 
   dt[, score := fifelse(
-    (best == "low" & y < y_his & .I == .I[.N]) |
-      (best == "high" & y > y_his & .I == .I[.N]),
+    (best == "low" & y < y_pctl & .I == .I[.N]) |
+      (best == "high" & y > y_pctl & .I == .I[.N]),
     paste0(pctl, "-", 100),
     score
   ), by = code]
