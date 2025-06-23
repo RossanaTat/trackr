@@ -10,8 +10,7 @@ predict_pctls(
   max = NULL,
   granularity = 0.1,
   sequence_pctl = seq(20, 80, 20),
-  verbose = TRUE,
-  lambdas = NULL
+  verbose = TRUE
 )
 }
 \arguments{
@@ -31,9 +30,6 @@ it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 \item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
 
 \item{verbose}{Logical. If TRUE, prints info messages in console}
-
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
 }
 \value{
 A data frame with calculated changes by percentiles.

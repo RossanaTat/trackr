@@ -45,7 +45,6 @@ track_progress <- function(indicator      = NULL,
                            granularity    = 0.1,
                            min            = NULL,
                            max            = NULL,
-                           lambdas        = 0.1*1.148^(0:50),
                            verbose        = TRUE) {
 
   # ___________________________ #
@@ -100,7 +99,6 @@ track_progress <- function(indicator      = NULL,
                                        min         = min,
                                        max         = max,
                                        granularity = granularity,
-                                       lambdas     = lambdas,
                                        best        = best,
                                        speed       = speed,
                                        percentiles = percentiles,
@@ -226,7 +224,6 @@ track_progress <- function(indicator      = NULL,
   return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
-    #data_historical   = data_his,
     path_historical   = path_historical,
     path_future       = future_path_out,
     scores            = scores

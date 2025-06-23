@@ -15,8 +15,6 @@
 #'   it is set to `floor` (if provided) or `min(data_model$initialvalue)`.
 #' @param max Optional. Maximum value of `initialvalue` to predict. If `NULL`,
 #'   it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.
-#' @param lambdas Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-#'   Defaults to `0.1 * 1.148^(0:50)`.
 #' @param granularity Numeric. Granularity in outcome variable. Default is `0.1`.
 #' @param floor Numeric or `NULL`.Minimum value of indicator.
 #'   If `NULL`, predictions are unrestricted on the lower end.
@@ -42,15 +40,6 @@ predict_speed <- function(data_model,
     return(data.table(y            = NA_real_,
                       change       = NA_real_))
   }
-
-  # Set min and max
-  # if (is.null(min)) {
-  #   min <- round(if (is.null(floor)) min(data_model$initialvalue) else floor / granularity) * granularity
-  # }
-  #
-  # if (is.null(max)) {
-  #   max <- round(if (is.null(ceiling)) max(data_model$initialvalue) else ceiling / granularity) * granularity
-  # }
 
   # Fit model
   fit_speed <- gcrq(change ~ ps(initialvalue,
@@ -162,8 +151,7 @@ predict_pctls <- function(data_model,
                           max           = NULL,
                           granularity   = 0.1,
                           sequence_pctl = seq(20, 80, 20),
-                          verbose       = TRUE,
-                          lambdas       = NULL) {
+                          verbose       = TRUE) {
 
   # __________________________________ #
   # Validate input ~~~~~ ####
@@ -240,7 +228,6 @@ predict_changes <- function(data,
                             min           = NULL,
                             max           = NULL,
                             granularity   = 0.1,
-                            lambdas       = NULL,
                             best          = "high",
                             speed         = FALSE,
                             percentiles   = TRUE,
@@ -280,7 +267,6 @@ predict_changes <- function(data,
     changes_speed <- predict_speed(data_model  = data,
                                    min         = min,
                                    max         = max,
-                                   lambdas     = lambdas,
                                    granularity = granularity,
                                    verbose     = verbose)
 

@@ -196,9 +196,9 @@ get_scores <- function(speed          = FALSE,
     if (is.null(path_his_pctl))  stop("Percentile-based scoring selected, but `path_his_pctl` was not provided.")
 
     out$pctl <- get_scores_pctl(path_his_pctl = path_his_pctl,
-                                best = best,
-                                min = min,
-                                max = max)
+                                best          = best,
+                                min           = min,
+                                max           = max)
 
     if (verbose) cli::cli_alert_success("Percentile-based scores calculated successfully.")
   }
@@ -210,10 +210,10 @@ get_scores <- function(speed          = FALSE,
       stop("Speed-based scoring selected, but `path_his_speed` and/or `path_speed` were not provided.")
     }
     out$speed <- get_scores_speed(path_his_speed = path_his_speed,
-                                  path_speed = path_speed,
-                                  min = min,
-                                  max = max,
-                                  granularity = granularity)
+                                  path_speed     = path_speed,
+                                  min            = min,
+                                  max            = max,
+                                  granularity    = granularity)
 
     if (verbose) cli::cli_alert_success("Speed-based scores calculated successfully.")
 

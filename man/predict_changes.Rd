@@ -9,7 +9,6 @@ predict_changes(
   min = NULL,
   max = NULL,
   granularity = 0.1,
-  lambdas = NULL,
   best = "high",
   speed = FALSE,
   percentiles = TRUE,
@@ -28,9 +27,6 @@ it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
 it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
-
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
 
 \item{best}{A character string indicating the direction of improvement.
 Use \code{"high"} (default) if higher values of the indicator are better,

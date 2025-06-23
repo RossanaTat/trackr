@@ -23,7 +23,6 @@ track_progress(
   granularity = 0.1,
   min = NULL,
   max = NULL,
-  lambdas = 0.1 * 1.148^(0:50),
   verbose = TRUE
 )
 }
@@ -64,9 +63,6 @@ or \code{"low"} if lower values are better. This affects the direction of the pa
 \item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
 
 \item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
-
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
