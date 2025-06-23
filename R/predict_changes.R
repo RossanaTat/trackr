@@ -1,4 +1,3 @@
-# Functions to predict changes in indicator
 
 #' Predict Speed of Change Based on Initial Value
 #'
@@ -32,13 +31,13 @@ predict_speed <- function(data_model,
                           granularity = 0.1,
                           verbose     = TRUE) {
 
-  # Early return if empty
-  if (nrow(data_model) == 0) {
+  # Early exit if no data
+  if (nrow(data_model) == 0L) {
 
     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
 
-    return(data.table(y            = NA_real_,
-                      change       = NA_real_))
+    return(data.table(y = NA_real_,
+                      change = NA_real_))
   }
 
   # Fit model
@@ -51,21 +50,17 @@ predict_speed <- function(data_model,
   # Generate prediction sequence
   x_seq <- seq(min,
                max,
-               granularity)
+               by = granularity)
 
   # Predict (charts() returns a named vector or data.frame)
-  changes_speed <- charts(fit_speed,
-                              k = x_seq)
+  # Predict changes over the grid
+  changes_speed <- charts(fit_speed, k = x_seq)
 
-  # Convert to data.table and compute columns
-  predictions_dt <- data.table(change = as.numeric(changes_speed))
-
-  predictions_dt[, initialvalue := round(x_seq / granularity) * granularity]
-
-
-  setnames(predictions_dt,
-           "initialvalue",
-           "y")
+  # Create output data.table
+  predictions_dt <- data.table(
+    y = round(x_seq / granularity) * granularity,
+    change = as.numeric(changes_speed)
+  )
 
   if (verbose) cli::cli_alert_success("Changes speed successfully calculated")
 
@@ -82,7 +77,7 @@ predict_speed <- function(data_model,
 #'
 #'
 #' @param changes_speed A data.table containing two columns:
-#'   \code{initialvalue} (the starting level of the indicator) and
+#'   \code{y} (the starting level of the indicator) and
 #'   \code{change} (the expected annualized change from that level).
 #' @param granularity A numeric value indicating the step size used when
 #'   computing the trajectory over time. Smaller values produce smoother curves.
@@ -108,28 +103,34 @@ get_speed_path <- function(changes_speed,
 
   if (best == "low") {
 
-    changes_speed <- changes_speed |>
-      roworder(-y) |>
-      fmutate(change = -change)
+    setorder(changes_speed,
+             -y)       # reorder rows by descending y
+
+    changes_speed[, change := -change] # mutate/change 'change' column by negating its values
+
 
   }
 
-  path_speed <- changes_speed |>
-    ftransform(
-      #y    = initialvalue,
-      time = change
-    ) |>
-    ftransform(
-      time = {
-        ltime        <- L(time)  # Lagged time
-        time_new     <- 1 / ltime * granularity
-        time_new[1L] <- 0  # Set first to 0
-        cumsum(time_new)
-      }
-    ) |>
-    fsubset(!is.infinite(time) & !is.nan(time)) |>
-    fselect(time,
-            y)
+  # Ensure changes_speed is a data.table
+  path_speed <- copy(changes_speed)  # don't overwrite original
+
+  # Step 1: Rename 'change' to 'time'
+  setnames(path_speed, "change", "time")
+
+  # Step 2: Compute lagged time and cumulative transformed time
+
+  path_speed[, time := {
+    ltime <- shift(time, type = "lag")                      # lag of 'time'
+    time_new <- 1 / ltime * granularity                     # transformed time
+    time_new[1L] <- 0                                       # first value is 0
+    cumsum(time_new)                                        # cumulative sum
+  }]
+
+  # Step 3: Filter out non-finite values
+  path_speed <- path_speed[is.finite(time)]
+
+  # Step 4: Keep only 'time' and 'y' columns
+  path_speed <- path_speed[, .(time, y)]
 
   if (verbose) cli::cli_alert_success("Path speed successfully calculated")
 
@@ -159,8 +160,6 @@ predict_pctls <- function(data_model,
 
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
-
-  # Inject lambdas into the data_model so gcrq can find it
 
   # Use formula with lambda as a name
   fit_pctl <- gcrq(change ~ ps(initialvalue,
