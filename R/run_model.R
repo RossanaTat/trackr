@@ -229,8 +229,4 @@ track_progress <- function(indicator      = NULL,
     scores            = scores
   )))
 
-
-
-
-
 }

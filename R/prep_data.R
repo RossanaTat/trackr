@@ -29,88 +29,56 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       min            = NULL,
                       max            = NULL,
                       granularity    = 0.1,
-                      verbose = TRUE) {
-
+                      verbose        = TRUE) {
 
   # ________________________________
   # Start formatting the data ####
   # ________________________________
 
-
-
   dt <- qDT(data)
 
-
   setnames(dt,
-           old         = c(code_col, year_col, indicator),
-           new         = c("code", "year", "y"),
+           old = c(code_col, year_col, indicator),
+           new = c("code", "year", "y"),
            skip_absent = FALSE)
 
-  dt <- dt[
-    year >= startyear_data & year <= endyear_data,
-    .(code, year, y)
-  ][
-    order(code, year)
-  ]
-
+  dt <- dt[year >= startyear_data & year <= endyear_data, .(code, year, y)]
+  setorder(dt, code, year)
 
   # _______________________________________________________
   # Compute annualized changes from 5 to 10 years ah.  ####
   # _______________________________________________________
 
-  # To optimize with collapse
-
-  dt[, `:=`(
-    c5   = (shift(y, type = "lead", n = 5) - y) / 5,
-    c6   = (shift(y, type = "lead", n = 6) - y) / 6,
-    c7   = (shift(y, type = "lead", n = 7) - y) / 7,
-    c8   = (shift(y, type = "lead", n = 8) - y) / 8,
-    c9   = (shift(y, type = "lead", n = 9) - y) / 9,
-    c10  = (shift(y, type = "lead", n = 10) - y) / 10
-  )]
-
+  dt[, paste0("c", 5:10) := lapply(5:10, function(n) (shift(y, type = "lead", n = n) - y) / n), by = code]
 
   # Reshape to long format
+  dt_long <- melt(dt,
+                  id.vars       = c("code", "year", "y"),
+                  measure.vars  = patterns("^c[5-9]$|^c10$"),
+                  variable.name = "duration",
+                  value.name    = "change",
+                  variable.factor = FALSE)
 
-  dt <- dt |>
-    pivot(ids              = c("code", "year", "y"),
-          values           = paste0("c", 5:10),
-          names            = list(variable = "duration"),
-          how              = "longer") |>
-    fsubset(!is.na(value)) |>
-    frename("year_start"   = "year",
-            "change"       = "value",
-            "initialvalue" = "y") |>
-    fmutate(duration       = as.numeric(gsub("^c", "", duration)),
-            year_end       = year_start + duration) |>
-    fselect(-duration) |>
-    group_by(code,
-             year_start) |>
-    # TODO move to collapse
-    # The line below imply that we only use 6-year spells if there is no 5-year spell, and only use 7-year spells if there is no 5 and 6-year spell etc.
-    # The advantage of doing so is that we rely more consistently on spells of the same length.
-    slice(1) |> # TODO move to collapse |>
-    ungroup() |>
+  dt_long <- dt_long[!is.na(change)]
+  dt_long[, duration := as.numeric(gsub("^c", "", duration))]
+  dt_long[, year_end := year + duration]
+  setnames(dt_long, c("year", "y"), c("year_start", "initialvalue"))
 
-    # Multiply the rows of countries with little data so they have about as many rows as countries with a lot of data
-    fcount(code,
-           name = "n",
-           add = TRUE) |>
-    #add_count(code) |>
-    fmutate(expansion = round(max(n)/n)) |>
-    splitstackshape::expandRows('expansion')
+  # Keep only the shortest available spell per (code, year_start)
+  setorder(dt_long, code, year_start, duration)
+  dt_long <- dt_long[, .SD[1], by = .(code, year_start)]
+
+  # Expand rows to balance representation across countries
+  dt_long[, n := .N, by = code]
+  dt_long[, expansion := round(max(n) / n)]
+  dt_long <- dt_long[rep(1L:.N, times = expansion)]
 
   # _____________________________________________
   # Create folds for cross-validation ####
   # _____________________________________________
 
-  folds <- dt |>
-    fselect(code) |>
-    distinct()
-
-  folds$fold_id <- sample(1:5,
-                          size          = nrow(folds),
-                          replace       = TRUE)
+  folds <- unique(dt_long[, .(code)])
+  folds[, fold_id := sample(1:5, .N, replace = TRUE)]
 
   # _____________________________________________
   # Handle min and max ####
@@ -119,38 +87,33 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
   min_val <- if (!is.null(min)) {
     round(min / granularity) * granularity
   } else {
-    round(min(dt$initialvalue, na.rm = TRUE) / granularity) * granularity
+    round(min(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
   }
 
   max_val <- if (!is.null(max)) {
     round(max / granularity) * granularity
   } else {
-    round(max(dt$initialvalue, na.rm = TRUE) / granularity) * granularity
+    round(max(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
   }
-
 
   # ________________________________
   # Return ####
   # ________________________________
 
+  res_data <- joyn::joyn(dt_long,
+                         folds,
+                         by         = "code",
+                         match_type = "m:1",
+                         reportvar  = FALSE,
+                         verbose    = FALSE)
 
-  res_data    <- joyn::joyn(dt,
-                            folds,
-                            by         = "code",
-                            match_type = "m:1",
-                            reportvar  = FALSE,
-                            verbose    = FALSE)
-    #qDT()
+  if (verbose) cli::cli_alert_success("User data successfully formatted")
 
-  return(
-    invisible(list(
-    data_model  = res_data,
-    min         = min_val,
-    max         = max_val,
-    indicator   = indicator
-  )))
-
-
-  if (verbose) cli::cli_alert_success("user data successfuly formatted")
-
+  invisible(list(
+    data_model = res_data,
+    min        = min_val,
+    max        = max_val,
+    indicator  = indicator
+  ))
 }
+
