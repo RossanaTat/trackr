@@ -121,82 +121,69 @@ project_path_speed <- function(data_his,
                                max            = NULL,
                                best           = "high") {
 
-#
-#   data_his <- cross_join(data_his,
-#                          as.data.table(sequence_speed)) |>
-#     rename("speed" = "sequence_speed")
+  # Set min and max from attributes if not provided
+  if (is.null(min)) min <- attr(data_his, "min")
+  if (is.null(max)) max <- attr(data_his, "max")
 
-  sequence_speed_dt <- qDT(sequence_speed)
+  # Ensure data_his is copied and safe
+  data_his <- copy(data_his)
 
-  # data_his <- join(data_his,
-  #                  sequence_speed_dt,
-  #                  join = "cross")
+  # Store actual y as y_actual
+  setnames(data_his, "y", "y_actual")
+
+  # Cross join with sequence_speed
+  speeds <- qDT(sequence_speed)[, k := 1]
 
   data_his[, k := 1]
-  sequence_speed_dt[, k := 1]
-
-  data_his <- merge(data_his,
-                    sequence_speed_dt,
-                    by = "k",
+  data_his <- merge(data_his, speeds, by = "k",
                     allow.cartesian = TRUE,
-                    verbose = FALSE,
-                    reportvar = FALSE)[, k := NULL]
+                    reportvar = FALSE, verbose = FALSE)
 
-  setnames(data_his,
-           old = "sequence_speed", new = "speed")
+  # Keep only rows where y_his is not NA
+  data_his <- data_his[!is.na(y_his)]
 
+  setnames(data_his, old = "sequence_speed", new = "speed")
 
+  # Cross join with path_speed
+  path_speed <- copy(path_speed)[, k := 1]
 
+  path_his_speed <- merge(data_his, path_speed, by = "k",
+                          allow.cartesian = TRUE,
+                          verbose = FALSE,
+                          reportvar = FALSE)[, `:=`(k = NULL, best = best)]
 
+  # Filter: keep only those where path is improving in right direction
+  path_his_speed <- path_his_speed[
+    (best == "high" & y_his <= y) |
+      (best != "high" & y_his >= y)
+  ]
 
+  # Compute projected year
+  setorder(path_his_speed, code, speed, time)
 
-  # Create a new data set which will contain the path a country would have taken with various speeds
-  path_his_speed <- data_his |>
-    filter(!is.na(y_his)) |>
-    select(code,
-           y_his,
-           year,
-           speed) |>
-    cross_join(path_speed) |>
-    mutate(best = best) |>
-    filter(if_else(best == "high",
-                   y_his <= y,
-                   y_his >= y)) |>
-    group_by(code,
-             speed) |>
-    arrange(time) |>
-    mutate(year = year + (time-time[1])/speed) |>
-    ungroup() |>
-    select(-c(y_his,
-              time,
-              best)) |>
-    rename("y_speed" = "y") |>
-    joyn::joyn(data_his,
-               match_type = "1:1",
-               by = c("code","year","speed"),
-               reportvar = FALSE,
-               verbose = FALSE,
-               y_vars_to_keep = "y") |>
-    group_by(code,
-             speed) |>
-    arrange(year) |>
-    mutate(y_speed = zoo::na.approx(y_speed,
-                                  year,
-                                  na.rm = FALSE,
-                                  rule = 2)) |>
-    filter(year %in% seq(eval_from,
-                         eval_to,
-                         1)) |>
-    ungroup() |>
-    # Only keep cases where target has not been reached
-    filter(between(y,
-                   min,
-                   max))
+  path_his_speed[, year := year + (time - time[1]) / speed, by = .(code, speed)]
 
-  return(path_his_speed)
+  path_his_speed[, y_his := NULL]
 
+  # Rename path_speed's y as y_his (counterfactual)
+  setnames(path_his_speed,
+           old = c("y", "y_actual"), new = c("y_his", "y"))
 
+  # # Interpolate y_his over time
+  setorder(path_his_speed, code, speed, year)
+  path_his_speed[, y_his := zoo::na.approx(y_his, year, na.rm = FALSE, rule = 2), by = .(code, speed)]
+
+  # Keep only evaluation years
+  path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
+
+  # Filter for actual values between min and max
+  path_his_speed <- path_his_speed[y >= min, ][y <= max, ]
+
+  return(path_his_speed[])
 }
+
+
+
 
 #' Wrapper to compute historical paths by percentiles and/or speed
 #'
