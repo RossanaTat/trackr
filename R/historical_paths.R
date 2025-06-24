@@ -41,6 +41,10 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                          eval_to      = 2022,
                          granularity  = 0.1) {
 
+  if(is.null(min) || is.null(max)) {
+    cli::cli_abort(message = "min and max should be provided")
+  }
+
   # Input validation
   stopifnot(is.numeric(eval_from),
             is.numeric(eval_to),
@@ -135,9 +139,12 @@ project_path_speed <- function(data_his,
   speeds <- qDT(sequence_speed)[, k := 1]
 
   data_his[, k := 1]
-  data_his <- merge(data_his, speeds, by = "k",
-                    allow.cartesian = TRUE,
-                    reportvar = FALSE, verbose = FALSE)
+  data_his <- joyn::merge(data_his,
+                          speeds,
+                          by              = "k",
+                          allow.cartesian = TRUE,
+                          reportvar       = FALSE,
+                          verbose         = FALSE)
 
   # Keep only rows where y_his is not NA
   data_his <- data_his[!is.na(y_his)]
@@ -147,15 +154,15 @@ project_path_speed <- function(data_his,
   # Cross join with path_speed
   path_speed <- copy(path_speed)[, k := 1]
 
-  path_his_speed <- merge(data_his, path_speed, by = "k",
-                          allow.cartesian = TRUE,
-                          verbose = FALSE,
-                          reportvar = FALSE)[, `:=`(k = NULL, best = best)]
+  path_his_speed <- joyn::merge(data_his, path_speed, by = "k",
+                          allow.cartesian                = TRUE,
+                          verbose                        = FALSE,
+                          reportvar                      = FALSE)[, `:=`(k = NULL, best = best)]
 
   # Filter: keep only those where path is improving in right direction
   path_his_speed <- path_his_speed[
     (best == "high" & y_his <= y) |
-      (best != "high" & y_his >= y)
+    (best != "high" & y_his >= y)
   ]
 
   # Compute projected year
@@ -165,13 +172,15 @@ project_path_speed <- function(data_his,
 
   path_his_speed[, y_his := NULL]
 
-  # Rename path_speed's y as y_his (counterfactual)
   setnames(path_his_speed,
-           old = c("y", "y_actual"), new = c("y_his", "y"))
+           old = c("y", "y_actual"),
+           new = c("y_his", "y"))
 
   # # Interpolate y_his over time
   setorder(path_his_speed, code, speed, year)
-  path_his_speed[, y_his := zoo::na.approx(y_his, year, na.rm = FALSE, rule = 2), by = .(code, speed)]
+  path_his_speed[,
+                 y_his := zoo::na.approx(y_his, year, na.rm = FALSE, rule = 2),
+                 by = .(code, speed)]
 
   # Keep only evaluation years
   path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]

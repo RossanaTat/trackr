@@ -20,7 +20,7 @@
 #' @importFrom splitstackshape expandRows
 #'
 #' @export
-prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
+prep_data <- function(indicator      = NULL,
                       data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
                       code_col       = "iso3c",
                       year_col       = "date",
@@ -30,6 +30,10 @@ prep_data <- function(indicator      = "EG.ELC.ACCS.ZS",
                       max            = NULL,
                       granularity    = 0.1,
                       verbose        = TRUE) {
+
+  if (is.null(indicator)) {
+    cli::cli_abort("indicator name must be provided")
+  }
 
   # ________________________________
   # Start formatting the data ####

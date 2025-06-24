@@ -2,6 +2,7 @@
 
 # data_wdi <- wbstats::wb_data(indicator = indicator,lang = "en",country="countries_only")
 # indicator      = "EG.ELC.ACCS.ZS"
+# indicator = "NY.GDP.PCAP.KD"
 
 
 #' Track Progress on an Indicator Over Time
