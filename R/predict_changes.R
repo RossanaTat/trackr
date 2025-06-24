@@ -54,11 +54,12 @@ predict_speed <- function(data_model,
 
   # Predict (charts() returns a named vector or data.frame)
   # Predict changes over the grid
-  changes_speed <- charts(fit_speed, k = x_seq)
+  changes_speed <- charts(fit_speed,
+                          k = x_seq)
 
   # Create output data.table
   predictions_dt <- data.table(
-    y = round(x_seq / granularity) * granularity,
+    y      = round(x_seq / granularity) * granularity,
     change = as.numeric(changes_speed)
   )
 
@@ -120,8 +121,8 @@ get_speed_path <- function(changes_speed,
   # Step 2: Compute lagged time and cumulative transformed time
 
   path_speed[, time := {
-    ltime <- shift(time, type = "lag")                      # lag of 'time'
-    time_new <- 1 / ltime * granularity                     # transformed time
+    ltime        <- shift(time, type = "lag")                      # lag of 'time'
+    time_new     <- 1 / ltime * granularity                     # transformed time
     time_new[1L] <- 0                                       # first value is 0
     cumsum(time_new)                                        # cumulative sum
   }]

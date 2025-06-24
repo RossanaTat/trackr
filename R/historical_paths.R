@@ -121,10 +121,34 @@ project_path_speed <- function(data_his,
                                max            = NULL,
                                best           = "high") {
 
+#
+#   data_his <- cross_join(data_his,
+#                          as.data.table(sequence_speed)) |>
+#     rename("speed" = "sequence_speed")
 
-  data_his <- cross_join(data_his,
-                         as.data.table(sequence_speed)) |>
-    rename("speed" = "sequence_speed")
+  sequence_speed_dt <- qDT(sequence_speed)
+
+  # data_his <- join(data_his,
+  #                  sequence_speed_dt,
+  #                  join = "cross")
+
+  data_his[, k := 1]
+  sequence_speed_dt[, k := 1]
+
+  data_his <- merge(data_his,
+                    sequence_speed_dt,
+                    by = "k",
+                    allow.cartesian = TRUE,
+                    verbose = FALSE,
+                    reportvar = FALSE)[, k := NULL]
+
+  setnames(data_his,
+           old = "sequence_speed", new = "speed")
+
+
+
+
+
 
   # Create a new data set which will contain the path a country would have taken with various speeds
   path_his_speed <- data_his |>
