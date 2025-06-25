@@ -152,41 +152,55 @@ project_path_speed <- function(data_his,
   setnames(data_his, old = "sequence_speed", new = "speed")
 
   # Cross join with path_speed
-  path_speed <- copy(path_speed)[, k := 1]
 
-  path_his_speed <- joyn::merge(data_his, path_speed, by = "k",
-                          allow.cartesian                = TRUE,
-                          verbose                        = FALSE,
-                          reportvar                      = FALSE)[, `:=`(k = NULL, best = best)]
+  path_speed <- copy(path_speed)
+  path_speed[, k := 1]
+
+
+  path_his_speed <- joyn::merge(data_his,
+
+                                path_speed,
+                                by = "k",
+                                allow.cartesian                = TRUE,
+                                verbose                        = FALSE,
+                                reportvar                      = FALSE)
+
+
+  path_his_speed[, k := NULL]
+  path_his_speed[, best := best]
 
   # Filter: keep only those where path is improving in right direction
   path_his_speed <- path_his_speed[
     (best == "high" & y_his <= y) |
-    (best != "high" & y_his >= y)
+      (best != "high" & y_his >= y)
   ]
+
 
   # Compute projected year
   setorder(path_his_speed, code, speed, time)
 
   path_his_speed[, year := year + (time - time[1]) / speed, by = .(code, speed)]
 
-  path_his_speed[, y_his := NULL]
+  path_his_speed[, y_his := NULL][,
+                                  time := NULL][,
+                                                best:= NULL]
 
   setnames(path_his_speed,
            old = c("y", "y_actual"),
-           new = c("y_his", "y"))
+           new = c("y_speed", "y"))
 
   # # Interpolate y_his over time
   setorder(path_his_speed, code, speed, year)
+
   path_his_speed[,
-                 y_his := zoo::na.approx(y_his, year, na.rm = FALSE, rule = 2),
+                 y_his := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
                  by = .(code, speed)]
 
   # Keep only evaluation years
   path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
 
   # Filter for actual values between min and max
-  path_his_speed <- path_his_speed[y >= min, ][y <= max, ]
+  path_his_speed <- path_his_speed[y_speed >= min, ][y_sped <= max, ]
 
   return(path_his_speed[])
 }
