@@ -193,7 +193,7 @@ get_scores <- function(speed          = FALSE,
   out <- list()
 
   if (pctl) {
-    if (is.null(path_his_pctl))  stop("Percentile-based scoring selected, but `path_his_pctl` was not provided.")
+    if (nrow(path_his_pctl) == 0)  cli::cli_abort("Percentile-based scoring selected, but `path_his_pctl` was not provided or is empty")
 
     out$pctl <- get_scores_pctl(path_his_pctl = path_his_pctl,
                                 best          = best,
@@ -205,10 +205,11 @@ get_scores <- function(speed          = FALSE,
 
   if (speed) {
 
-    if (is.null(path_his_speed) || is.null(path_speed)) {
+    if (nrow(path_his_speed) == 0 || nrow(path_speed) == 0) {
 
-      stop("Speed-based scoring selected, but `path_his_speed` and/or `path_speed` were not provided.")
+      cli::cli_abort("Speed-based scoring selected, but `path_his_speed` and/or `path_speed` were not provided or are empty.")
     }
+
     out$speed <- get_scores_speed(path_his_speed = path_his_speed,
                                   path_speed     = path_speed,
                                   min            = min,

@@ -38,7 +38,7 @@ Use \code{"high"} (default) if higher values of the indicator are better,
 or \code{"low"} if lower values are better. This affects the direction of the path.}
 }
 \value{
-A data frame of projected values under different speeds
+A data table of projected values under different speeds
 }
 \description{
 Calculates path a country would have taken with various speeds

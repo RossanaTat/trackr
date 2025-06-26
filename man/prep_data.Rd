@@ -5,7 +5,7 @@
 \title{Prepares data for analysis}
 \usage{
 prep_data(
-  indicator = "EG.ELC.ACCS.ZS",
+  indicator = NULL,
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   code_col = "iso3c",
   year_col = "date",

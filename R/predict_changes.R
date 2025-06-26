@@ -112,6 +112,13 @@ get_speed_path <- function(changes_speed,
 
   }
 
+  if (best == "high") {
+
+    setorder(changes_speed,
+             y)       # reorder rows by descending y
+
+  }
+
   # Ensure changes_speed is a data.table
   path_speed <- copy(changes_speed)  # don't overwrite original
 
@@ -119,6 +126,9 @@ get_speed_path <- function(changes_speed,
   setnames(path_speed, "change", "time")
 
   # Step 2: Compute lagged time and cumulative transformed time
+
+  # set order
+
 
   path_speed[, time := {
     ltime        <- shift(time, type = "lag")                      # lag of 'time'

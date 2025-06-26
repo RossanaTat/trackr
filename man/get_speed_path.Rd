@@ -8,7 +8,7 @@ get_speed_path(changes_speed, granularity = 0.1, best = "high", verbose = TRUE)
 }
 \arguments{
 \item{changes_speed}{A data.table containing two columns:
-\code{initialvalue} (the starting level of the indicator) and
+\code{y} (the starting level of the indicator) and
 \code{change} (the expected annualized change from that level).}
 
 \item{granularity}{A numeric value indicating the step size used when

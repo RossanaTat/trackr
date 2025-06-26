@@ -130,16 +130,16 @@ project_path_speed <- function(data_his,
   if (is.null(max)) max <- attr(data_his, "max")
 
   # Ensure data_his is copied and safe
-  data_his <- copy(data_his)
+  data_his_copy <- copy(data_his)
 
   # Store actual y as y_actual
-  setnames(data_his, "y", "y_actual")
+  setnames(data_his_copy, "y", "y_actual")
 
   # Cross join with sequence_speed
   speeds <- qDT(sequence_speed)[, k := 1]
 
-  data_his[, k := 1]
-  data_his <- joyn::merge(data_his,
+  data_his_copy[, k := 1]
+  data_his_copy <- joyn::merge(data_his_copy,
                           speeds,
                           by              = "k",
                           allow.cartesian = TRUE,
@@ -147,19 +147,19 @@ project_path_speed <- function(data_his,
                           verbose         = FALSE)
 
   # Keep only rows where y_his is not NA
-  data_his <- data_his[!is.na(y_his)]
+  data_his_copy <- data_his_copy[!is.na(y_his)]
 
-  setnames(data_his, old = "sequence_speed", new = "speed")
+  setnames(data_his_copy, old = "sequence_speed", new = "speed")
 
   # Cross join with path_speed
 
-  path_speed <- copy(path_speed)
-  path_speed[, k := 1]
+  path_speed_copy <- copy(path_speed)
+  path_speed_copy[, k := 1]
 
 
-  path_his_speed <- joyn::merge(data_his,
+  path_his_speed <- joyn::merge(data_his_copy,
 
-                                path_speed,
+                                path_speed_copy,
                                 by = "k",
                                 allow.cartesian                = TRUE,
                                 verbose                        = FALSE,
@@ -200,7 +200,13 @@ project_path_speed <- function(data_his,
   path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
 
   # Filter for actual values between min and max
-  path_his_speed <- path_his_speed[y_speed >= min, ][y_sped <= max, ]
+  path_his_speed <- path_his_speed[y_speed >= min, ][y_speed <= max, ]
+
+  if (verbose) {
+    if (is.null(path_his_speed)) {
+      cli::cli_alert_danger("Computed path dt is empty")
+    }
+  }
 
   return(path_his_speed[])
 }
