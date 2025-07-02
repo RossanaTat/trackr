@@ -18,11 +18,9 @@ predict_speed(
 - `change`: numeric, the change in the indicator.
 - `fold_id`: numeric or factor, used for cross-validation.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
@@ -42,6 +40,6 @@ A data frame with:
 \description{
 Fits a generalized constrained regression quantile model (`gcrq`) to estimate
 the change in a variable as a function of its initial value
-The function can restrict predictions to a range between a specified `floor` and `ceiling`
+The function can restrict predictions to a range between a specified `min` and `max`
 (e.g., targets), or default to the observed data range if these are not specified.
 }

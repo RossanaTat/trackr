@@ -129,10 +129,10 @@ project_path_speed <- function(data_his,
   if (is.null(min)) min <- attr(data_his, "min")
   if (is.null(max)) max <- attr(data_his, "max")
 
-  # Ensure data_his is copied and safe
+  # Ensure data_his is copied
   data_his_copy <- copy(data_his)
 
-  # Store actual y as y_actual
+  # Rename actual y as y_actual -keeping it for later
   setnames(data_his_copy, "y", "y_actual")
 
   # Cross join with sequence_speed
@@ -149,7 +149,9 @@ project_path_speed <- function(data_his,
   # Keep only rows where y_his is not NA
   data_his_copy <- data_his_copy[!is.na(y_his)]
 
-  setnames(data_his_copy, old = "sequence_speed", new = "speed")
+  setnames(data_his_copy,
+           old = "sequence_speed",
+           new = "speed")
 
   # Cross join with path_speed
 
@@ -179,7 +181,8 @@ project_path_speed <- function(data_his,
   # Compute projected year
   setorder(path_his_speed, code, speed, time)
 
-  path_his_speed[, year := year + (time - time[1]) / speed, by = .(code, speed)]
+  path_his_speed[, year := year + (time - time[1]) / speed,
+                   by = .(code, speed)]
 
   path_his_speed[, y_his := NULL][,
                                   time := NULL][,

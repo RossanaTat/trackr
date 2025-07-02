@@ -20,11 +20,9 @@ predict_changes(
 \item{data}{A data frame or list representing the input data model to be used for the prediction.
 This should be the output of the [`prep_data()`] function, which prepares the data in the required format.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 

@@ -3,17 +3,15 @@
 #'
 #' Fits a generalized constrained regression quantile model (`gcrq`) to estimate
 #' the change in a variable as a function of its initial value
-#' The function can restrict predictions to a range between a specified `floor` and `ceiling`
+#' The function can restrict predictions to a range between a specified `min` and `max`
 #' (e.g., targets), or default to the observed data range if these are not specified.
 #'
 #' @param data_model A data frame with the training data. Obtained through `prep_data()`. Must contain:
 #'   - `initialvalue`: numeric, the initial level of the indicator.
 #'   - `change`: numeric, the change in the indicator.
 #'   - `fold_id`: numeric or factor, used for cross-validation.
-#' @param min Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-#'   it is set to `floor` (if provided) or `min(data_model$initialvalue)`.
-#' @param max Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-#'   it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.
+#' @param min Optional. Minimum value of `initialvalue` to predict.
+#' @param max Optional. Maximum value of `initialvalue` to predict.
 #' @param granularity Numeric. Granularity in outcome variable. Default is `0.1`.
 #' @param floor Numeric or `NULL`.Minimum value of indicator.
 #'   If `NULL`, predictions are unrestricted on the lower end.
@@ -36,7 +34,7 @@ predict_speed <- function(data_model,
 
     cli::cli_alert_warning("Input data_model is empty. Returning NA data.table.")
 
-    return(data.table(y = NA_real_,
+    return(data.table(y      = NA_real_,
                       change = NA_real_))
   }
 
@@ -123,15 +121,15 @@ get_speed_path <- function(changes_speed,
   path_speed <- copy(changes_speed)  # don't overwrite original
 
   # Step 1: Rename 'change' to 'time'
-  setnames(path_speed, "change", "time")
+  setnames(path_speed,
+           "change",
+           "time")
 
   # Step 2: Compute lagged time and cumulative transformed time
 
-  # set order
-
-
   path_speed[, time := {
-    ltime        <- shift(time, type = "lag")                      # lag of 'time'
+    ltime        <- shift(time,
+                          type = "lag")                      # lag of 'time'
     time_new     <- 1 / ltime * granularity                     # transformed time
     time_new[1L] <- 0                                       # first value is 0
     cumsum(time_new)                                        # cumulative sum
@@ -141,7 +139,8 @@ get_speed_path <- function(changes_speed,
   path_speed <- path_speed[is.finite(time)]
 
   # Step 4: Keep only 'time' and 'y' columns
-  path_speed <- path_speed[, .(time, y)]
+  path_speed <- path_speed[,
+                           .(time, y)]
 
   if (verbose) cli::cli_alert_success("Path speed successfully calculated")
 
@@ -169,12 +168,10 @@ predict_pctls <- function(data_model,
   # Validate input ~~~~~ ####
   # __________________________________ #
 
-  # if (is.null(min)) min <- min(data_model$min)
-  #
-  # if (is.null(max)) max <- max(data_model$max)
-
   # Prediction grid
-  x_seq <- seq(min, max, by = granularity)
+  x_seq <- seq(min,
+               max,
+               by = granularity)
 
   # Uses cross-validation to find the optimal smoothing of percentile-curves.
   # gcrq automatically ensures that the percentile-curves do not cross
@@ -187,7 +184,8 @@ predict_pctls <- function(data_model,
 
 
   # Predict changes at each initial value for each percentile
-  changes_mat <- charts(fit_pctl, k = x_seq)  # matrix with cols = percentiles
+  changes_mat <- charts(fit_pctl,
+                        k = x_seq)  # matrix with cols = percentiles
 
   # Convert to data.table and reshape long
   changes_dt <- qDT(changes_mat)
@@ -195,9 +193,9 @@ predict_pctls <- function(data_model,
   changes_dt[, y := round(x_seq / granularity) * granularity]
 
   changes_dt <- melt(changes_dt,
-                     id.vars = "y",
+                     id.vars       = "y",
                      variable.name = "pctl",
-                     value.name = "change")
+                     value.name    = "change")
 
   # Convert factor or character percentile labels to numeric percentiles
   changes_dt[,

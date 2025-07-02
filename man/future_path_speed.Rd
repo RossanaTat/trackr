@@ -25,11 +25,9 @@ or \code{"low"} if lower values are better. This affects the direction of the pa
 
 \item{target_year}{An integer specifying the year to project to. Default is `2030`.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 }
 \value{
 A data table with projected indicator values (`y_fut`) for each
