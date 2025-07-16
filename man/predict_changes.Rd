@@ -26,16 +26,15 @@ This should be the output of the [`prep_data()`] function, which prepares the da
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{speed}{Logical. If TRUE, calculate speed of progress scores.
-Default is FALSE}
+\item{speed}{Logical. If TRUE, calculate speed of progress scores. Default is FALSE.}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if percentiles=TRUE.}
 
 \item{verbose}{Logical. If TRUE, prints info messages in console}
 }
@@ -48,8 +47,7 @@ A list containing prediction results. The content depends on the selected method
 }
 }
 \description{
-This function calculates projected changes in an indicator based on its initial value.
-Two methods are available: `"speed"` and `"percentiles"`.
+This function calculates predicted changes in an indicator based on its initial value. Two methods are available: `speed` and `percentiles`.
 }
 \details{
 - On The `"speed"` method: for indicators without overall progress, the speed of progress cannot be computed.

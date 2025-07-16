@@ -2,7 +2,7 @@
 % Please edit documentation in R/scores.R
 \name{get_scores_speed}
 \alias{get_scores_speed}
-\title{Calculate speed-based score over time}
+\title{Calculate speed-based score over a historical evaluation period}
 \usage{
 get_scores_speed(
   path_his_speed,
@@ -17,9 +17,10 @@ get_scores_speed(
 
 \item{path_speed}{Result of `get_speed_path()`}
 
-\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
 \item{granularity}{Rounding precision for `y`. Default is 0.1.}
 }
@@ -27,5 +28,5 @@ get_scores_speed(
 A data.table with `code`, `score`, and `evaluationperiod`.
 }
 \description{
-Computes a score based on the average annual change in percentile rank over at least 5 years.
+Computes countries’ speed of progress over a user-specified evaluation period.
 }

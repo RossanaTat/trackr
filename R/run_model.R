@@ -7,35 +7,39 @@
 
 #' Track Progress on an Indicator Over Time
 #'
-#' Calculates progress scores and future targets for a WDI indicator of choice, depending on user selection of speed, percentiles, and future projections.
+#' Evaluates countries’ progress in an indicator over a specified time period.
+#' Progress scores will either be calculated using a ‘speed of progress’ metric and/or by a ‘percentile score’ metric.
+#' The former evaluates countries by how fast they developed relative to the typical experience, expressed in years. A speed of progress of 2, for example, means that a country developed twice as fast as the typical experience.
+#' Percentile scores evaluate countries progress by the share of experiences that they are outperforming.
+#' A score of 90, for example, means that a country outperformed 90% of experiences observed. Alternatively (or additionally) Calculates progress scores and future targets for an indicator of choice, depending on user selections
 #'
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
 #' @inheritParams path_historical
 #' @inheritParams future_path
 #' @inheritParams get_scores
+#' @param future Logical. If TRUE, projections to the future will be made using the speeds of sequence_speed (if speed=TRUE) and the percentile paths of sequence_pctl (if `percentiles = TRUE`).
+#' @param support Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.
 #'
 #' @return An (invisible) list containing:
 #' \describe{
-#'   \item{data_model}{Cleaned and normalized indicator data.}
-#'   \item{predicted_changes}{Output from `predict_changes()`.}
-#'   \item{data_historical}{Subset of original data used for historical paths.}
-#'   \item{path_historical}{Historical percentile and speed paths.}
-#'   \item{future_path}{(Optional) Projected future paths; `NULL` if `future = FALSE`.}
-#'   \item{scores}{Performance scores based on historical and projected trends.}
+#'   \item{data_model}{The indicator data used to fit the model.}
+#'   \item{predicted_changes}{Median changes in the indicator as a function of the level of the indicator (`changes_speed`), or quantile specific changes in the indicator as a function of the level of the indicator(`changes_pctl`), or the typical path from the worst outcome in the indicator to the best outcome in the indicator (path_speed) }
+#'   \item{path_historical}{The historical data as well as predicted paths from each country’s starting value at various speeds and/or percentile paths.}
+#'   \item{future_path}{(Optional) Projected future paths from the last observation for each country at various speeds and/or percentile paths; `NULL` if `future = FALSE`.}
+#'   \item{scores}{Progress scores for the evaluation period selected.}
 #' }
 #'
 #' @seealso [prep_data()], [predict_changes()], [future_path()], [get_scores()]
 #' @export
-track_progress <- function(indicator      = NULL,
-                           data           = wbstats::wb_data(indicator = indicator,
-                                                   lang = "en", country = "countries_only"),
+track_progress <- function(data           = NULL,
+                           indicator      = NULL,
                            code_col       = "iso3c",
                            year_col       = "date",
-                           startyear_data = 2000,
-                           endyear_data   = 2023,
-                           eval_from      = 2000,
-                           eval_to        = 2022,
+                           startyear_data = NULL,
+                           endyear_data   = NULL,
+                           eval_from      = NULL,
+                           eval_to        = NULL,
                            speed          = FALSE,
                            percentiles    = TRUE,
                            future         = FALSE,
@@ -43,9 +47,10 @@ track_progress <- function(indicator      = NULL,
                            sequence_pctl  = seq(20,80,20),
                            sequence_speed = c(0.25, 0.5, 1, 2, 4),
                            best           = NULL,
-                           granularity    = 0.1,
                            min            = NULL,
                            max            = NULL,
+                           #support       = 1,
+                           granularity    = 0.1,
                            verbose        = TRUE) {
 
   # ___________________________ #
@@ -72,6 +77,13 @@ track_progress <- function(indicator      = NULL,
     cli::cli_abort("`best` must be provided: either 'high' or 'low'")
   }
 
+  # Validate data and indicator params
+
+  if (is.null(indicator) && is.null(data)) {
+
+    cli::cli_abort("User must provide both indicator name and input data")
+
+  }
   # ___________________________ #
   # 1. Prepare Data ####
   # ___________________________ #

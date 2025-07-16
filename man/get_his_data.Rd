@@ -17,13 +17,13 @@ get_his_data(
 )
 }
 \arguments{
-\item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
 \item{min}{A numeric value indicating the minimum bound,}
 
@@ -33,7 +33,7 @@ get_his_data(
 
 \item{eval_to}{The last year to include in the analysis}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 }
 \value{
 A `data.table` containing the following columns:

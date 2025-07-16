@@ -12,10 +12,8 @@
 #'
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
-#' @param min A numeric value indicating the minimum bound,
-#' @param max A numeric value indicating the maximum bound,
-#' @param eval_from The first year to include in the analysis
-#' @param eval_to The last year to include in the analysis
+#' @param eval_from First year to include when evaluating the progress of countries.
+#' @param eval_to Last year to include when evaluating the progress of countries.
 #' @return A `data.table` containing the following columns:
 #'   \item{code}{Country code (standardized).}
 #'   \item{year}{Year of observation.}
@@ -104,7 +102,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
 }
 
 
-#' Project speed path
+#' Historical speed path
 #'
 #' Calculates path a country would have taken with various speeds
 #'
@@ -193,7 +191,10 @@ project_path_speed <- function(data_his,
            new = c("y_speed", "y"))
 
   # # Interpolate y_his over time
-  setorder(path_his_speed, code, speed, year)
+  setorder(path_his_speed,
+           code,
+           speed,
+           year)
 
   path_his_speed[,
                  y_his := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
@@ -217,24 +218,24 @@ project_path_speed <- function(data_his,
 
 
 
+#' Compute historical paths
+#'
 #' Wrapper to compute historical paths by percentiles and/or speed
 #'
 #' @inheritParams predict_changes
+#' @inheritParams get_his_data
+#' @inheritParams project_pctls_path
 #' @param data_his A data.table containing historical values.
-#' @param eval_from First year to include in projections.
-#' @param eval_to Last year to include in projections.
 #' @param changes_pctl A `data.table` with predicted changes by initialvalue and pctl.
-#' @param verbose Logical. Whether to print progress messages (only used in percentile projection).
-#' @param sequence_speed Numeric vector of speed paths to calculate
-#' @param path_speed Data table  with xxx
+#' @param path_speed Data table  with speed paths
 #'
 #' @return A named list with one or both of `percentile_path` and `speed_path`.
 #' @export
 path_historical <- function(percentiles      = TRUE,
                             speed            = TRUE,
                             data_his,
-                            eval_from        = 2000,
-                            eval_to          = 2022,
+                            eval_from        = NULL,
+                            eval_to          = NULL,
                             granularity      = 0.1,
                             min              = 0,
                             max              = 100,
@@ -299,15 +300,16 @@ path_historical <- function(percentiles      = TRUE,
 ## TESTING NEW PROJECT PCTLS PATHS ####
 # Filter early to only include cases where target is not yet met
 
-#' Project percentiles paths
+#' Historical percentiles paths
 #'
-#' Simulates year-by-year projected paths of a variable across percentiles,
-#' based on historical values and predicted changes.
+#' Simulates year-by-year projected paths of a variable across percentiles, based on historical values and predicted changes
 #'
 #' @param data_his A `data.table` containing historical values with variables `code`, `year`, and `y_his`.
 #' @inheritParams get_his_data
 #' @inheritParams predict_pctls
-#' @param sequence_pctl Numeric vector. Sequence of percentiles
+#' @param sequence_pctl Numeric vector of percentile paths to calculate.
+#'                      The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+#'                      This argument is only relevant if `percentiles = TRUE`.
 #' @param changes_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
 #'
@@ -368,7 +370,7 @@ project_pctls_path <- function(data_his,
                             relationship = "many-to-many",
                             verbose      = FALSE)
 
-    qDT(prev)
+    #qDT(prev)
 
     # Apply change and granularity, and floor/ceiling bounds
     prev[, new_y := round((y_his + change) / granularity) * granularity]
@@ -383,7 +385,7 @@ project_pctls_path <- function(data_his,
              code,
              year)
 
-  }
+  } # end of for loop
 
   dt_expanded <- joyn::left_join(
 

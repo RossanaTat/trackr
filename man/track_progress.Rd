@@ -5,14 +5,14 @@
 \title{Track Progress on an Indicator Over Time}
 \usage{
 track_progress(
+  data = NULL,
   indicator = NULL,
-  data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
   code_col = "iso3c",
   year_col = "date",
-  startyear_data = 2000,
-  endyear_data = 2023,
-  eval_from = 2000,
-  eval_to = 2022,
+  startyear_data = NULL,
+  endyear_data = NULL,
+  eval_from = NULL,
+  eval_to = NULL,
   speed = FALSE,
   percentiles = TRUE,
   future = FALSE,
@@ -20,65 +20,72 @@ track_progress(
   sequence_pctl = seq(20, 80, 20),
   sequence_speed = c(0.25, 0.5, 1, 2, 4),
   best = NULL,
-  granularity = 0.1,
   min = NULL,
   max = NULL,
+  granularity = 0.1,
   verbose = TRUE
 )
 }
 \arguments{
-\item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
-\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
+\item{startyear_data}{Integer. First year to include in the modelling of typical experiences observed. If not provided, defaults to the minimum value of year_col.}
 
-\item{endyear_data}{Integer. Maximum year to include in the data. Defaults to 2023.}
+\item{endyear_data}{Integer. Last year to include in the modelling of typical experiences observed. If not provided, defaults to the maximum value of year_col.}
 
-\item{eval_from}{First year to include in projections.}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{eval_to}{Last year to include in projections.}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{speed}{Logical. If TRUE, calculate speed of progress scores.
-Default is FALSE}
+\item{speed}{Logical. If TRUE, calculate speed of progress scores. Default is FALSE.}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+\item{future}{Logical. If TRUE, projections to the future will be made using the speeds of sequence_speed (if speed=TRUE) and the percentile paths of sequence_pctl (if `percentiles = TRUE`).}
 
-\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
 
-\item{sequence_speed}{Numeric vector of speed paths to calculate}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if percentiles=TRUE.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{sequence_speed}{Numeric vector of speed paths to calculate.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
+
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
+
+\item{support}{Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.}
 }
 \value{
 An (invisible) list containing:
 \describe{
-  \item{data_model}{Cleaned and normalized indicator data.}
-  \item{predicted_changes}{Output from `predict_changes()`.}
-  \item{data_historical}{Subset of original data used for historical paths.}
-  \item{path_historical}{Historical percentile and speed paths.}
-  \item{future_path}{(Optional) Projected future paths; `NULL` if `future = FALSE`.}
-  \item{scores}{Performance scores based on historical and projected trends.}
+  \item{data_model}{The indicator data used to fit the model.}
+  \item{predicted_changes}{Median changes in the indicator as a function of the level of the indicator (`changes_speed`), or quantile specific changes in the indicator as a function of the level of the indicator(`changes_pctl`), or the typical path from the worst outcome in the indicator to the best outcome in the indicator (path_speed) }
+  \item{path_historical}{The historical data as well as predicted paths from each country’s starting value at various speeds and/or percentile paths.}
+  \item{future_path}{(Optional) Projected future paths from the last observation for each country at various speeds and/or percentile paths; `NULL` if `future = FALSE`.}
+  \item{scores}{Progress scores for the evaluation period selected.}
 }
 }
 \description{
-Calculates progress scores and future targets for a WDI indicator of choice, depending on user selection of speed, percentiles, and future projections.
+Evaluates countries’ progress in an indicator over a specified time period.
+Progress scores will either be calculated using a ‘speed of progress’ metric and/or by a ‘percentile score’ metric.
+The former evaluates countries by how fast they developed relative to the typical experience, expressed in years. A speed of progress of 2, for example, means that a country developed twice as fast as the typical experience.
+Percentile scores evaluate countries progress by the share of experiences that they are outperforming.
+A score of 90, for example, means that a country outperformed 90% of experiences observed. Alternatively (or additionally) Calculates progress scores and future targets for an indicator of choice, depending on user selections
 }
 \seealso{
 [prep_data()], [predict_changes()], [future_path()], [get_scores()]

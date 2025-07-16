@@ -7,8 +7,8 @@
 prep_data(
   indicator = NULL,
   data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
-  code_col = "iso3c",
-  year_col = "date",
+  code_col = NULL,
+  year_col = NULL,
   startyear_data = 2000,
   endyear_data = 2023,
   min = NULL,
@@ -18,21 +18,24 @@ prep_data(
 )
 }
 \arguments{
-\item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
-\item{startyear_data}{Integer. Minimum year to include in the data. Defaults to 2000.}
+\item{startyear_data}{Integer. First year to include in the modelling of typical experiences observed. If not provided, defaults to the minimum value of year_col.}
 
-\item{endyear_data}{Integer. Maximum year to include in the data. Defaults to 2023.}
+\item{endyear_data}{Integer. Last year to include in the modelling of typical experiences observed. If not provided, defaults to the maximum value of year_col.}
 
-\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
+
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }

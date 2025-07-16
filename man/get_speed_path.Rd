@@ -15,9 +15,7 @@ get_speed_path(changes_speed, granularity = 0.1, best = "high", verbose = TRUE)
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), a success message is displayed after computation.}
 }

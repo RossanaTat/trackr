@@ -1,12 +1,10 @@
 #' Calculate percentile-based score over a historical evaluation period
 #'
-#' Computes a score based on how a country's latest value compares to its past performance,
-#' using percentiles (`pctl`) over a minimum 5-year period.
+#' Computes countries’ percentile progress scores over a user-specified evaluation period.
 #'
 #' @param path_his_pctl A data frame containing columns: `code`, `year`, `y`, `y_his`, and `pctl`
 #' @param best Character indicating whether higher (`"high"`) or lower (`"low"`) values are better
-#' @param min Numeric. Minimum acceptable value for `y` (default is 0)
-#' @param max Numeric. Maximum acceptable value for `y` (default is 100)
+#' @inheritParams prep_data
 #'
 #' @return A data.table with columns: `code`, `score` (as a percentile range), and `evaluationperiod`
 #'
@@ -76,9 +74,9 @@ get_scores_pctl <- function(path_his_pctl,
 }
 
 
-#' Calculate speed-based score over time
+#' Calculate speed-based score over a historical evaluation period
 #'
-#' Computes a score based on the average annual change in percentile rank over at least 5 years.
+#' Computes countries’ speed of progress over a user-specified evaluation period.
 #'
 #' @param path_his_speed Result of `project_pctls_path()`
 #' @param path_speed Result of `get_speed_path()`

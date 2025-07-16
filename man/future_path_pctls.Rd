@@ -18,11 +18,13 @@ future_path_pctls(
 \arguments{
 \item{data_fut}{A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.}
 
-\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if percentiles=TRUE.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
@@ -37,11 +39,6 @@ A data.table with the projected values (`y_fut`) by `code`, `year`, and `pctl`, 
 }
 \description{
 Computes projected future paths for given percentiles based on initial levels and predicted changes.
-}
-\details{
-This function builds a dataset that extends observed data (`data_fut`) forward in time to a target year using
-predicted changes at specified percentiles. It iteratively calculates future values by applying changes year-by-year,
-starting from the last available observation for each country-percentile pair.
 }
 \examples{
 \dontrun{

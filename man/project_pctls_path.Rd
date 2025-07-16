@@ -2,7 +2,7 @@
 % Please edit documentation in R/historical_paths.R
 \name{project_pctls_path}
 \alias{project_pctls_path}
-\title{Project percentiles paths}
+\title{Historical percentiles paths}
 \usage{
 project_pctls_path(
   data_his,
@@ -23,7 +23,7 @@ project_pctls_path(
 
 \item{eval_to}{The last year to include in the analysis}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
 \item{min}{A numeric value indicating the minimum bound,}
 
@@ -39,6 +39,5 @@ project_pctls_path(
 A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
 }
 \description{
-Simulates year-by-year projected paths of a variable across percentiles,
-based on historical values and predicted changes.
+Simulates year-by-year projected paths of a variable across percentiles, based on historical values and predicted changes
 }

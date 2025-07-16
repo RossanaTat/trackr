@@ -2,7 +2,7 @@
 % Please edit documentation in R/future_paths.R
 \name{future_path_speed}
 \alias{future_path_speed}
-\title{Project Future Indicator Pathways at Different Speeds}
+\title{Project future indicator paths at different speeds}
 \usage{
 future_path_speed(
   data_fut,
@@ -19,11 +19,9 @@ future_path_speed(
 baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
 and optionally `y_fut` and `time` for projections.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
@@ -36,10 +34,5 @@ A data table with projected indicator values (`y_fut`) for each
   indicator direction (`best`).
 }
 \description{
-This function simulates future indicator trajectories under different
-speeds of progress, based on current trends and a set of predefined
-projection speeds. It generates interpolated yearly projections from
-the latest available data point up to a given target year, filtering
-for progress scenarios that either increase or decrease the indicator
-as specified.
+This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
 }

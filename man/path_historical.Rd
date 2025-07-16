@@ -2,14 +2,14 @@
 % Please edit documentation in R/historical_paths.R
 \name{path_historical}
 \alias{path_historical}
-\title{Wrapper to compute historical paths by percentiles and/or speed}
+\title{Compute historical paths}
 \usage{
 path_historical(
   percentiles = TRUE,
   speed = TRUE,
   data_his,
-  eval_from = 2000,
-  eval_to = 2022,
+  eval_from = NULL,
+  eval_to = NULL,
   granularity = 0.1,
   min = 0,
   max = 100,
@@ -24,14 +24,13 @@ path_historical(
 \arguments{
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{speed}{Logical. If TRUE, calculate speed of progress scores.
-Default is FALSE}
+\item{speed}{Logical. If TRUE, calculate speed of progress scores. Default is FALSE.}
 
 \item{data_his}{A data.table containing historical values.}
 
-\item{eval_from}{First year to include in projections.}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{eval_to}{Last year to include in projections.}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 
@@ -39,15 +38,15 @@ Default is FALSE}
 
 \item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{sequence_pctl}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if percentiles=TRUE.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{sequence_speed}{Numeric vector of speed paths to calculate}
+\item{sequence_speed}{Numeric vector of speed paths to calculate.}
 
 \item{path_speed}{Data table  with xxx}
 

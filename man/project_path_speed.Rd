@@ -2,7 +2,7 @@
 % Please edit documentation in R/historical_paths.R
 \name{project_path_speed}
 \alias{project_path_speed}
-\title{Project speed path}
+\title{Historical speed path}
 \usage{
 project_path_speed(
   data_his,
@@ -33,9 +33,7 @@ Defaults to \code{0.1}.}
 
 \item{max}{A numeric value indicating the maximum bound,}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 }
 \value{
 A data table of projected values under different speeds

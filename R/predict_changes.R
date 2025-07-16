@@ -81,9 +81,7 @@ predict_speed <- function(data_model,
 #' @param granularity A numeric value indicating the step size used when
 #'   computing the trajectory over time. Smaller values produce smoother curves.
 #'   Defaults to \code{0.1}.
-#' @param best A character string indicating the direction of improvement.
-#'   Use \code{"high"} (default) if higher values of the indicator are better,
-#'   or \code{"low"} if lower values are better. This affects the direction of the path.
+#' @param best A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.
 #' @param verbose Logical. If \code{TRUE} (default), a success message is displayed after computation.
 #'
 #' @return A \code{data.table} with two columns:
@@ -135,6 +133,13 @@ get_speed_path <- function(changes_speed,
     cumsum(time_new)                                        # cumulative sum
   }]
 
+  # original version #####
+  # path_speed <- changes_speed |>
+  #   rename( "time" = "change") |>
+  #   mutate(time = 1/lag(time)*granularity,
+  #          time = if_else(row_number()==1,0,time),
+  #          time = cumsum(time))
+
   # Step 3: Filter out non-finite values
   path_speed <- path_speed[is.finite(time)]
 
@@ -154,7 +159,9 @@ get_speed_path <- function(changes_speed,
 #'
 #' @inheritParams predict_speed
 #' @param verbose Logical. If TRUE, prints info messages in console
-#' @param sequence_pctl Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.
+#' @param sequence_pctl Numeric vector of percentile paths to calculate.
+#'                      The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+#'                      This argument is only relevant if `percentiles=TRUE`.
 #' @return A data frame with calculated changes by percentiles.
 #' @export
 predict_pctls <- function(data_model,
@@ -216,13 +223,11 @@ predict_pctls <- function(data_model,
 
 #' Predict Changes in an indicator Over Time
 #'
-#' This function calculates projected changes in an indicator based on its initial value.
-#' Two methods are available: `"speed"` and `"percentiles"`.
+#' This function calculates predicted changes in an indicator based on its initial value. Two methods are available: `speed` and `percentiles`.
 #'
 #' @param data A data frame or list representing the input data model to be used for the prediction.
 #' This should be the output of the [`prep_data()`] function, which prepares the data in the required format.
-#' @param speed Logical. If TRUE, calculate speed of progress scores.
-#' Default is FALSE
+#' @param speed Logical. If TRUE, calculate speed of progress scores. Default is FALSE.
 #' @param percentiles Logical. If TRUE, calculate percentile scores. Default is TRUE
 #' @inheritParams predict_speed
 #' @inheritParams predict_pctls

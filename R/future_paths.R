@@ -1,18 +1,7 @@
 #' Prepare data for future target projections
 #'
 #'
-#' @param data A `data.frame` or `data.table` containing the indicator data. Defaults to the result of
-#' `wbstats::wb_data()` for the specified indicator. The dataset must include columns for the country code,
-#' year, and indicator value.
-#' @param indicator Character. The name of the World Bank Development Indicator to use. Default is `"EG.ELC.ACCS.ZS"`,
-#' which measures the percentage of the population with access to electricity.
-#' @param granularity Numeric. The level of granularity for the output variable `y_fut`. For example, `0.1` rounds to
-#' one decimal place (e.g., 43.6%), while `1` rounds to the nearest whole number (e.g., 44%). Lower values yield
-#' more precise projections but may increase computing time. Default is `0.1`.
-#' @param code_col Character. Name of the column containing the country code (e.g., ISO3 code). Default is `"iso3c"`.
-#' @param year_col Character. Name of the column containing the year. Default is `"date"`.
-#' @param verbose Logical. If `TRUE`, the function may print messages. Default is `TRUE`.
-#'
+#' @inheritParams prep_data
 #' @return A `data.table` with the latest observation per country, including:
 #' \describe{
 #'   \item{code}{Standardized country code (from `code_col`)}
@@ -59,12 +48,8 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 #'
 #' Computes projected future paths for given percentiles based on initial levels and predicted changes.
 #'
-#' This function builds a dataset that extends observed data (`data_fut`) forward in time to a target year using
-#' predicted changes at specified percentiles. It iteratively calculates future values by applying changes year-by-year,
-#' starting from the last available observation for each country-percentile pair.
-#'
 #' @param data_fut A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.
-#' @param target_year An integer specifying the year to project to. Default is `2030`.
+#' @param target_year An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.
 #' @inheritParams path_historical
 #' @param verbose Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.
 #'
@@ -154,14 +139,9 @@ future_path_pctls <- function(data_fut,
 # Speed ~~ #
 # -------------------- #
 
-#' Project Future Indicator Pathways at Different Speeds
+#' Project future indicator paths at different speeds
 #'
-#' This function simulates future indicator trajectories under different
-#' speeds of progress, based on current trends and a set of predefined
-#' projection speeds. It generates interpolated yearly projections from
-#' the latest available data point up to a given target year, filtering
-#' for progress scenarios that either increase or decrease the indicator
-#' as specified.
+#' This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
 #'
 #' @param data_fut A data frame or data table containing the historical and/or
 #'   baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
@@ -257,10 +237,10 @@ future_path_speed <- function(data_fut,
   return(path_fut_speed)
 }
 
-#' Wrapper to Compute Future Paths Based on Either Percentiles or Speeds method
+#' Future paths. Wrapper to Compute future paths based on either percentiles or speeds method
 #'
-#' Computes future trajectories for each country either based on percentile growth projections
-#' (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+#' Computes future trajectories for each country either based on percentile projections (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+#'
 #'
 #' @inheritParams future_path_pctls
 #' @inheritParams future_path_speed
