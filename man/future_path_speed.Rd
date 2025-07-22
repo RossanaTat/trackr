@@ -21,7 +21,7 @@ and optionally `y_fut` and `time` for projections.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict.}
 

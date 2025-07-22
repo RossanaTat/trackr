@@ -49,13 +49,11 @@ track_progress(
 
 \item{future}{Logical. If TRUE, projections to the future will be made using the speeds of sequence_speed (if speed=TRUE) and the percentile paths of sequence_pctl (if `percentiles = TRUE`).}
 
-\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
 \item{sequence_pctl}{Numeric vector of percentile paths to calculate.
 The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
-This argument is only relevant if percentiles=TRUE.}
-
-\item{sequence_speed}{Numeric vector of speed paths to calculate.}
+This argument is only relevant if `percentiles=TRUE`.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 

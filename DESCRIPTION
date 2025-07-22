@@ -1,4 +1,4 @@
-Package: sdgtrackr
+Package: trackr
 Type: Package
 Title: Track Progress and Forecast Targets for WDI Indicators
 Version: 0.1.0

@@ -20,11 +20,11 @@ future_path_pctls(
 
 \item{sequence_pctl}{Numeric vector of percentile paths to calculate.
 The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
-This argument is only relevant if percentiles=TRUE.}
+This argument is only relevant if `percentiles=TRUE`.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if future=TRUE.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
 

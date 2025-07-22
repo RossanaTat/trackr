@@ -34,7 +34,7 @@ This should be the output of the [`prep_data()`] function, which prepares the da
 
 \item{sequence_pctl}{Numeric vector of percentile paths to calculate.
 The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
-This argument is only relevant if percentiles=TRUE.}
+This argument is only relevant if `percentiles=TRUE`.}
 
 \item{verbose}{Logical. If TRUE, prints info messages in console}
 }

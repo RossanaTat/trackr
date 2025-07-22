@@ -42,15 +42,13 @@ path_historical(
 
 \item{sequence_pctl}{Numeric vector of percentile paths to calculate.
 The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
-This argument is only relevant if percentiles=TRUE.}
+This argument is only relevant if `percentiles=TRUE`.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{sequence_speed}{Numeric vector of speed paths to calculate.}
+\item{path_speed}{Data table  with speed paths}
 
-\item{path_speed}{Data table  with xxx}
-
-\item{verbose}{Logical. Whether to print progress messages (only used in percentile projection).}
+\item{verbose}{Logical. If TRUE, prints info messages in console}
 }
 \value{
 A named list with one or both of `percentile_path` and `speed_path`.

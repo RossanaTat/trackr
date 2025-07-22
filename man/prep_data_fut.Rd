@@ -14,22 +14,17 @@ prep_data_fut(
 )
 }
 \arguments{
-\item{data}{A `data.frame` or `data.table` containing the indicator data. Defaults to the result of
-`wbstats::wb_data()` for the specified indicator. The dataset must include columns for the country code,
-year, and indicator value.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{indicator}{Character. The name of the World Bank Development Indicator to use. Default is `"EG.ELC.ACCS.ZS"`,
-which measures the percentage of the population with access to electricity.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{granularity}{Numeric. The level of granularity for the output variable `y_fut`. For example, `0.1` rounds to
-one decimal place (e.g., 43.6%), while `1` rounds to the nearest whole number (e.g., 44%). Lower values yield
-more precise projections but may increase computing time. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
-\item{code_col}{Character. Name of the column containing the country code (e.g., ISO3 code). Default is `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column containing the year. Default is `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
-\item{verbose}{Logical. If `TRUE`, the function may print messages. Default is `TRUE`.}
+\item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
 \value{
 A `data.table` with the latest observation per country, including:

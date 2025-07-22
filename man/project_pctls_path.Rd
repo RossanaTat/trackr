@@ -19,17 +19,20 @@ project_pctls_path(
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{eval_from}{The first year to include in the analysis}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{eval_to}{The last year to include in the analysis}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
-\item{min}{A numeric value indicating the minimum bound,}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{A numeric value indicating the maximum bound,}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
-\item{sequence_pctl}{Numeric vector. Sequence of percentiles}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles = TRUE`.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
 

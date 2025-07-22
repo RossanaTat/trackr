@@ -25,13 +25,14 @@ project_path_speed(
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}
 
-\item{eval_from}{The first year to include in the analysis}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{eval_to}{The last year to include in the analysis}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{min}{A numeric value indicating the minimum bound,}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{A numeric value indicating the maximum bound,}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 }
