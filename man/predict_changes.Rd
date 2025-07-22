@@ -13,6 +13,7 @@ predict_changes(
   speed = FALSE,
   percentiles = TRUE,
   sequence_pctl = seq(20, 80, 20),
+  support = 1,
   verbose = TRUE
 )
 }

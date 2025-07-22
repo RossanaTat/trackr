@@ -331,9 +331,9 @@ project_pctls_path <- function(data_his,
   }
 
 
-  data_his[y >= min]
-
-  data_his[y <= max]
+  # Filter data_his within min/max if provided
+  if (!is.null(min)) data_his <- data_his[y >= min]
+  if (!is.null(max)) data_his <- data_his[y <= max]
 
   # Step 1: Expand data_his at start_year by pctl
   dt_expanded <- data_his[year == eval_from, .(code, year, y_his)]
@@ -345,6 +345,14 @@ project_pctls_path <- function(data_his,
   all_years <- seq(eval_from,
                    eval_to)
 
+  ### testing here ________________ ############
+
+
+  #### ________________________________________ ##########
+
+
+
+
   dt_expanded <- dt_expanded[, .(year = all_years),
                              by = .(code, pctl)][
     dt_expanded, on = .(code, pctl, year), y_his := i.y_his]
@@ -354,7 +362,7 @@ project_pctls_path <- function(data_his,
            pctl,
            year)
 
-  # Step 3: Project year by year
+  # # Step 3: Project year by year
   for (i in 2:length(all_years)) {
 
     prev_year <- all_years[i - 1]
@@ -370,9 +378,8 @@ project_pctls_path <- function(data_his,
                             relationship = "many-to-many",
                             verbose      = FALSE)
 
-    #qDT(prev)
-
-    # Apply change and granularity, and floor/ceiling bounds
+  #
+  #   # Apply change and granularity, and floor/ceiling bounds
     prev[, new_y := round((y_his + change) / granularity) * granularity]
 
 
@@ -404,3 +411,4 @@ project_pctls_path <- function(data_his,
   return(dt_expanded[])
 
 }
+

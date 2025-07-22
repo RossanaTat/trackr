@@ -13,6 +13,7 @@ future         = TRUE
 sequence_pctl  = seq(20,80,20)
 sequence_speed = c(0.25, 0.5, 1, 2, 4)
 min = 0
+support = 1
 # max = 100
 
 # _________________________________________ #

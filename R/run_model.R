@@ -116,6 +116,7 @@ track_progress <- function(data           = NULL,
                                        speed          = speed,
                                        percentiles    = percentiles,
                                        sequence_pctl  = sequence_pctl,
+                                       support        = support,
                                        verbose        = verbose)
 
 
