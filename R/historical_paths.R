@@ -82,6 +82,18 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
   # Compute y_his: store rounded first value by group
   dt[, y_his := fifelse(seq_len(.N) == 1, round(y / granularity) * granularity, NA_real_), by = code]
 
+  ####### ___ #
+  # Apply support filter
+  if (!is.null(support) && support > 1) {
+    support_table <- dt[!is.na(y_his), .(n_countries = uniqueN(code)), by = y_his]
+    supported_bins <- support_table[n_countries >= support, y_his]
+    dt <- dt[y_his %in% supported_bins]
+
+    cli::cli_alert_info("{length(supported_bins)} indicator levels retained after applying support >= {support}.")
+  }
+
+  ################
+
   # Drop cum_nm
   dt[, cum_nm := NULL]
 

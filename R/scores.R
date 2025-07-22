@@ -93,8 +93,8 @@ get_scores_speed <- function(path_his_speed,
                              granularity = 0.1) {
 
   # Ensure data.table
-  path_his_speed <- as.data.table(path_his_speed)
-  path_speed     <- as.data.table(path_speed)
+  #path_his_speed <- as.data.table(path_his_speed)
+  #path_speed     <- as.data.table(path_speed)
 
   # Filter, round, and keep relevant columns
   path_his_speed <- path_his_speed[
