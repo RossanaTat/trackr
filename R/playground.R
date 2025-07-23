@@ -5,7 +5,7 @@
 
 code_col       = "iso3c"
 year_col       = "date"
-granularity    = 0.1
+#granularity    = 0.1
 verbose        = TRUE
 speed          = TRUE
 percentiles    = TRUE
@@ -22,7 +22,7 @@ support = 1
 
 
 indicator = "NY.GDP.PCAP.KD"
-# data_wdi <- wbstats::wb_data(indicator = indicator,
+# data <- wbstats::wb_data(indicator = indicator,
 #                              lang = "en",
 #                              country="countries_only")
 startyear_data                                = 1960

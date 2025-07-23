@@ -12,6 +12,8 @@
 #'            Will be overruled by support if that reflects a higher minimum value
 #' @param max Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.
 #' @param verbose Logical. If TRUE print messages in console. Default is TRUE
+#' @param support Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.
+#'
 #' @param granularity Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.
 #'
 #'
@@ -20,13 +22,14 @@
 #'
 #' @export
 prep_data <- function(indicator      = NULL,
-                      data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+                      data           = NULL,
                       code_col       = NULL,
                       year_col       = NULL,
                       startyear_data = 2000,
                       endyear_data   = 2023,
                       min            = NULL,
                       max            = NULL,
+                      support        = 1,
                       granularity    = 0.1,
                       verbose        = TRUE) {
 
@@ -93,17 +96,10 @@ prep_data <- function(indicator      = NULL,
   dt_long <- dt_long |> splitstackshape::expandRows('expansion')
 
   # _____________________________________________
-  # Create folds for cross-validation ####
-  # _____________________________________________
-
-  folds <- unique(dt_long[, .(code)])
-  folds[, fold_id := sample(1:5, .N, replace = TRUE)]
-
-
-  # _____________________________________________
   # Handle min and max ####
   # _____________________________________________
 
+  # Compute min and max BEFORE filtering on support
   min_val <- if (!is.null(min)) {
     round(min / granularity) * granularity
   } else {
@@ -115,6 +111,40 @@ prep_data <- function(indicator      = NULL,
   } else {
     round(max(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
   }
+
+  # ________________________________
+  # Apply support filter ####
+  # ________________________________
+
+  dt_long[, bin := round(initialvalue / granularity) * granularity]
+
+  # Filter to bins within min/max
+  bins_in_range <- dt_long[bin >= min_val & bin <= max_val, unique(bin)]
+
+  # Compute support table only within valid bins
+  support_table <- dt_long[bin %in% bins_in_range,
+                           .(n_countries = uniqueN(code)), by = bin]
+
+  supported_bins <- support_table[n_countries >= support, bin]
+
+  final_bins <- intersect(bins_in_range, supported_bins)
+
+  dt_long <- dt_long[bin %in% final_bins]
+
+  if (verbose && support >= 1) {
+    cli::cli_alert_info("{length(final_bins)} initialvalue levels retained after applying support >= {support} and bounds [{min_val}, {max_val}].")
+  }
+
+  dt_long[, bin := NULL]  # Clean up
+
+
+  # _____________________________________________
+  # Create folds for cross-validation ####
+  # _____________________________________________
+
+  folds <- unique(dt_long[, .(code)])
+  folds[, fold_id := sample(1:5, .N, replace = TRUE)]
+
 
   # ________________________________
   # Return ####

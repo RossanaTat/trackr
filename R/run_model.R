@@ -19,8 +19,6 @@
 #' @inheritParams future_path
 #' @inheritParams get_scores
 #' @param future Logical. If TRUE, projections to the future will be made using the speeds of sequence_speed (if speed=TRUE) and the percentile paths of sequence_pctl (if `percentiles = TRUE`).
-#' @param support Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.
-#'
 #' @return An (invisible) list containing:
 #' \describe{
 #'   \item{data_model}{The indicator data used to fit the model.}
@@ -49,7 +47,7 @@ track_progress <- function(data           = NULL,
                            best           = NULL,
                            min            = NULL,
                            max            = NULL,
-                           #support       = 1,
+                           support        = 1,
                            granularity    = 0.1,
                            verbose        = TRUE) {
 
@@ -92,6 +90,7 @@ track_progress <- function(data           = NULL,
                           data           = data,
                           startyear_data = startyear_data,
                           endyear_data   = endyear_data,
+                          support        = support,
                           granularity    = granularity,
                           code_col       = code_col,
                           year_col       = year_col,
@@ -116,7 +115,7 @@ track_progress <- function(data           = NULL,
                                        speed          = speed,
                                        percentiles    = percentiles,
                                        sequence_pctl  = sequence_pctl,
-                                       support        = support,
+                                       #support        = support,
                                        verbose        = verbose)
 
 
