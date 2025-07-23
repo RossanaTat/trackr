@@ -21,134 +21,105 @@
 #' @importFrom splitstackshape expandRows
 #'
 #' @export
-prep_data <- function(indicator      = NULL,
-                      data           = NULL,
-                      code_col       = NULL,
-                      year_col       = NULL,
-                      startyear_data = 2000,
-                      endyear_data   = 2023,
-                      min            = NULL,
-                      max            = NULL,
-                      support        = 1,
-                      granularity    = 0.1,
-                      verbose        = TRUE) {
+prep_data <- function(indicator           = NULL,
+                      data                = NULL,
+                      code_col            = NULL,
+                      year_col            = NULL,
+                      startyear_data      = 2000,
+                      endyear_data        = 2023,
+                      min                 = NULL,
+                      max                 = NULL,
+                      support             = 1,
+                      granularity         = 0.1,
+                      extreme_percentile  = 0.05,
+                      verbose             = TRUE) {
 
-  if (is.null(indicator)) {
-    cli::cli_abort("indicator name must be provided")
-  }
+  if (is.null(indicator)) cli::cli_abort("indicator name must be provided")
 
-  # ________________________________
-  # Start formatting the data ####
-  # ________________________________
+  # --------------------------------------
+  # Format and preprocess the data ####
+  # --------------------------------------
 
   dt <- qDT(data)
 
   setnames(dt,
-           old         = c(code_col, year_col, indicator),
-           new         = c("code", "year", "y"),
+           old = c(code_col, year_col, indicator),
+           new = c("code", "year", "y"),
            skip_absent = FALSE)
 
   dt <- dt[year >= startyear_data & year <= endyear_data, .(code, year, y)]
+  setorder(dt, code, year)
 
-  setorder(dt,
-           code,
-           year)
+  # --------------------------------------
+  # Compute annualized changes ####
+  # --------------------------------------
 
-  # _______________________________________________________
-  # Compute annualized changes from 5 to 10 years ah.  ####
-  # _______________________________________________________
+  dt[, paste0("c", 5:10) := Map(function(n) (shift(y, type = "lead", n = n) - y) / n, 5:10)]
 
+  dt_long <- melt(dt,
+                  id.vars = c("code", "year", "y"),
+                  measure.vars = paste0("c", 5:10),
+                  variable.name = "duration",
+                  value.name = "change")
 
-  dt[, paste0("c", 5:10) := Map(function(n) (shift(y,
-                                                   type = "lead",
-                                                   n = n) - y) / n, 5:10)]
+  setnames(dt_long, old = c("year", "y"), new = c("year_start", "initialvalue"))
 
-
-  # Reshape to long format
-  dt_long <- melt(
-    dt,
-    id.vars = c("code", "year", "y"),
-    measure.vars = paste0("c", 5:10),
-    variable.name = "duration",
-    value.name = "change"
-  )
-
-  setnames(dt_long,
-           old = c("year", "y"),
-           new = c("year_start", "initialvalue"))
-
-  dt_long[, duration := as.numeric(gsub("^c", "", as.character(duration)))][,
-            year_end := year_start + duration]
-
+  dt_long[, duration := as.numeric(gsub("^c", "", as.character(duration)))]
+  dt_long[, year_end := year_start + duration]
 
   setorder(dt_long, code, year_start, duration)
-
-  dt_long <- dt_long[,
-                     .SD[1], by = .(code, year_start)]
-
+  dt_long <- dt_long[, .SD[1], by = .(code, year_start)]
   dt_long <- dt_long[!is.na(change)]
   dt_long[, duration := NULL]
-  dt_long[, n := .N, by = code]
 
+  # --------------------------------------
+  # Balance countries ####
+  # --------------------------------------
+
+  dt_long[, n := .N, by = code]
   max_n <- dt_long[, max(n)]
   dt_long[, expansion := round(max_n / n)]
+  dt_long <- dt_long |> splitstackshape::expandRows("expansion")
 
-  dt_long <- dt_long |> splitstackshape::expandRows('expansion')
+  # --------------------------------------
+  # Compute bounds ####
+  # --------------------------------------
 
-  # _____________________________________________
-  # Handle min and max ####
-  # _____________________________________________
+  min_val <- if (!is.null(min)) round(min / granularity) * granularity else round(min(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
+  max_val <- if (!is.null(max)) round(max / granularity) * granularity else round(max(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
 
-  # Compute min and max BEFORE filtering on support
-  min_val <- if (!is.null(min)) {
-    round(min / granularity) * granularity
-  } else {
-    round(min(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
-  }
-
-  max_val <- if (!is.null(max)) {
-    round(max / granularity) * granularity
-  } else {
-    round(max(dt_long$initialvalue, na.rm = TRUE) / granularity) * granularity
-  }
-
-  # ________________________________
-  # Apply support filter ####
-  # ________________________________
+  # --------------------------------------
+  # Apply tail-based support filtering ####
+  # --------------------------------------
 
   dt_long[, bin := round(initialvalue / granularity) * granularity]
 
-  # Filter to bins within min/max
-  bins_in_range <- dt_long[bin >= min_val & bin <= max_val, unique(bin)]
+  lower_cutoff <- quantile(dt_long$initialvalue, probs = extreme_percentile, na.rm = TRUE)
+  upper_cutoff <- quantile(dt_long$initialvalue, probs = 1 - extreme_percentile, na.rm = TRUE)
 
-  # Compute support table only within valid bins
-  support_table <- dt_long[bin %in% bins_in_range,
-                           .(n_countries = uniqueN(code)), by = bin]
+  support_table <- dt_long[, .(n_countries = uniqueN(code)), by = bin]
 
-  supported_bins <- support_table[n_countries >= support, bin]
+  support_table[, region := fifelse(bin < lower_cutoff, "low",
+                                    fifelse(bin > upper_cutoff, "high", "middle"))]
 
-  final_bins <- intersect(bins_in_range, supported_bins)
+  support_table[, keep := region == "middle" | n_countries >= support]
 
-  dt_long <- dt_long[bin %in% final_bins]
+  support_table <- support_table[bin >= min_val & bin <= max_val]
+
+  supported_bins <- support_table[keep == TRUE, bin]
+  dt_long <- dt_long[bin %in% supported_bins]
+  dt_long[, bin := NULL]
 
   if (verbose && support >= 1) {
-    cli::cli_alert_info("{length(final_bins)} initialvalue levels retained after applying support >= {support} and bounds [{min_val}, {max_val}].")
+    cli::cli_alert_info("{length(supported_bins)} initialvalue levels retained after applying support >= {support} to tails and bounds [{min_val}, {max_val}].")
   }
 
-  dt_long[, bin := NULL]  # Clean up
-
-
-  # _____________________________________________
-  # Create folds for cross-validation ####
-  # _____________________________________________
+  # --------------------------------------
+  # Cross-validation folds ####
+  # --------------------------------------
 
   folds <- unique(dt_long[, .(code)])
   folds[, fold_id := sample(1:5, .N, replace = TRUE)]
-
-
-  # ________________________________
-  # Return ####
-  # ________________________________
 
   res_data <- joyn::joyn(dt_long,
                          folds,

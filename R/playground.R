@@ -34,7 +34,7 @@ best                                          = "high"
 max                                           = 89884.08
 min = 122.6789
 #ceiling  <- quantile(data_wdi$y, 0.99, na.rm = T)
-granularity                                   = 1
+granularity                                   = 0.6
 
 
 # _________________________________________ #
