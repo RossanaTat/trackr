@@ -31,22 +31,22 @@
 #' }
 #'
 #' @export
-get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
-                         data         = NULL,
-                         code_col     = "iso3c",
-                         year_col     = "date",
-                         min          = NULL,
-                         max          = NULL,
-                         eval_from    = 2000,
-                         eval_to      = 2022,
-                         support      = 1,
-                         granularity  = 0.1) {
+get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
+                         data               = NULL,
+                         code_col           = "iso3c",
+                         year_col           = "date",
+                         min                = NULL,
+                         max                = NULL,
+                         eval_from          = 2000,
+                         eval_to            = 2022,
+                         support            = 1,
+                         granularity        = 0.1,
+                         extreme_percentile = 0.05) {
 
   if (is.null(min) || is.null(max)) {
     cli::cli_abort(message = "min and max should be provided")
   }
 
-  # Input validation
   stopifnot(is.numeric(eval_from),
             is.numeric(eval_to),
             eval_from <= eval_to)
@@ -63,58 +63,48 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
                        new         = c("code", "year", "y"),
                        skip_absent = FALSE)
 
-  # Keep relevant columns and filter years
+  # Filter and clean
   dt <- dt[
-    year >= eval_from
-  ][
-    , .(code, year, y)
+    between(year, eval_from, eval_to),
+    .(code, year, y)
   ]
 
-  # Order data
-  data.table::setorder(dt, year)
+  setorder(dt, code, year)
 
-  # Filter to evaluation period and remove leading NAs
-  dt <- dt[
-    between(year, eval_from, eval_to)
-  ][
-    , cum_nm := cumsum(!is.na(y)), by = code
-  ][
-    cum_nm != 0
-  ]
+  # Remove leading NAs
+  dt[, cum_nm := cumsum(!is.na(y)), by = code]
+  dt <- dt[cum_nm != 0]
 
-  # Compute y_his: rounded first value by group
+  # Compute historical starting value
   dt[, y_his := fifelse(seq_len(.N) == 1, round(y / granularity) * granularity, NA_real_), by = code]
 
-  # ____________________________
-  # Apply support filter ####
-  # ____________________________
+  # Filter to non-missing y_his within min/max
+  dt <- dt[!is.na(y_his) & y_his >= min & y_his <= max]
 
-  # Filter y_his to those within [min, max]
-  y_his_in_range <- dt[!is.na(y_his) & y_his >= min & y_his <= max, unique(y_his)]
+  # Tail-aware support filtering ####
+  lower_cutoff <- quantile(dt$y_his, probs = extreme_percentile, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y_his, probs = 1 - extreme_percentile, na.rm = TRUE)
 
-  # Compute how many countries per y_his (within valid range)
-  support_table <- dt[y_his %in% y_his_in_range,
-                      .(n_countries = uniqueN(code)), by = y_his]
+  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_his]
+  support_table[, region := fifelse(y_his < lower_cutoff, "low",
+                                    fifelse(y_his > upper_cutoff, "high", "middle"))]
+  support_table[, keep := region == "middle" | n_countries >= support]
 
-  supported_bins <- support_table[n_countries >= support, y_his]
+  supported_bins <- support_table[keep == TRUE, y_his]
+  dt <- dt[y_his %in% supported_bins]
 
-  final_bins <- intersect(y_his_in_range, supported_bins)
-
-  # Filter rows to those within valid and supported bins
-  dt <- dt[y_his %in% final_bins]
-
-  if (support > 1) {
-    cli::cli_alert_info("{length(final_bins)} y_his levels retained after applying support >= {support} and bounds [{min}, {max}].")
-  }
-
-  # Drop cum_nm
+  # Clean up
   dt[, cum_nm := NULL]
 
-  # Set attributes
+  # Attributes
   setattr(dt, "min", min)
   setattr(dt, "max", max)
 
   setorder(dt, code, year)
+
+  if (support > 1) {
+    cli::cli_alert_info("{length(supported_bins)} y_his levels retained after applying support >= {support} to tails and bounds [{min}, {max}].")
+  }
 
   return(dt)
 }

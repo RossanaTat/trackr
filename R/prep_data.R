@@ -31,7 +31,7 @@ prep_data <- function(indicator           = NULL,
                       max                 = NULL,
                       support             = 1,
                       granularity         = 0.1,
-                      extreme_percentile  = 0.05,
+                      extreme_percentile  = getOption("trackr.extreme_pctl"),
                       verbose             = TRUE) {
 
   if (is.null(indicator)) cli::cli_abort("indicator name must be provided")
