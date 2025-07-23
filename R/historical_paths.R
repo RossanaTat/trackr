@@ -14,6 +14,8 @@
 #' @inheritParams predict_changes
 #' @param eval_from First year to include when evaluating the progress of countries.
 #' @param eval_to Last year to include when evaluating the progress of countries.
+#' @param support Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.
+#'
 #' @return A `data.table` containing the following columns:
 #'   \item{code}{Country code (standardized).}
 #'   \item{year}{Year of observation.}
@@ -30,16 +32,17 @@
 #'
 #' @export
 get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
-                         data         = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+                         data         = NULL,
                          code_col     = "iso3c",
                          year_col     = "date",
                          min          = NULL,
                          max          = NULL,
                          eval_from    = 2000,
                          eval_to      = 2022,
+                         support      = 1,
                          granularity  = 0.1) {
 
-  if(is.null(min) || is.null(max)) {
+  if (is.null(min) || is.null(max)) {
     cli::cli_abort(message = "min and max should be provided")
   }
 
@@ -52,7 +55,7 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
             granularity > 0)
 
   # Convert to data.table
-  dt <- qDT(data) #qDT
+  dt <- qDT(data)
 
   # Standardize column names
   data.table::setnames(dt,
@@ -79,36 +82,39 @@ get_his_data <- function(indicator    = "EG.ELC.ACCS.ZS",
     cum_nm != 0
   ]
 
-  # Compute y_his: store rounded first value by group
+  # Compute y_his: rounded first value by group
   dt[, y_his := fifelse(seq_len(.N) == 1, round(y / granularity) * granularity, NA_real_), by = code]
 
-  ####### ___ #
-  # Apply support filter
-  if (!is.null(support) && support > 1) {
-    support_table <- dt[!is.na(y_his), .(n_countries = uniqueN(code)), by = y_his]
-    supported_bins <- support_table[n_countries >= support, y_his]
-    dt <- dt[y_his %in% supported_bins]
+  # ____________________________
+  # Apply support filter ####
+  # ____________________________
 
-    cli::cli_alert_info("{length(supported_bins)} indicator levels retained after applying support >= {support}.")
+  # Filter y_his to those within [min, max]
+  y_his_in_range <- dt[!is.na(y_his) & y_his >= min & y_his <= max, unique(y_his)]
+
+  # Compute how many countries per y_his (within valid range)
+  support_table <- dt[y_his %in% y_his_in_range,
+                      .(n_countries = uniqueN(code)), by = y_his]
+
+  supported_bins <- support_table[n_countries >= support, y_his]
+
+  final_bins <- intersect(y_his_in_range, supported_bins)
+
+  # Filter rows to those within valid and supported bins
+  dt <- dt[y_his %in% final_bins]
+
+  if (support > 1) {
+    cli::cli_alert_info("{length(final_bins)} y_his levels retained after applying support >= {support} and bounds [{min}, {max}].")
   }
-
-  ################
 
   # Drop cum_nm
   dt[, cum_nm := NULL]
 
-  # Set attributes from external computation
-  setattr(dt,
-       "min",
-       min)
+  # Set attributes
+  setattr(dt, "min", min)
+  setattr(dt, "max", max)
 
-  setattr(dt,
-       "max",
-       max)
-
-  setorder(dt,
-           code,
-           year)
+  setorder(dt, code, year)
 
   return(dt)
 }

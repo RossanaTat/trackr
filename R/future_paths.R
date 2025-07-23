@@ -10,12 +10,13 @@
 #'   \item{y_fut}{Rounded value of `y`, based on the specified granularity}
 #' }
 #' @export
-prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+prep_data_fut <- function(data           = NULL,
                           indicator      = "EG.ELC.ACCS.ZS",
                           granularity    = 0.1,
                           code_col       = "iso3c",
                           year_col       = "date",
-                          verbose = TRUE) {
+                          support        = 1,
+                          verbose        = TRUE) {
 
   # Convert to data.table
   dt <- qDT(data)
@@ -37,8 +38,25 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
   # Compute future value based on rounded y
   dt[, y_fut := round(y / granularity) * granularity]
 
+  # ____________________________
+  # Apply support filter ####
+  # ____________________________
+
+  support_table <- dt[, .(n_countries = uniqueN(code)),
+                      by = y_fut]
+
+  supported_bins <- support_table[n_countries >= support,
+                                  y_fut]
+
+  dt <- dt[y_fut %in% supported_bins]
+
+  if (verbose && support >= 1) {
+    cli::cli_alert_info("{length(supported_bins)} future starting levels retained after applying support >= {support}.")
+  }
+
   return(dt)
 }
+
 
 # -------------------- #
 # Percentiles ~~ #

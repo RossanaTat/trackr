@@ -132,6 +132,7 @@ track_progress <- function(data           = NULL,
     max         = max,
     eval_from   = eval_from,
     eval_to     = eval_to,
+    support     = support,
     granularity = granularity
   )
 
@@ -167,6 +168,7 @@ track_progress <- function(data           = NULL,
       granularity = granularity,
       code_col    = code_col,
       year_col    = year_col,
+      support     = support,
       verbose     = verbose
     )
 
