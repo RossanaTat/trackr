@@ -41,7 +41,7 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
                          eval_to            = 2022,
                          support            = 1,
                          granularity        = 0.1,
-                         extreme_percentile = 0.05) {
+                         extreme_percentile = getOption("trackr.extreme_pctl")) {
 
   if (is.null(min) || is.null(max)) {
     cli::cli_abort(message = "min and max should be provided")
@@ -49,66 +49,67 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
 
   stopifnot(is.numeric(eval_from),
             is.numeric(eval_to),
-            eval_from <= eval_to)
-
-  stopifnot(is.numeric(granularity),
+            eval_from <= eval_to,
+            is.numeric(granularity),
             granularity > 0)
 
-  # Convert to data.table
+  # Convert to data.table and standardize column names
   dt <- qDT(data)
-
-  # Standardize column names
   data.table::setnames(dt,
                        old         = c(code_col, year_col, indicator),
                        new         = c("code", "year", "y"),
                        skip_absent = FALSE)
 
-  # Filter and clean
-  dt <- dt[
-    between(year, eval_from, eval_to),
-    .(code, year, y)
-  ]
-
+  # Filter years
+  dt <- dt[between(year, eval_from, eval_to), .(code, year, y)]
   setorder(dt, code, year)
 
-  # Remove leading NAs
+  # Add rounded y for support analysis
+  dt[, y_rounded := round(y / granularity) * granularity]
+
+  # Compute support table using all y values
+  support_table <- dt[!is.na(y_rounded), .(n_countries = uniqueN(code)), by = y_rounded]
+
+  # Determine bounds based on extreme percentiles
+  lower_cutoff <- quantile(dt$y_rounded, probs = extreme_percentile, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y_rounded, probs = 1 - extreme_percentile, na.rm = TRUE)
+
+  support_table[, region := fifelse(y_rounded < lower_cutoff, "low",
+                                    fifelse(y_rounded > upper_cutoff, "high", "middle"))]
+
+  support_table[, keep := region == "middle" | n_countries >= support]
+
+  # Supported values
+  supported_values <- support_table[keep == TRUE, y_rounded]
+
+  # Apply support filter
+  dt <- dt[y_rounded %in% supported_values]
+
+  # Apply strict min/max filtering
+  dt <- dt[y_rounded >= min & y_rounded <= max]
+
+  # Remove leading NAs to define historical baseline
   dt[, cum_nm := cumsum(!is.na(y)), by = code]
   dt <- dt[cum_nm != 0]
 
-  # Compute historical starting value
-  dt[, y_his := fifelse(seq_len(.N) == 1, round(y / granularity) * granularity, NA_real_), by = code]
+  # Assign y_his: first non-NA rounded y per country
+  dt[, y_his := fifelse(seq_len(.N) == 1, y_rounded, NA_real_), by = code]
 
-  # Filter to non-missing y_his within min/max
-  dt <- dt[!is.na(y_his) & y_his >= min & y_his <= max]
+  # Final cleanup
+  dt[, c("cum_nm", "y_rounded") := NULL]
 
-  # Tail-aware support filtering ####
-  lower_cutoff <- quantile(dt$y_his, probs = extreme_percentile, na.rm = TRUE)
-  upper_cutoff <- quantile(dt$y_his, probs = 1 - extreme_percentile, na.rm = TRUE)
-
-  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_his]
-  support_table[, region := fifelse(y_his < lower_cutoff, "low",
-                                    fifelse(y_his > upper_cutoff, "high", "middle"))]
-  support_table[, keep := region == "middle" | n_countries >= support]
-
-  supported_bins <- support_table[keep == TRUE, y_his]
-  dt <- dt[y_his %in% supported_bins]
-
-  # Clean up
-  dt[, cum_nm := NULL]
-
-  # Attributes
+  # Assign attributes
   setattr(dt, "min", min)
   setattr(dt, "max", max)
 
   setorder(dt, code, year)
 
   if (support > 1) {
-    cli::cli_alert_info("{length(supported_bins)} y_his levels retained after applying support >= {support} to tails and bounds [{min}, {max}].")
+    cli::cli_alert_info("{length(supported_values)} rounded `y` levels retained after applying support >= {support} to tails and bounds [{min}, {max}].")
   }
 
   return(dt)
 }
-
 
 #' Historical speed path
 #'

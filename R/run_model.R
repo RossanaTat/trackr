@@ -48,6 +48,7 @@ track_progress <- function(data           = NULL,
                            min            = NULL,
                            max            = NULL,
                            support        = 1,
+                           extreme_percentile = getOption("trackr.extreme_pctl"),
                            granularity    = 0.1,
                            verbose        = TRUE) {
 
@@ -91,6 +92,7 @@ track_progress <- function(data           = NULL,
                           startyear_data = startyear_data,
                           endyear_data   = endyear_data,
                           support        = support,
+                          extreme_percentile = extreme_percentile,
                           granularity    = granularity,
                           code_col       = code_col,
                           year_col       = year_col,
@@ -133,6 +135,7 @@ track_progress <- function(data           = NULL,
     eval_from   = eval_from,
     eval_to     = eval_to,
     support     = support,
+    extreme_percentile = extreme_percentile,
     granularity = granularity
   )
 
@@ -169,6 +172,7 @@ track_progress <- function(data           = NULL,
       code_col    = code_col,
       year_col    = year_col,
       support     = support,
+      extreme_percentile = extreme_percentile,
       verbose     = verbose
     )
 

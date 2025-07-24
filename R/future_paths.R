@@ -10,13 +10,14 @@
 #'   \item{y_fut}{Rounded value of `y`, based on the specified granularity}
 #' }
 #' @export
-prep_data_fut <- function(data           = NULL,
-                          indicator      = "EG.ELC.ACCS.ZS",
-                          granularity    = 0.1,
-                          code_col       = "iso3c",
-                          year_col       = "date",
-                          support        = 1,
-                          verbose        = TRUE) {
+prep_data_fut <- function(data               = NULL,
+                          indicator          = "EG.ELC.ACCS.ZS",
+                          granularity        = 0.1,
+                          code_col           = "iso3c",
+                          year_col           = "date",
+                          support            = 1,
+                          extreme_percentile = getOption("trackr.extreme_pctl"),
+                          verbose            = TRUE) {
 
   # Convert to data.table
   dt <- qDT(data)
@@ -27,35 +28,38 @@ prep_data_fut <- function(data           = NULL,
                        new         = c("code", "year", "y"),
                        skip_absent = FALSE)
 
-  # Keep only relevant columns
-  dt <- dt[, .(code, year, y)]
-
-  # Remove NAs and keep only the last observation for each code
-  dt <- dt[!is.na(y)]
-  data.table::setorder(dt, code, year)
+  # Keep relevant columns and latest observation per country
+  dt <- dt[!is.na(y), .(code, year, y)]
+  setorder(dt, code, year)
   dt <- dt[, .SD[.N], by = code]
 
-  # Compute future value based on rounded y
+  # Compute rounded future value
   dt[, y_fut := round(y / granularity) * granularity]
 
   # ____________________________
-  # Apply support filter ####
+  # Tail-aware support filtering
   # ____________________________
 
-  support_table <- dt[, .(n_countries = uniqueN(code)),
-                      by = y_fut]
+  # Compute percentiles of y_fut
+  lower_cutoff <- quantile(dt$y_fut, probs = extreme_percentile, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y_fut, probs = 1 - extreme_percentile, na.rm = TRUE)
 
-  supported_bins <- support_table[n_countries >= support,
-                                  y_fut]
+  # Support counts by bin
+  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_fut]
+  support_table[, region := fifelse(y_fut < lower_cutoff, "low",
+                                    fifelse(y_fut > upper_cutoff, "high", "middle"))]
+  support_table[, keep := region == "middle" | n_countries >= support]
 
+  supported_bins <- support_table[keep == TRUE, y_fut]
   dt <- dt[y_fut %in% supported_bins]
 
   if (verbose && support >= 1) {
-    cli::cli_alert_info("{length(supported_bins)} future starting levels retained after applying support >= {support}.")
+    cli::cli_alert_info("{length(supported_bins)} future starting levels retained after applying support >= {support} to tails.")
   }
 
   return(dt)
 }
+
 
 
 # -------------------- #
