@@ -13,7 +13,7 @@ future         = TRUE
 sequence_pctl  = seq(20,80,20)
 sequence_speed = c(0.25, 0.5, 1, 2, 4)
 min = 0
-support = 1
+support = 2
 # max = 100
 
 # _________________________________________ #
@@ -22,9 +22,9 @@ support = 1
 
 
 indicator = "NY.GDP.PCAP.KD"
-# data <- wbstats::wb_data(indicator = indicator,
-#                              lang = "en",
-#                              country="countries_only")
+data <- wbstats::wb_data(indicator = indicator,
+                             lang = "en",
+                             country="countries_only")
 startyear_data                                = 1960
 endyear_data                                  = 2022
 eval_from                                     = 2015
@@ -35,7 +35,7 @@ max                                           = 89884.08
 min = 122.6789
 #ceiling  <- quantile(data_wdi$y, 0.99, na.rm = T)
 granularity                                   = 0.6
-
+support = 3
 
 # _________________________________________ #
 ## Access to Electricity ####

@@ -83,6 +83,13 @@ track_progress <- function(data           = NULL,
     cli::cli_abort("User must provide both indicator name and input data")
 
   }
+
+  if (is.null(eval_from) && is.null(eval_to)) {
+
+    cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
+
+  }
+
   # ___________________________ #
   # 1. Prepare Data ####
   # ___________________________ #

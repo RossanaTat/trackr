@@ -33,33 +33,38 @@ prep_data_fut <- function(data               = NULL,
   setorder(dt, code, year)
   dt <- dt[, .SD[.N], by = code]
 
-  # Compute rounded future value
-  dt[, y_fut := round(y / granularity) * granularity]
-
   # ____________________________
-  # Tail-aware support filtering
+  # Tail-aware support filtering on raw y
   # ____________________________
 
-  # Compute percentiles of y_fut
-  lower_cutoff <- quantile(dt$y_fut, probs = extreme_percentile, na.rm = TRUE)
-  upper_cutoff <- quantile(dt$y_fut, probs = 1 - extreme_percentile, na.rm = TRUE)
+  # Compute percentiles of y
+  lower_cutoff <- quantile(dt$y, probs = extreme_percentile, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y, probs = 1 - extreme_percentile, na.rm = TRUE)
 
-  # Support counts by bin
-  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_fut]
-  support_table[, region := fifelse(y_fut < lower_cutoff, "low",
-                                    fifelse(y_fut > upper_cutoff, "high", "middle"))]
+  # Compute bin on y for support checking
+  dt[, y_bin := round(y / granularity) * granularity]
+
+  # Support counts by raw y bin
+  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_bin]
+  support_table[, region := fifelse(y_bin < lower_cutoff, "low",
+                                    fifelse(y_bin > upper_cutoff, "high", "middle"))]
   support_table[, keep := region == "middle" | n_countries >= support]
 
-  supported_bins <- support_table[keep == TRUE, y_fut]
-  dt <- dt[y_fut %in% supported_bins]
+  supported_bins <- support_table[keep == TRUE, y_bin]
+
+  # Filter based on support in y bins
+  dt <- dt[y_bin %in% supported_bins]
+
+  # Now compute y_fut from filtered y
+  dt[, y_fut := round(y / granularity) * granularity]
+  dt[, y_bin := NULL]  # clean up
 
   if (verbose && support >= 1) {
-    cli::cli_alert_info("{length(supported_bins)} future starting levels retained after applying support >= {support} to tails.")
+    cli::cli_alert_info("{length(supported_bins)} starting levels retained after applying support >= {support} to tails.")
   }
 
   return(dt)
 }
-
 
 
 # -------------------- #
