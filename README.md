@@ -38,7 +38,7 @@ data <- wbstats::wb_data(indicator = indicator,
                          country   = "countries_only")
                              
                              
-track_progress(data                = data,
+result <- track_progress(data                = data,
                indicator           = "EG.ELC.ACCS.ZS",
                code_col            = "iso3c",
                year_col            = "date",
