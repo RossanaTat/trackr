@@ -27,6 +27,7 @@ These methods can be used independently or together, depending on user preferenc
 
 # Install from GitHub (requires remotes package)
 remotes::install_github("RossanaTat/trackr")
+
 devtools::install_github("RossanaTat/trackr")
 
 
