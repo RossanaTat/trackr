@@ -76,7 +76,7 @@ prep_data <- function(indicator           = NULL,
   # Balance countries ####
   # --------------------------------------
 
-  dt_long[, n := .N, by = code]
+  dt_long[, n := .N, by = code]     # count how many rows per country
   max_n <- dt_long[, max(n)]
   dt_long[, expansion := round(max_n / n)]
   dt_long <- dt_long |> splitstackshape::expandRows("expansion")

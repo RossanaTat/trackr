@@ -13,9 +13,6 @@
 #' @param min Optional. Minimum value of `initialvalue` to predict.
 #' @param max Optional. Maximum value of `initialvalue` to predict.
 #' @param granularity Numeric. Granularity in outcome variable. Default is `0.1`.
-#' @param floor Numeric or `NULL`.Minimum value of indicator.
-#'   If `NULL`, predictions are unrestricted on the lower end.
-#' @param ceiling Maximum value of indicator (NA if none).
 #'   If `NULL`, predictions are unrestricted on the upper end.
 #' @param verbose. Logical. If TRUE, display messages in console. Default is TRUE
 #'
@@ -97,26 +94,39 @@ get_speed_path <- function(changes_speed,
                            verbose     = TRUE) {
 
   # Add validations on inputs ####
-
-  if (best == "low") {
-
-    setorder(changes_speed,
-             -y)       # reorder rows by descending y
-
-    changes_speed[, change := -change] # mutate/change 'change' column by negating its values
-
-
-  }
-
-  if (best == "high") {
-
-    setorder(changes_speed,
-             y)       # reorder rows by descending y
-
-  }
+#
+#   if (best == "low") {
+#
+#     setorder(changes_speed,
+#              -y)       # reorder rows by descending y
+#
+#     changes_speed[, change := -change] # mutate/change 'change' column by negating its values
+#
+#
+#   }
+  #
+  # if (best == "high") {
+  #
+  #   setorder(changes_speed,
+  #            y)       # reorder rows by descending y
+  #
+  # }
 
   # Ensure changes_speed is a data.table
   path_speed <- copy(changes_speed)  # don't overwrite original
+
+  if (best == "low") {
+
+    setorder(path_speed,
+             -y)       # reorder rows by descending y
+
+    path_speed[, change := -change] # mutate/change 'change' column by negating its values
+
+
+  } else {
+      setorder(changes_speed,
+               y)       # reorder rows by descending y
+  }
 
   # Step 1: Rename 'change' to 'time'
   setnames(path_speed,
@@ -145,7 +155,11 @@ get_speed_path <- function(changes_speed,
 
   # Step 4: Keep only 'time' and 'y' columns
   path_speed <- path_speed[,
-                           .(time, y)]
+                           .(y, time)]
+
+  # time is cumulative time it takes to reach the value of y from the starting point
+  # example:  If you start at y = 0.30, and follow the speed of progress described in changes_speed,
+  #           it will take 2 years to reach y = 0.40, 4.5 years to reach y = 0.50, etc.
 
   if (verbose) cli::cli_alert_success("Path speed successfully calculated")
 

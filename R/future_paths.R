@@ -127,7 +127,7 @@ future_path_pctls <- function(data_fut,
     # Year processed concurrently
     #print(n+min(path_fut_pctl$year)-1)
 
-    if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
+    #if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
 
     path_fut_pctl <- path_fut_pctl |>
       # Merge in data with predicted changes based on initial levels
