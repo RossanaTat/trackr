@@ -206,11 +206,13 @@ project_path_speed <- function(data_his,
            year)
 
   path_his_speed[,
-                 y_his := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
+                 y_sim := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
                  by = .(code, speed)]
 
   # Keep only evaluation years
   path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
+
+  #########################################
 
   # Filter for actual values between min and max
   path_his_speed <- path_his_speed[y_speed >= min, ][y_speed <= max, ]
@@ -220,6 +222,14 @@ project_path_speed <- function(data_his,
       cli::cli_alert_danger("Computed path dt is empty")
     }
   }
+
+  # Output _____ #
+  ################
+
+  # y_his  :  Interpolated simulated trajectory on full-year grid
+  # y_speed:  Simulated trajectory values from path_speed (non-regular years)
+  # y      :  Actual observed data
+
 
   return(path_his_speed[])
 }
