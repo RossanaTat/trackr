@@ -199,7 +199,7 @@ project_path_speed <- function(data_his,
            old = c("y", "y_actual"),
            new = c("y_speed", "y"))
 
-  # # Interpolate y_his over time
+  # Interpolate y_his over time
   setorder(path_his_speed,
            code,
            speed,
