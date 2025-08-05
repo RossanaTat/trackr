@@ -7,7 +7,7 @@
     trackr.future                    = TRUE,
     trackr.default_sequence_pctl     = seq(20, 80, 20),
     trackr.default_speedseq          = c(0.25, 0.5, 1, 2, 4),
-    trackr.extreme_pctl              = 0.05
+    trackr.extreme_pctl              = c(0.02, 0.02)
 
   )
   toset <- !(names(op.trackr) %in% names(op))

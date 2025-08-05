@@ -38,8 +38,27 @@ prep_data_fut <- function(data               = NULL,
   # ____________________________
 
   # Compute percentiles of y
-  lower_cutoff <- quantile(dt$y, probs = extreme_percentile, na.rm = TRUE)
-  upper_cutoff <- quantile(dt$y, probs = 1 - extreme_percentile, na.rm = TRUE)
+  # lower_cutoff <- quantile(dt$y, probs = extreme_percentile, na.rm = TRUE)
+  # upper_cutoff <- quantile(dt$y, probs = 1 - extreme_percentile, na.rm = TRUE)
+
+  # --------------------------------------
+  # Tail cutoff logic: support asymmetric percentiles ####
+  # --------------------------------------
+  if (length(extreme_percentile) == 1) {
+    lower_pct <- extreme_percentile
+    upper_pct <- extreme_percentile
+  } else if (length(extreme_percentile) == 2) {
+    lower_pct <- extreme_percentile[1]
+    upper_pct <- extreme_percentile[2]
+  } else {
+    cli::cli_abort("extreme_percentile must be a numeric vector of length 1 or 2.")
+  }
+
+  # Compute percentile-based cutoffs
+  lower_cutoff <- quantile(dt$y, probs = lower_pct, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y, probs = 1 - upper_pct, na.rm = TRUE)
+
+
 
   # Compute bin on y for support checking
   dt[, y_bin := round(y / granularity) * granularity]

@@ -94,8 +94,21 @@ prep_data <- function(indicator           = NULL,
 
   dt_long[, bin := round(initialvalue / granularity) * granularity]
 
-  lower_cutoff <- quantile(dt_long$initialvalue, probs = extreme_percentile, na.rm = TRUE)
-  upper_cutoff <- quantile(dt_long$initialvalue, probs = 1 - extreme_percentile, na.rm = TRUE)
+  # lower_cutoff <- quantile(dt_long$initialvalue, probs = extreme_percentile, na.rm = TRUE)
+  # upper_cutoff <- quantile(dt_long$initialvalue, probs = 1 - extreme_percentile, na.rm = TRUE)
+
+  if (length(extreme_percentile) == 1) {
+    lower_pct <- extreme_percentile
+    upper_pct <- extreme_percentile
+  } else if (length(extreme_percentile) == 2) {
+    lower_pct <- extreme_percentile[1]
+    upper_pct <- extreme_percentile[2]
+  } else {
+    cli::cli_abort("extreme_percentile must be a numeric vector of length 1 or 2.")
+  }
+
+  lower_cutoff <- quantile(dt_long$initialvalue, probs = lower_pct, na.rm = TRUE)
+  upper_cutoff <- quantile(dt_long$initialvalue, probs = 1 - upper_pct, na.rm = TRUE)
 
   support_table <- dt_long[, .(n_countries = uniqueN(code)), by = bin]
 

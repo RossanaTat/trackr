@@ -71,8 +71,26 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
   support_table <- dt[!is.na(y_rounded), .(n_countries = uniqueN(code)), by = y_rounded]
 
   # Determine bounds based on extreme percentiles
-  lower_cutoff <- quantile(dt$y_rounded, probs = extreme_percentile, na.rm = TRUE)
-  upper_cutoff <- quantile(dt$y_rounded, probs = 1 - extreme_percentile, na.rm = TRUE)
+  # lower_cutoff <- quantile(dt$y_rounded, probs = extreme_percentile, na.rm = TRUE)
+  # upper_cutoff <- quantile(dt$y_rounded, probs = 1 - extreme_percentile, na.rm = TRUE)
+
+  # --------------------------------------
+  # Tail cutoff logic: support asymmetric percentiles ####
+  # --------------------------------------
+
+  if (length(extreme_percentile) == 1) {
+    lower_pct <- extreme_percentile
+    upper_pct <- extreme_percentile
+  } else if (length(extreme_percentile) == 2) {
+    lower_pct <- extreme_percentile[1]
+    upper_pct <- extreme_percentile[2]
+  } else {
+    cli::cli_abort("extreme_percentile must be a numeric vector of length 1 or 2.")
+  }
+
+  lower_cutoff <- quantile(dt$y_rounded, probs = lower_pct, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y_rounded, probs = 1 - upper_pct, na.rm = TRUE)
+
 
   support_table[, region := fifelse(y_rounded < lower_cutoff, "low",
                                     fifelse(y_rounded > upper_cutoff, "high", "middle"))]

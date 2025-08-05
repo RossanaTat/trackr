@@ -56,8 +56,8 @@ indicator = "SL.TLF.ACTI.FE.ZS"
 # _________________________________________ #
 
 # load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
-# # #
-# results <- track_progress(
+# # # #
+# new_results <- track_progress(
 #   data = poverty_country,
 #   indicator = "rate",
 #   code_col = "code",
@@ -78,8 +78,8 @@ indicator = "SL.TLF.ACTI.FE.ZS"
 #   support=1,
 #   granularity=0.01,
 # )
-#
-#
+
+
 
 
 
