@@ -32,7 +32,8 @@ path_historical(
 
 \item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
+If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict.}
 

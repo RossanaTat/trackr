@@ -26,7 +26,8 @@ This argument is only relevant if `percentiles=TRUE`.}
 
 \item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
+If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{min}{Optional. Minimum value of `initialvalue` to predict.}
 

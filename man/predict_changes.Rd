@@ -25,7 +25,8 @@ This should be the output of the [`prep_data()`] function, which prepares the da
 
 \item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
+If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 

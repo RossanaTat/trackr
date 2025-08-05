@@ -21,9 +21,9 @@ project_path_speed(
 
 \item{sequence_speed}{numeric vector of speed paths to calculate}
 
-\item{granularity}{A numeric value indicating the step size used when
-computing the trajectory over time. Smaller values produce smoother curves.
-Defaults to \code{0.1}.}
+\item{path_speed}{Result of `get_speed_path()` — the base simulated trajectories}
+
+\item{granularity}{Rounding precision for `y_speed`. Default is 0.1.}
 
 \item{eval_from}{First year to include when evaluating the progress of countries.}
 
@@ -35,9 +35,19 @@ Will be overruled by support if that reflects a higher minimum value}
 \item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
+
+\item{path_his_speed}{Result of `project_path_speed()` — contains simulated paths (`y_speed`)}
 }
 \value{
 A data table of projected values under different speeds
+
+
+
+Calculate speed-based score over a historical evaluation period
+
+Computes countries’ speed of progress over a user-specified evaluation period.
+
+A data.table with `code`, `score`, and `evaluationperiod`.
 }
 \description{
 Calculates path a country would have taken with various speeds

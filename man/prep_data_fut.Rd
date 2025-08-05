@@ -11,6 +11,7 @@ prep_data_fut(
   code_col = "iso3c",
   year_col = "date",
   support = 1,
+  extreme_percentile = getOption("trackr.extreme_pctl"),
   verbose = TRUE
 )
 }
@@ -26,6 +27,8 @@ prep_data_fut(
 \item{year_col}{Character. Name of the column with years.}
 
 \item{support}{Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.}
+
+\item{extreme_percentile}{Numeric (length 1 or 2). Percentile(s) used to define the lower and upper tails of the distribution of initial values. Values in the tails are retained only if there is sufficient country support (`support`). If a single value is provided, it is applied symmetrically to both tails. Defaults to `getOption("trackr.extreme_pctl")`.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }

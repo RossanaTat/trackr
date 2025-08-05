@@ -22,12 +22,7 @@ predict_speed(
 
 \item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
 If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{verbose.}{Logical. If TRUE, display messages in console. Default is TRUE}

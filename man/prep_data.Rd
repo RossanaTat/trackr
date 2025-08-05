@@ -15,6 +15,7 @@ prep_data(
   max = NULL,
   support = 1,
   granularity = 0.1,
+  extreme_percentile = getOption("trackr.extreme_pctl"),
   verbose = TRUE
 )
 }
@@ -39,6 +40,8 @@ Will be overruled by support if that reflects a higher minimum value}
 \item{support}{Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.}
 
 \item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
+
+\item{extreme_percentile}{Numeric (length 1 or 2). Percentile(s) used to define the lower and upper tails of the distribution of initial values. Values in the tails are retained only if there is sufficient country support (`support`). If a single value is provided, it is applied symmetrically to both tails. Defaults to `getOption("trackr.extreme_pctl")`.}
 
 \item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
