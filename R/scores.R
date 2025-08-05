@@ -92,61 +92,58 @@ get_scores_speed <- function(path_his_speed,
                              max         = NULL,
                              granularity = 0.1) {
 
-  # Ensure data.table
-  #path_his_speed <- as.data.table(path_his_speed)
-  #path_speed     <- as.data.table(path_speed)
-
-  # Filter, round, and keep relevant columns
+  # Step 1 — Use simulated values (y_speed), not actual observed y
   path_his_speed <- path_his_speed[
-    !is.na(y) & between(y, min, max),
-    .(code, year, y = round(y / granularity) * granularity)
+    !is.na(y_speed) & between(y_speed, min, max),
+    .(code, year, y = round(y_speed / granularity) * granularity)  # Round for join with path_speed$y
   ]
 
-  # Compute per-code start and end
-  path_his_speed   <- path_his_speed[order(code, year)]
+  # Step 2 — Get start and end values per country
+  path_his_speed <- path_his_speed[order(code, year)]
 
-  summary_dt       <- path_his_speed[
+  summary_dt <- path_his_speed[
     , .(
       y_start = first(y),
       year_start = first(year),
-      y_end = last(y),
+      y_end   = last(y),
       year_end = last(year)
     ),
     by = code
-  ][(year_end - year_start) >= 5]
+  ][(year_end - year_start) >= 5]  # Only keep countries with at least 5-year history
 
-  # First join: match y_end with path_speed$y
+  # Step 3 — Join end point (y_end) with path_speed to get time_end
   summary_dt_join1 <- copy(summary_dt)
+  summary_dt_join1[, y := y_end]
 
-  summary_dt_join1[, y := y_end]  # Rename for join
-  join1            <- joyn::joyn(
+  join1 <- joyn::joyn(
     summary_dt_join1,
     path_speed,
     by = "y",
     match_type = "m:1",
-    reportvar = FALSE,
-    keep = "left",
-    verbose = FALSE
+    reportvar  = FALSE,
+    keep       = "left",
+    verbose    = FALSE
   )
   setnames(join1, "time", "time_end")
-  join1[, y := NULL]  # Clean up temp column
+  join1[, y := NULL]
 
-  # Second join: match y_start with path_speed$y
+  # Step 4 — Join start point (y_start) with path_speed to get time_start
   join1[, y := y_start]
-  join2            <- joyn::joyn(
+
+  join2 <- joyn::joyn(
     join1,
     path_speed,
     by = "y",
     match_type = "m:1",
-    reportvar = FALSE,
-    keep = "left",
-    verbose = FALSE
+    reportvar  = FALSE,
+    keep       = "left",
+    verbose    = FALSE
   )
   setnames(join2, "time", "time_start")
-  join2[, y := NULL]  # Clean up again
+  join2[, y := NULL]
 
-  # Compute score
-  result           <- join2[
+  # Step 5 — Compute score: speed of change in trajectory per year
+  result <- join2[
     , .(
       code,
       score = (time_end - time_start) / (year_end - year_start),
