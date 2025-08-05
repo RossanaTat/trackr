@@ -136,191 +136,118 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
 #' @return A data.table with `code`, `score`, and `evaluationperiod`.
 #'
 #' @export
-get_scores_speed <- function(path_his_speed,
-                             path_speed,
-                             min         = NULL,
-                             max         = NULL,
-                             granularity = 0.1) {
+project_path_speed <- function(data_his,
+                               sequence_speed = c(0.25, 0.5, 1, 2, 4),
+                               path_speed,
+                               granularity    = 0.1,
+                               eval_from      = 2000,
+                               eval_to        = 2022,
+                               min            = NULL,
+                               max            = NULL,
+                               best           = "high") {
 
-  # Step 1 — Use simulated values (y_speed), not actual observed y
+  # Set min and max from attributes if not provided
+  if (is.null(min)) min <- attr(data_his, "min")
+  if (is.null(max)) max <- attr(data_his, "max")
+
+  # Ensure data_his is copied
+  data_his_copy <- copy(data_his)
+
+  # Rename actual y as y_actual -keeping it for later
+  setnames(data_his_copy, "y", "y_actual")
+
+  # Cross join with sequence_speed
+  speeds <- qDT(sequence_speed)[, k := 1]
+
+  data_his_copy[, k := 1]
+  data_his_copy <- joyn::merge(data_his_copy,
+                          speeds,
+                          by              = "k",
+                          allow.cartesian = TRUE,
+                          reportvar       = FALSE,
+                          verbose         = FALSE)
+
+  # Keep only rows where y_his is not NA
+  data_his_copy <- data_his_copy[!is.na(y_his)]
+
+  setnames(data_his_copy,
+           old = "sequence_speed",
+           new = "speed")
+
+  # Cross join with path_speed
+
+  path_speed_copy <- copy(path_speed)
+  path_speed_copy[, k := 1]
+
+
+  path_his_speed <- joyn::merge(data_his_copy,
+
+                                path_speed_copy,
+                                by = "k",
+                                allow.cartesian                = TRUE,
+                                verbose                        = FALSE,
+                                reportvar                      = FALSE)
+
+
+  path_his_speed[, k := NULL]
+  path_his_speed[, best := best]
+
+  # Filter: keep only those where path is improving in right direction
   path_his_speed <- path_his_speed[
-    !is.na(y_speed) & between(y_speed, min, max),
-    .(code, year, y = round(y_speed / granularity) * granularity)  # Round for join with path_speed$y
+    (best == "high" & y_his <= y) |
+      (best != "high" & y_his >= y)
   ]
 
-  # Step 2 — Get start and end values per country
-  path_his_speed <- path_his_speed[order(code, year)]
 
-  summary_dt <- path_his_speed[
-    , .(
-      y_start = first(y),
-      year_start = first(year),
-      y_end   = last(y),
-      year_end = last(year)
-    ),
-    by = code
-  ][(year_end - year_start) >= 5]  # Only keep countries with at least 5-year history
+  # Compute projected year
+  setorder(path_his_speed, code, speed, time)
 
-  # Step 3 — Join end point (y_end) with path_speed to get time_end
-  summary_dt_join1 <- copy(summary_dt)
-  summary_dt_join1[, y := y_end]
+  path_his_speed[, year := year + (time - time[1]) / speed,
+                   by = .(code, speed)]
 
-  join1 <- joyn::joyn(
-    summary_dt_join1,
-    path_speed,
-    by = "y",
-    match_type = "m:1",
-    reportvar  = FALSE,
-    keep       = "left",
-    verbose    = FALSE
-  )
-  setnames(join1, "time", "time_end")
-  join1[, y := NULL]
+  path_his_speed[, y_his := NULL][,
+                                  time := NULL][,
+                                                best:= NULL]
 
-  # Step 4 — Join start point (y_start) with path_speed to get time_start
-  join1[, y := y_start]
+  setnames(path_his_speed,
+           old = c("y", "y_actual"),
+           new = c("y_speed", "y"))
 
-  join2 <- joyn::joyn(
-    join1,
-    path_speed,
-    by = "y",
-    match_type = "m:1",
-    reportvar  = FALSE,
-    keep       = "left",
-    verbose    = FALSE
-  )
-  setnames(join2, "time", "time_start")
-  join2[, y := NULL]
+  # Interpolate y_his over time
+  setorder(path_his_speed,
+           code,
+           speed,
+           year)
 
-  # Step 5 — Compute score: speed of change in trajectory per year
-  result <- join2[
-    , .(
-      code,
-      score = (time_end - time_start) / (year_end - year_start),
-      evaluationperiod = paste0(year_start, "-", year_end)
-    )
-  ][!is.na(score)]
+  path_his_speed[,
+                 y_sim := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
+                 by = .(code, speed)]
 
-  return(result[])
+  # Keep only evaluation years
+  path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
+
+  #########################################
+
+  # Filter for actual values between min and max
+  path_his_speed <- path_his_speed[y_speed >= min, ][y_speed <= max, ]
+
+  if (verbose) {
+    if (is.null(path_his_speed)) {
+      cli::cli_alert_danger("Computed path dt is empty")
+    }
+  }
+
+  # Output _____ #
+  ################
+
+  # y_his  :  Interpolated simulated trajectory on full-year grid
+  # y_speed:  Simulated trajectory values from path_speed (non-regular years)
+  # y      :  Actual observed data
+
+
+  return(path_his_speed[])
 }
 
-
-
-
-
-
-# project_path_speed <- function(data_his,
-#                                sequence_speed = c(0.25, 0.5, 1, 2, 4),
-#                                path_speed,
-#                                granularity    = 0.1,
-#                                eval_from      = 2000,
-#                                eval_to        = 2022,
-#                                min            = NULL,
-#                                max            = NULL,
-#                                best           = "high") {
-#
-#   # Set min and max from attributes if not provided
-#   if (is.null(min)) min <- attr(data_his, "min")
-#   if (is.null(max)) max <- attr(data_his, "max")
-#
-#   # Ensure data_his is copied
-#   data_his_copy <- copy(data_his)
-#
-#   # Rename actual y as y_actual -keeping it for later
-#   setnames(data_his_copy, "y", "y_actual")
-#
-#   # Cross join with sequence_speed
-#   speeds <- qDT(sequence_speed)[, k := 1]
-#
-#   data_his_copy[, k := 1]
-#   data_his_copy <- joyn::merge(data_his_copy,
-#                           speeds,
-#                           by              = "k",
-#                           allow.cartesian = TRUE,
-#                           reportvar       = FALSE,
-#                           verbose         = FALSE)
-#
-#   # Keep only rows where y_his is not NA
-#   data_his_copy <- data_his_copy[!is.na(y_his)]
-#
-#   setnames(data_his_copy,
-#            old = "sequence_speed",
-#            new = "speed")
-#
-#   # Cross join with path_speed
-#
-#   path_speed_copy <- copy(path_speed)
-#   path_speed_copy[, k := 1]
-#
-#
-#   path_his_speed <- joyn::merge(data_his_copy,
-#
-#                                 path_speed_copy,
-#                                 by = "k",
-#                                 allow.cartesian                = TRUE,
-#                                 verbose                        = FALSE,
-#                                 reportvar                      = FALSE)
-#
-#
-#   path_his_speed[, k := NULL]
-#   path_his_speed[, best := best]
-#
-#   # Filter: keep only those where path is improving in right direction
-#   path_his_speed <- path_his_speed[
-#     (best == "high" & y_his <= y) |
-#       (best != "high" & y_his >= y)
-#   ]
-#
-#
-#   # Compute projected year
-#   setorder(path_his_speed, code, speed, time)
-#
-#   path_his_speed[, year := year + (time - time[1]) / speed,
-#                    by = .(code, speed)]
-#
-#   path_his_speed[, y_his := NULL][,
-#                                   time := NULL][,
-#                                                 best:= NULL]
-#
-#   setnames(path_his_speed,
-#            old = c("y", "y_actual"),
-#            new = c("y_speed", "y"))
-#
-#   # Interpolate y_his over time
-#   setorder(path_his_speed,
-#            code,
-#            speed,
-#            year)
-#
-#   path_his_speed[,
-#                  y_sim := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
-#                  by = .(code, speed)]
-#
-#   # Keep only evaluation years
-#   path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
-#
-#   #########################################
-#
-#   # Filter for actual values between min and max
-#   path_his_speed <- path_his_speed[y_speed >= min, ][y_speed <= max, ]
-#
-#   if (verbose) {
-#     if (is.null(path_his_speed)) {
-#       cli::cli_alert_danger("Computed path dt is empty")
-#     }
-#   }
-#
-#   # Output _____ #
-#   ################
-#
-#   # y_his  :  Interpolated simulated trajectory on full-year grid
-#   # y_speed:  Simulated trajectory values from path_speed (non-regular years)
-#   # y      :  Actual observed data
-#
-#
-#   return(path_his_speed[])
-# }
-#
 
 
 
