@@ -182,7 +182,7 @@ predict_pctls <- function(data_model,
                           min           = NULL,
                           max           = NULL,
                           granularity   = 0.1,
-                          sequence_pctl = seq(20, 80, 20),
+                          sequence_pctl = NULL,
                           verbose       = TRUE) {
 
   # __________________________________ #
@@ -267,7 +267,7 @@ predict_changes <- function(data,
                             best          = "high",
                             speed         = FALSE,
                             percentiles   = TRUE,
-                            sequence_pctl = seq(20,80,20),
+                            sequence_pctl = NULL,
                             support       = 1,
                             verbose       = TRUE) {
 
@@ -297,29 +297,6 @@ predict_changes <- function(data,
 
 
   res_list <- list()
-
-  # # ---------------------------------- #
-  # # Apply support filter (if needed)
-  # # ---------------------------------- #
-  #
-  # if (!is.null(support) && support > 1) {
-  #
-  #   # Round initial values to the granularity grid
-  #   data[, rounded_initial := round(initialvalue / granularity) * granularity]
-  #
-  #   # Count number of countries per rounded indicator level
-  #   support_table <- data[, .(n_countries = uniqueN(code)), by = rounded_initial]
-  #
-  #   # Keep only indicator levels with enough support
-  #   supported_bins <- support_table[n_countries >= support, rounded_initial]
-  #
-  #   # Filter the data to retain only supported initial values
-  #   data <- data[rounded_initial %in% supported_bins]
-  #
-  #   if (verbose) {
-  #     cli::cli_alert_info("{length(supported_bins)} indicator levels retained after applying support >= {support}.")
-  #   }
-  # }
 
   if (speed) {
 
