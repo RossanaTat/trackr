@@ -270,14 +270,19 @@ future_path_speed <- function(data_fut,
                          target_year,
                          1)) |>
     ungroup() |>
-    select(-y_fut) |>
-    filter(!is.na(y_speed))
+    select(-y_speed,
+           -y)
+    #select(-y_fut) |>
+    #filter(!is.na(y_speed))
 
     # Only keep cases where target has not been reached
-    #filter(between(y,min,max) | is.na(y))
+    # filter(between(y_fut,
+    #                min,
+    #                max) | is.na(y_fut))
 
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y) | (y >= min & y <= max)] |>
-    setorder(code, year)
+  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
+    setorder(code,
+             year)
 
 
   return(path_fut_speed)
