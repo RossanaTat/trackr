@@ -55,31 +55,83 @@ indicator = "SL.TLF.ACTI.FE.ZS"
 ## Poverty Rate -Ch. 1 ####
 # _________________________________________ #
 
-load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
-# # # #
-new_results <- track_progress(
-  data = poverty_country,
-  indicator = "rate",
-  code_col = "code",
-  year_col = "year",
-  startyear_data = 1950,
-  endyear_data = 2025,
-  eval_from = 2015,
-  eval_to=2025,
-  future = TRUE,
-  target_year = 2050,
-  speed=TRUE,
-  percentiles=FALSE,
-  sequence_pctl = seq(20, 80, 20),
-  sequence_speed = c(0.25,0.5,1,2,4),
-  best="low",
-  min=0,
-  max=100,
-  support=1,
-  granularity=0.01,
-)
-#
+indicator = "rate"
 
+# Load data
+
+# load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
+
+# Run model
+
+# new_results <- track_progress(
+#   data = poverty_country,
+#   indicator = "rate",
+#   code_col = "code",
+#   year_col = "year",
+#   startyear_data = 1950,
+#   endyear_data = 2025,
+#   eval_from = 2015,
+#   eval_to=2025,
+#   future = TRUE,
+#   target_year = 2050,
+#   speed=TRUE,
+#   percentiles=FALSE,
+#   sequence_pctl = seq(20, 80, 20),
+#   sequence_speed = c(0.25,0.5,1,2,4),
+#   best="low",
+#   min=0,
+#   max=100,
+#   support=1,
+#   granularity=0.01,
+# )
+# #
+
+# ________________________________________________ #
+## Fossil Fuel Sub. per unit of GDP -Ch. 12 ####
+# ________________________________________________ #
+
+# Load data
+# data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
 #
-#
-#
+# # Run package code
+# results <- track_progress(
+#   data=data,
+#   indicator="y",
+#   code_col="code",
+#   year_col="year",
+#   startyear_data=2015,
+#   endyear_data=2025,
+#   eval_from=2015,
+#   eval_to=2025,
+#   future=FALSE,
+#   target_year=2030,
+#   speed=TRUE,
+#   percentiles=TRUE,
+#   sequence_pctl = seq(20, 80, 20),
+#   sequence_speed = c(0.25,0.5,1,2,4),
+#   best="low",
+#   min=0,
+#   max=max(data$y),
+#   support=1,
+#   granularity=0.01,
+# )
+
+# Inspect results
+
+### Plot predicted path
+
+# path <- results$predicted_changes$path_speed
+# ggplot(path,aes(y=y,x=time)) + geom_line()
+# min(path$y)
+
+# The path stops at 3.4. Below that, changes are not on expectation in the right direction. You can also see that here:
+
+# expectedchanges <- results$predicted_changes$changes_speed
+# ggplot(expectedchanges,aes(y=change,x=y)) + geom_line()
+
+# Here the x-axis is the initial level, and the y-axis is the expected change.
+# For the speed method to work, the expected change has to be below zero regardless of the initial level.
+
+# Only for countries with values greater than 3.4 can the speed score be calculated
+
+

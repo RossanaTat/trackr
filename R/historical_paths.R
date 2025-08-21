@@ -364,7 +364,7 @@ path_historical <- function(percentiles      = TRUE,
 #' @param changes_pctl A `data.table` with predicted changes by `initialvalue` and `pctl`.
 #' @param verbose Logical. Whether to print progress messages.
 #'
-#' @return A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+#' @return A `data.table` with projected values `y_pctl` by `code`, `year`, and `pctl`. `y_pctl` is the projected value along the given percentile path in that year
 #'
 #' @export
 project_pctls_path <- function(data_his,

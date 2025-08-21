@@ -2,7 +2,7 @@
 #'
 #' Computes countries’ percentile progress scores over a user-specified evaluation period.
 #'
-#' @param path_his_pctl A data frame containing columns: `code`, `year`, `y`, `y_his`, and `pctl`
+#' @param path_his_pctl A data frame containing columns: `code`, `year`, `y`, `y_pctl`, and `pctl`
 #' @param best Character indicating whether higher (`"high"`) or lower (`"low"`) values are better
 #' @inheritParams prep_data
 #'
@@ -21,58 +21,66 @@ get_scores_pctl <- function(path_his_pctl,
     cli::cli_abort("{.arg path_his_pctl} must be a {.cls data.table}.")
   }
 
-  dt <- copy(path_his_pctl)  # avoid modifying input in-place
+  dt <- copy(path_his_pctl)
 
-  # Filter out NA and keep only rows within the desired range
+  # Filter out NA and optionally keep only values within range
   dt <- dt[!is.na(y) & between(y, min, max)]
 
-  # Create firstobs and firstyear per group
+  # Sort and create first observation & first year
   setorder(dt, code, pctl, year)
-
   dt[, firstobs := y[1L], by = .(code, pctl)]
-
   dt[, firstyear := year[1L], by = .(code, pctl)]
 
-  # Keep only the last observation in the group
+  # Keep only the last observation in each group
   dt <- dt[, .SD[.N], by = .(code, pctl)]
 
-  # Filter for evaluation period of at least 5 years
+  # Require at least 5 years evaluation
   dt <- dt[year - firstyear >= 5]
   dt[, evaluationperiod := paste0(firstyear, "-", year)]
   dt[, c("year", "firstyear") := NULL]
 
-  # Compute score depending on whether higher or lower is better
-  if (best == "low") {
-    dt[, pctl := 100 - pctl]
-  }
-
+  # Order by code and pctl after flipping
   setorder(dt, code, pctl)
 
-  dt[, score := fifelse(
-    (best == "low" & y >= y_pctl & .I == .I[1L]) | (best == "high" & y <= y_pctl & .I == .I[1L]),
-    paste0(0, "-", pctl),
-    NA_character_
-  ), by = code]
+  # TODO:
+  #### Convert to data table ####
 
-  dt[, score := fifelse(
-    (best == "low" & y < y_pctl & y >= shift(y_pctl, type = "lead")) |
-      (best == "high" & y > y_pctl & y <= shift(y_pctl, type = "lead")),
-    paste0(pctl, "-", shift(pctl, type = "lead")),
-    score
-  ), by = code]
+  if (best=="low") {
+    dt <- dt |>
+      mutate(pctl = 100 - pctl) |>
+      group_by(code) |>
+      arrange(pctl) |>
+      mutate(score = if_else(y>=y_pctl & row_number()==1,paste0(0,"-",pctl),NA),
+             score = if_else(y<y_pctl & y>=lead(y_pctl),paste0(pctl,"-",lead(pctl)),score),
+             score = if_else(y<y_pctl & row_number()==n(),paste0(pctl,"-",100),score)) |>
+      ungroup()  |>
+      filter(firstobs!=best) |>
+      filter(!is.na(score)) |>
+      select(code,score,evaluationperiod)
+  }
 
-  dt[, score := fifelse(
-    (best == "low" & y < y_pctl & .I == .I[.N]) |
-      (best == "high" & y > y_pctl & .I == .I[.N]),
-    paste0(pctl, "-", 100),
-    score
-  ), by = code]
+  # Calculate the score for indicators where a high value is better
+  if (best=="high") {
+    dt <- dt |>
+      group_by(code) |>
+      arrange(pctl) |>
+      mutate(score = if_else(y<=y_pctl & row_number()==1,paste0(0,"-",pctl),NA),
+             score = if_else(y>y_pctl & y<=lead(y_pctl),paste0(pctl,"-",lead(pctl)),score),
+             score = if_else(y>y_pctl & row_number()==n(),paste0(pctl,"-",100),score)) |>
+      ungroup() |>
+      filter(firstobs!=best) |>
+      filter(!is.na(score)) |>
+      select(code,score,evaluationperiod)
+  }
 
-  dt <- dt[firstobs != best & !is.na(score), .(code, score, evaluationperiod)]
+
+  dt <- qDT(dt)
+
+  # Keep only rows with assigned score
+  dt <- dt[!is.na(score), .(code, score, evaluationperiod)]
 
   return(dt)
 }
-
 
 #' Calculate speed-based score over a historical evaluation period
 #'
@@ -92,33 +100,32 @@ get_scores_speed <- function(path_his_speed,
                              max         = NULL,
                              granularity = 0.1) {
 
-  # Step 1 — Use simulated values (y_speed), not actual observed y
+  # Step 1 — Filter on y_speed and round
   path_his_speed <- path_his_speed[
     !is.na(y_speed) & between(y_speed, min, max),
-    .(code, year, y = round(y_speed / granularity) * granularity)  # Round for join with path_speed$y
+    .(code, year, y = round(y_speed / granularity) * granularity)
   ]
 
-  # Step 2 — Get start and end values per country
-  path_his_speed <- path_his_speed[order(code, year)]
+  # Step 2 — Order within groups
+  setorder(path_his_speed, code, year)
 
-  summary_dt <- path_his_speed[
-    , .(
-      y_start = first(y),
-      year_start = first(year),
-      y_end   = last(y),
-      year_end = last(year)
-    ),
-    by = code
-  ][(year_end - year_start) >= 5]  # Only keep countries with at least 5-year history
+  # Step 3 — Add y_start and year_start per group
+  path_his_speed[, `:=`(
+    y_start    = first(y),
+    year_start = first(year)
+  ), by = code]
 
-  # Step 3 — Join end point (y_end) with path_speed to get time_end
-  summary_dt_join1 <- copy(summary_dt)
-  summary_dt_join1[, y := y_end]
+  # Step 4 — Keep only the last row per country + at least 5-year span
+  last_rows <- path_his_speed[
+    , .SD[.N], by = code
+  ][(year - year_start) >= 5]
 
+  # Step 5 — Join y_end (last y) with path_speed → time_end
+  last_rows[, y := y]
   join1 <- joyn::joyn(
-    summary_dt_join1,
+    last_rows,
     path_speed,
-    by = "y",
+    by         = "y",
     match_type = "m:1",
     reportvar  = FALSE,
     keep       = "left",
@@ -127,13 +134,12 @@ get_scores_speed <- function(path_his_speed,
   setnames(join1, "time", "time_end")
   join1[, y := NULL]
 
-  # Step 4 — Join start point (y_start) with path_speed to get time_start
+  # Step 6 — Join y_start with path_speed → time_start
   join1[, y := y_start]
-
   join2 <- joyn::joyn(
     join1,
     path_speed,
-    by = "y",
+    by         = "y",
     match_type = "m:1",
     reportvar  = FALSE,
     keep       = "left",
@@ -142,12 +148,12 @@ get_scores_speed <- function(path_his_speed,
   setnames(join2, "time", "time_start")
   join2[, y := NULL]
 
-  # Step 5 — Compute score: speed of change in trajectory per year
+  # Step 7 — Compute score + evaluation period
   result <- join2[
     , .(
       code,
-      score = (time_end - time_start) / (year_end - year_start),
-      evaluationperiod = paste0(year_start, "-", year_end)
+      score            = (time_end - time_start) / (year - year_start),
+      evaluationperiod = paste0(year_start, "-", year)
     )
   ][!is.na(score)]
 
