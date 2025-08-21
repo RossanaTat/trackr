@@ -91,11 +91,11 @@ indicator = "rate"
 # ________________________________________________ #
 
 # Load data
-# data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
-#
-# # Run package code
+data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
+
+# Run package code
 # results <- track_progress(
-#   data=data,
+#   data=data_ch12,
 #   indicator="y",
 #   code_col="code",
 #   year_col="year",

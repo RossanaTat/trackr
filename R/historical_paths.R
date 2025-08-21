@@ -141,18 +141,6 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
 #' @return A data table of projected values under different speeds
 #'
 #'
-#'
-#' Calculate speed-based score over a historical evaluation period
-#'
-#' Computes countries’ speed of progress over a user-specified evaluation period.
-#'
-#' @param path_his_speed Result of `project_path_speed()` — contains simulated paths (`y_speed`)
-#' @param path_speed Result of `get_speed_path()` — the base simulated trajectories
-#' @inheritParams prep_data
-#' @param granularity Rounding precision for `y_speed`. Default is 0.1.
-#'
-#' @return A data.table with `code`, `score`, and `evaluationperiod`.
-#'
 #' @export
 project_path_speed <- function(data_his,
                                sequence_speed = c(0.25, 0.5, 1, 2, 4),
