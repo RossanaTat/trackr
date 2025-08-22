@@ -91,9 +91,9 @@ indicator = "rate"
 # ________________________________________________ #
 
 # Load data
-data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
-
-# Run package code
+# data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
+#
+# # Run package code
 # results <- track_progress(
 #   data=data_ch12,
 #   indicator="y",
@@ -111,7 +111,7 @@ data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\P
 #   sequence_speed = c(0.25,0.5,1,2,4),
 #   best="low",
 #   min=0,
-#   max=max(data$y),
+#   max=max(data_ch12$y),
 #   support=1,
 #   granularity=0.01,
 # )
