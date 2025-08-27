@@ -9,7 +9,7 @@ predict_pctls(
   min = NULL,
   max = NULL,
   granularity = 0.1,
-  sequence_pctl = seq(20, 80, 20),
+  sequence_pctl = NULL,
   verbose = TRUE
 )
 }

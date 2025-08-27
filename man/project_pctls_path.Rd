@@ -39,7 +39,7 @@ This argument is only relevant if `percentiles = TRUE`.}
 \item{verbose}{Logical. Whether to print progress messages.}
 }
 \value{
-A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+A `data.table` with projected values `y_pctl` by `code`, `year`, and `pctl`. `y_pctl` is the projected value along the given percentile path in that year
 }
 \description{
 Simulates year-by-year projected paths of a variable across percentiles, based on historical values and predicted changes

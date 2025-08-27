@@ -244,86 +244,6 @@ project_path_speed <- function(data_his,
   data_his_copy <- data_his_copy[y >= min, ][y <= max, ][, k := NULL]
 
 
-
-
-  # # Rename actual y as y_actual -keeping it for later
-  # setnames(data_his_copy, "y", "y_actual")
-  #
-  # # Cross join with sequence_speed
-  # speeds <- qDT(sequence_speed)[, k := 1]
-  #
-  # data_his_copy[, k := 1]
-  # data_his_copy <- joyn::merge(data_his_copy,
-  #                         speeds,
-  #                         by              = "k",
-  #                         allow.cartesian = TRUE,
-  #                         reportvar       = FALSE,
-  #                         verbose         = FALSE)
-  #
-  # # Keep only rows where y_his is not NA
-  # data_his_copy <- data_his_copy[!is.na(y_his)]
-  #
-  # setnames(data_his_copy,
-  #          old = "sequence_speed",
-  #          new = "speed")
-  #
-  # # Cross join with path_speed
-  #
-  # path_speed_copy <- copy(path_speed)
-  # path_speed_copy[, k := 1]
-  #
-  #
-  # path_his_speed <- joyn::merge(data_his_copy,
-  #
-  #                               path_speed_copy,
-  #                               by = "k",
-  #                               allow.cartesian                = TRUE,
-  #                               verbose                        = FALSE,
-  #                               reportvar                      = FALSE)
-  #
-  #
-  # path_his_speed[, k := NULL]
-  # path_his_speed[, best := best]
-  #
-  # # Filter: keep only those where path is improving in right direction
-  # path_his_speed <- path_his_speed[
-  #   (best == "high" & y_his <= y) |
-  #     (best != "high" & y_his >= y)
-  # ]
-  #
-  #
-  # # Compute projected year
-  # setorder(path_his_speed, code, speed, time)
-  #
-  # path_his_speed[, year := year + (time - time[1]) / speed,
-  #                  by = .(code, speed)]
-  #
-  # path_his_speed[, y_his := NULL][,
-  #                                 time := NULL][,
-  #                                               best:= NULL]
-  #
-  # setnames(path_his_speed,
-  #          old = c("y", "y_actual"),
-  #          new = c("y_speed", "y"))
-  #
-  # # Interpolate y_his over time
-  # setorder(path_his_speed,
-  #          code,
-  #          speed,
-  #          year)
-  #
-  # path_his_speed[,
-  #                y_sim := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2),
-  #                by = .(code, speed)]
-  #
-  # # Keep only evaluation years
-  # path_his_speed <- path_his_speed[year %in% seq(eval_from, eval_to)]
-  #
-  # #########################################
-  #
-  # # Filter for actual values between min and max
-  # path_his_speed <- path_his_speed[y_speed >= min, ][y_speed <= max, ]
-
   if (verbose) {
     if (is.null(data_his_copy)) {
       cli::cli_alert_danger("Computed path dt is empty")
@@ -333,7 +253,6 @@ project_path_speed <- function(data_his,
   # Output _____ #
   ################
 
-  # y_his  :  Interpolated simulated trajectory on full-year grid
   # y_speed:  Simulated trajectory values from path_speed (non-regular years)
   # y      :  Actual observed data
 

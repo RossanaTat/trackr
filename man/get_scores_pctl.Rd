@@ -7,7 +7,7 @@
 get_scores_pctl(path_his_pctl, best = "high", min = NULL, max = NULL)
 }
 \arguments{
-\item{path_his_pctl}{A data frame containing columns: `code`, `year`, `y`, `y_his`, and `pctl`}
+\item{path_his_pctl}{A data frame containing columns: `code`, `year`, `y`, `y_pctl`, and `pctl`}
 
 \item{best}{Character indicating whether higher (`"high"`) or lower (`"low"`) values are better}
 

@@ -91,9 +91,9 @@ indicator = "rate"
 # ________________________________________________ #
 
 # Load data
-# data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
-#
-# # Run package code
+#  data_ch12 <- readxl::read_excel("C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\fossil_fuel_subsidy_glow.xlsx")
+# #
+# # # Run package code
 # results <- track_progress(
 #   data=data_ch12,
 #   indicator="y",
@@ -115,17 +115,17 @@ indicator = "rate"
 #   support=1,
 #   granularity=0.01,
 # )
-
-# Inspect results
-
-### Plot predicted path
-
+#
+# # # Inspect results
+# #
+# # ### Plot predicted path
+# #
 # path <- results$predicted_changes$path_speed
 # ggplot(path,aes(y=y,x=time)) + geom_line()
 # min(path$y)
-
-# The path stops at 3.4. Below that, changes are not on expectation in the right direction. You can also see that here:
-
+#
+# # The path stops at 3.4. Below that, changes are not on expectation in the right direction. You can also see that here:
+#
 # expectedchanges <- results$predicted_changes$changes_speed
 # ggplot(expectedchanges,aes(y=change,x=y)) + geom_line()
 
