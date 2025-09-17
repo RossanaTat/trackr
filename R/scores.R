@@ -100,78 +100,97 @@ get_scores_speed <- function(path_his_speed,
                              max         = NULL,
                              granularity = 0.1) {
 
-  # Step 1 — Filter on y and round
-  path_his_speed <- path_his_speed[
-    !is.na(y) & between(y, min, max),
-    .(code, year, y = round(y / granularity) * granularity)
-  ]
+  result <- path_his_speed |>
+    select(code,year,y,y_speed) |>
+    filter(!is.na(y) & between(y,min,max)) |>
+    mutate(y=round(y/granularity)*granularity) |>
+    group_by(code) |>
+    arrange(year) |>
+    mutate(y_start = first(y),
+           year_start = first(year)) |>
+    filter(row_number()==n() & year-year_start>=5) |>
+    ungroup()  |>
+    joyn::joyn(path_speed,by="y",match_type="m:1",reportvar=FALSE,keep="left",verbose=FALSE) |>
+    rename("y_end" = "y", "y" = "y_start","time_end" = "time") |>
+    joyn::joyn(path_speed,by="y",match_type="m:1",reportvar=FALSE,keep="left",verbose=FALSE) |>
+    rename("time_start" = "time")  |>
+    mutate(score = (time_end-time_start)/(year-year_start)) |>
+    mutate(evaluationperiod = paste0(year_start,"-",year)) |>
+    filter(!is.na(score)) |>
+    qDT()
 
-  # Step 2 — Order within groups
-  setorder(path_his_speed, code, year)
-
-  # Step 3 — Add y_start and year_start per group
-  path_his_speed[, `:=`(
-    y_start    = first(y),
-    year_start = first(year)
-  ), by = code]
-
-  # Step 4 — Keep only the last row per country, conditional on being at least 5-year span
-  last_rows <- path_his_speed[
-    , .SD[.N], by = code
-  ][(year - year_start) >= 5]
-
-  # Step 5 — Join y_end (last y) with path_speed → time_end
-  last_rows[, y := y]
-
-  # Check for duplicates in path_speed$y
-  if(any(duplicated(path_speed$y))) {
-    dup_vals <- path_speed$y[duplicated(path_speed$y)]
-    cli::cli_alert_warning(
-      paste0(
-        "Duplicate y values found in path_speed: ",
-        paste(unique(dup_vals), collapse = ", "),
-        ". This may cause ambiguous joins."
-      )
-    )
-    # Optionally, stop execution:
-    # stop("Duplicate y values in path_speed. Please ensure y is unique.")
-  }
-
-  join1 <- joyn::joyn(
-    last_rows,
-    path_speed,
-    by         = "y",
-    match_type = "m:1",
-    reportvar  = FALSE,
-    keep       = "left",
-    verbose    = FALSE
-  )
-  setnames(join1, "time", "time_end")
-  join1[, y := NULL]
-
-  # Step 6 — Join y_start with path_speed → time_start
-  join1[, y := y_start]
-  join2 <- joyn::joyn(
-    join1,
-    path_speed,
-    by         = "y",
-    match_type = "m:1",
-    reportvar  = FALSE,
-    keep       = "left",
-    verbose    = FALSE
-  )
-  setnames(join2, "time", "time_start")
-  join2[, y := NULL]
-
-
-  # Step 7 — Compute score + evaluation period
-  result <- join2[
-    , .(
-      code,
-      score            = (time_end - time_start) / (year - year_start),
-      evaluationperiod = paste0(year_start, "-", year)
-    )
-  ][!is.na(score)]
+  # # Step 1 — Filter on y and round
+  # path_his_speed <- path_his_speed[
+  #   !is.na(y) & between(y, min, max),
+  #   .(code, year, y = round(y / granularity) * granularity)
+  # ]
+  #
+  # # Step 2 — Order within groups
+  # setorder(path_his_speed, code, year)
+  #
+  # # Step 3 — Add y_start and year_start per group
+  # path_his_speed[, `:=`(
+  #   y_start    = first(y),
+  #   year_start = first(year)
+  # ), by = code]
+  #
+  # # Step 4 — Keep only the last row per country, conditional on being at least 5-year span
+  # last_rows <- path_his_speed[
+  #   , .SD[.N], by = code
+  # ][(year - year_start) >= 5]
+  #
+  # # Step 5 — Join y_end (last y) with path_speed → time_end
+  # last_rows[, y := y]
+  #
+  # # Check for duplicates in path_speed$y
+  # if(any(duplicated(path_speed$y))) {
+  #   dup_vals <- path_speed$y[duplicated(path_speed$y)]
+  #   cli::cli_alert_warning(
+  #     paste0(
+  #       "Duplicate y values found in path_speed: ",
+  #       paste(unique(dup_vals), collapse = ", "),
+  #       ". This may cause ambiguous joins."
+  #     )
+  #   )
+  #   # Optionally, stop execution:
+  #   # stop("Duplicate y values in path_speed. Please ensure y is unique.")
+  # }
+  #
+  # join1 <- joyn::joyn(
+  #   last_rows,
+  #   path_speed,
+  #   by         = "y",
+  #   match_type = "m:1",
+  #   reportvar  = FALSE,
+  #   keep       = "left",
+  #   verbose    = FALSE
+  # )
+  # setnames(join1, "time", "time_end")
+  # join1[, y := NULL]
+  #
+  # # Step 6 — Join y_start with path_speed → time_start
+  # join1[, y := y_start]
+  # join2 <- joyn::joyn(
+  #   join1,
+  #   path_speed,
+  #   by         = "y",
+  #   match_type = "m:1",
+  #   reportvar  = FALSE,
+  #   keep       = "left",
+  #   verbose    = FALSE
+  # )
+  # setnames(join2, "time", "time_start")
+  # join2[, y := NULL]
+  #
+  #
+  # # Step 7 — Compute score + evaluation period
+  # result <- join2[
+  #   , .(
+  #     code,
+  #     score            = (time_end - time_start) / (year - year_start),
+  #     evaluationperiod = paste0(year_start, "-", year)
+  #   )
+  # ][!is.na(score)]
 
   return(result[])
 }

@@ -14,6 +14,7 @@ sequence_pctl  = seq(20,80,20)
 sequence_speed = c(0.25, 0.5, 1, 2, 4)
 min = 0
 support = 2
+extreme_percentile = getOption("trackr.extreme_pctl")
 # max = 100
 
 # _________________________________________ #
@@ -59,32 +60,32 @@ indicator = "rate"
 
 # Load data
 
-# load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
+load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
 
 # Run model
 
-# new_results <- track_progress(
-#   data = poverty_country,
-#   indicator = "rate",
-#   code_col = "code",
-#   year_col = "year",
-#   startyear_data = 1950,
-#   endyear_data = 2025,
-#   eval_from = 2015,
-#   eval_to=2025,
-#   future = TRUE,
-#   target_year = 2050,
-#   speed=TRUE,
-#   percentiles=FALSE,
-#   sequence_pctl = seq(20, 80, 20),
-#   sequence_speed = c(0.25,0.5,1,2,4),
-#   best="low",
-#   min=0,
-#   max=100,
-#   support=1,
-#   granularity=0.01,
-# )
-# #
+new_results <- track_progress(
+  data = poverty_country,
+  indicator = "rate",
+  code_col = "code",
+  year_col = "year",
+  startyear_data = 1950,
+  endyear_data = 2025,
+  eval_from = 2015,
+  eval_to=2025,
+  future = TRUE,
+  target_year = 2050,
+  speed=TRUE,
+  percentiles=FALSE,
+  sequence_pctl = seq(20, 80, 20),
+  sequence_speed = c(0.25,0.5,1,2,4),
+  best="low",
+  min=0,
+  max=100,
+  support=1,
+  granularity=0.01,
+)
+
 
 # ________________________________________________ #
 ## Fossil Fuel Sub. per unit of GDP  ####
