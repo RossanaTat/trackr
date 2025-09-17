@@ -21,7 +21,8 @@ Imports:
     quantregGrowth,
     wbstats,
     rlang,
-    cli
+    cli,
+    writexl
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
