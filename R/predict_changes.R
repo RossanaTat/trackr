@@ -1,4 +1,3 @@
-
 #' Predict Speed of Change Based on Initial Value
 #'
 #' Fits a generalized constrained regression quantile model (`gcrq`) to estimate
@@ -93,25 +92,6 @@ get_speed_path <- function(changes_speed,
                            best        = "high",
                            verbose     = TRUE) {
 
-  # Add validations on inputs ####
-#
-#   if (best == "low") {
-#
-#     setorder(changes_speed,
-#              -y)       # reorder rows by descending y
-#
-#     changes_speed[, change := -change] # mutate/change 'change' column by negating its values
-#
-#
-#   }
-  #
-  # if (best == "high") {
-  #
-  #   setorder(changes_speed,
-  #            y)       # reorder rows by descending y
-  #
-  # }
-
   # Ensure changes_speed is a data.table
   path_speed <- copy(changes_speed)  # don't overwrite original
 
@@ -143,12 +123,6 @@ get_speed_path <- function(changes_speed,
     cumsum(time_new)                                        # cumulative sum
   }]
 
-  # original version #####
-  # path_speed <- changes_speed |>
-  #   rename( "time" = "change") |>
-  #   mutate(time = 1/lag(time)*granularity,
-  #          time = if_else(row_number()==1,0,time),
-  #          time = cumsum(time))
 
   # Step 3: Filter out non-finite values
   path_speed <- path_speed[is.finite(time)]
