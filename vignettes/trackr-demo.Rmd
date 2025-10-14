@@ -157,9 +157,8 @@ benchmarking progress, and exploring future target scenarios.
 
 This example illustrated how to use track_progress() with WDI data to
 assess and project progress on undernourishment. The same workflow can
-be applied to any other indicator — simply change the WDI code (e.g.,
-for education, health, or environmental metrics) and re-run the
-function.
+be applied to any other indicator — either simply changing the WDI code
+or providing your own data.
 
 Suggested citation: Mahler, D. & Tatulli, R. trackr: Tools to Evaluate
 and Project Progress on Development Indicators. R package version 0.1.0.
