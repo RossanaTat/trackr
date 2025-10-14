@@ -56,14 +56,14 @@ indicator = "SL.TLF.ACTI.FE.ZS"
 ## Poverty Rate  ####
 # _________________________________________ #
 
-indicator = "rate"
-
-# Load data
-
-#load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
-
-# Run model
-
+# indicator = "rate"
+#
+# # Load data
+#
+# load(file = "C:\\Users\\wb621604\\OneDrive - WBG\\Desktop\\PIP\\poverty-country.Rda")
+#
+# # Run model
+#
 # new_results <- track_progress(
 #   data = poverty_country,
 #   indicator = "rate",
