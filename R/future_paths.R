@@ -144,10 +144,6 @@ future_path_pctls <- function(data_fut,
   # Continue this iteratively until the target year
   while (n + min(path_fut_pctl$year) - 1 <= target_year) {
     # Year processed concurrently
-    #print(n+min(path_fut_pctl$year)-1)
-
-    #if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
-
     path_fut_pctl <- path_fut_pctl |>
       # Merge in data with predicted changes based on initial levels
       joyn::joyn(changes_pctl,
@@ -353,74 +349,3 @@ future_path <- function(data_fut,
   return(result)
 }
 
-
-## TESTING NEW FUNCTIONS ####
-new_future_path_pctls <- function(data_fut,
-                                  sequence_pctl     = seq(20, 80, 20),
-                                  changes_pctl,
-                                  target_year = 2030,
-                                  granularity = 0.1,
-                                  min         = 0,
-                                  max         = 100,
-                                  verbose     = TRUE) {
-
-
-  # Step 1: Start from observed data_fut at the base year
-  dt_start <- data_fut[, .(code, year, y, y_fut)]
-  dt_start <- dt_start[, .(pctl = sequence_pctl), by = .(code, year, y, y_fut)]
-
-  # Step 2: Expand to all years forward
-  all_years <- seq(min(dt_start$year),
-                   target_year)
-
-  path_fut_pctl <- dt_start[, .(year = all_years),
-                            by = .(code, pctl, y, y_fut)]
-
-  # Step 3: Keep y_fut only for start year
-  base_year <- min(all_years)
-
-  path_fut_pctl[, y_fut := fifelse(year == base_year,
-                                   y_fut,
-                                   NA_real_)]
-
-  # Step 4: Pre-sort for fast group operations
-  setorder(path_fut_pctl, code, pctl, year)
-
-  years_to_project <- all_years[all_years > base_year]
-
-  if (verbose) cli::cli_alert_info("Calculating future percentile paths")
-
-  # Step 5: Year-by-year projection loop
-  for (yr in years_to_project) {
-    if (verbose) cli::cli_alert_info("Processing year {.strong {yr}}")
-
-    # Merge predictions based on last year’s value
-    path_fut_pctl <- joyn::joyn(
-      path_fut_pctl,
-      changes_pctl,
-      by = c("y_fut = initialvalue", "pctl"),
-      match_type = "m:1",
-      keep = "left",
-      reportvar = FALSE,
-      verbose = FALSE
-    )
-
-    # Apply projected value only for this year
-    path_fut_pctl[year == yr,
-                  y_fut := round((shift(y_fut) + shift(change)) / granularity) * granularity,
-                  by = .(code, pctl)
-    ]
-
-    # Drop change to avoid accumulation
-    path_fut_pctl[, change := NULL]
-  }
-
-  # Step 6: Final cleanup and filtering
-  path_fut_pctl <- path_fut_pctl[
-    !is.na(y_fut) & (is.na(y) | (y >= min & y <= max))
-  ]
-  data.table::setorder(path_fut_pctl, code, year)
-
-  # Return result
-  return(path_fut_pctl[])
-}
