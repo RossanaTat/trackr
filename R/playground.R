@@ -23,9 +23,9 @@ extreme_percentile = getOption("trackr.extreme_pctl")
 
 
 indicator = "NY.GDP.PCAP.KD"
-data <- wbstats::wb_data(indicator = indicator,
-                             lang = "en",
-                             country="countries_only")
+# data <- wbstats::wb_data(indicator = indicator,
+#                              lang = "en",
+#                              country="countries_only")
 startyear_data                                = 1960
 endyear_data                                  = 2022
 eval_from                                     = 2015
@@ -134,67 +134,3 @@ indicator = "SL.TLF.ACTI.FE.ZS"
 # For the speed method to work, the expected change has to be below zero regardless of the initial level.
 
 # Only for countries with values greater than 3.4 can the speed score be calculated
-
-
-# WDI Indicators     ######
-# ___________________ ######
-
-
-# Ch 1 ####
-
-indicator = "SI.POV.DDAY"
-# data_ch1 <- wbstats::wb_data(indicator = indicator,
-#                          lang      = "en",
-#                          country   = "countries_only")
-#
-# results_ch1 <- track_progress(
-#   data           = data_ch1,
-#   indicator      = indicator,
-#   code_col       = "iso3c",
-#   year_col       = "date",
-#   startyear_data = 1960,
-#   endyear_data   = 2024,
-#   eval_from      = 2015,
-#   eval_to        = 2023,
-#   future         = FALSE,
-#   target_year    = 2030,
-#   speed          = TRUE,
-#   percentiles    = TRUE,
-#   sequence_pctl  = seq(20, 80, 20),
-#   sequence_speed = c(0.25, 0.5, 1, 2, 4),
-#   best           = "low",
-#   min            = 0,
-#   max            = NULL,
-#   support        = 2,
-#   granularity    = 0.01
-# )
-
-# Ch 2 ####
-
-# indicator = "SN.ITK.DEFC.ZS"
-# data_ch2 <- wbstats::wb_data(indicator = indicator,
-#                              lang      = "en",
-#                              country   = "countries_only")
-#
-# results_ch2 <- track_progress(
-#   data           = data_ch2,
-#   indicator      = indicator,
-#   code_col       = "iso3c",
-#   year_col       = "date",
-#   startyear_data = 1960,
-#   endyear_data   = 2024,
-#   eval_from      = 2015,
-#   eval_to        = 2024,
-#   future         = TRUE,
-#   target_year    = 2030,
-#   speed          = TRUE,
-#   percentiles    = TRUE,
-#   sequence_pctl  = seq(20, 80, 20),
-#   sequence_speed = c(0.25, 0.5, 1, 2, 4),
-#   best           = "low",
-#   min            = 0,
-#   max            = NULL,
-#   support        = 2,
-#   granularity    = 0.01
-# )
-
