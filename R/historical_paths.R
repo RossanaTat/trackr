@@ -70,9 +70,6 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
   # Compute support table using all y values
   support_table <- dt[!is.na(y_rounded), .(n_countries = uniqueN(code)), by = y_rounded]
 
-  # Determine bounds based on extreme percentiles
-  # lower_cutoff <- quantile(dt$y_rounded, probs = extreme_percentile, na.rm = TRUE)
-  # upper_cutoff <- quantile(dt$y_rounded, probs = 1 - extreme_percentile, na.rm = TRUE)
 
   # --------------------------------------
   # Tail cutoff logic: support asymmetric percentiles ####
@@ -162,7 +159,6 @@ project_path_speed <- function(data_his,
   speeds <- qDT(sequence_speed)[, k := 1]
 
   data_his_copy[, k := 1]
-  #data_his_copy[, best := best]
 
   data_his_copy <- joyn::merge(data_his_copy,
                           speeds,
@@ -220,10 +216,6 @@ project_path_speed <- function(data_his,
              y_vars_to_keep = "y",
              verbose        = FALSE)
 
-  # data_his_copy[,
-  #               y_speed := zoo::na.approx(y_speed, x = year, na.rm = FALSE, rule = 2),
-  #               by = .(code, speed)]
-
   # keep original row order
   data_his_copy[, orig_order := .I]
 
@@ -255,7 +247,6 @@ project_path_speed <- function(data_his,
 
   # y_speed:  Simulated trajectory values from path_speed (non-regular years)
   # y      :  Actual observed data
-
 
   return(data_his_copy[])
 }
@@ -342,9 +333,6 @@ path_historical <- function(percentiles      = TRUE,
 }
 
 
-## TESTING NEW PROJECT PCTLS PATHS ####
-# Filter early to only include cases where target is not yet met
-
 #' Historical percentiles paths
 #'
 #' Simulates year-by-year projected paths of a variable across percentiles, based on historical values and predicted changes
@@ -390,14 +378,6 @@ project_pctls_path <- function(data_his,
   all_years <- seq(eval_from,
                    eval_to)
 
-  ### testing here ________________ ############
-
-
-  #### ________________________________________ ##########
-
-
-
-
   dt_expanded <- dt_expanded[, .(year = all_years),
                              by = .(code, pctl)][
     dt_expanded, on = .(code, pctl, year), y_his := i.y_his]
@@ -423,7 +403,6 @@ project_pctls_path <- function(data_his,
                             relationship = "many-to-many",
                             verbose      = FALSE)
 
-  #
   #   # Apply change and granularity, and floor/ceiling bounds
     prev[, new_y := round((y_his + change) / granularity) * granularity]
 
