@@ -68,6 +68,10 @@ prep_data <- function(indicator           = NULL,
   dt_long[, duration := as.numeric(gsub("^c", "", as.character(duration)))]
   dt_long[, year_end := year_start + duration]
 
+
+  # Filter out spells that extend beyond endyear_data
+  dt_long <- dt_long[year_end <= endyear_data]
+
   setorder(dt_long, code, year_start, duration)
   dt_long <- dt_long[, .SD[1], by = .(code, year_start)]
   dt_long <- dt_long[!is.na(change)]
