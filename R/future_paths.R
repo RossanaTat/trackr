@@ -17,6 +17,8 @@ prep_data_fut <- function(data               = NULL,
                           year_col           = "date",
                           support            = 1,
                           extreme_percentile = getOption("trackr.extreme_pctl"),
+                          startyear_data     = 2000,
+                          endyear_data       = 2023,
                           verbose            = TRUE) {
 
   # Convert to data.table
@@ -29,9 +31,20 @@ prep_data_fut <- function(data               = NULL,
                        skip_absent = FALSE)
 
   # Keep relevant columns and latest observation per country
+  # Filter to intended future horizon
+
   dt <- dt[!is.na(y), .(code, year, y)]
+  dt <- dt[year >= startyear_data & year <= endyear_data]
+
   setorder(dt, code, year)
+
   dt <- dt[, .SD[.N], by = code]
+
+  if (nrow(dt) == 0) {
+    cli::cli_warn("No data remains within startyear_data and endyear_data window.")
+    return(NULL)
+  }
+
 
   # ____________________________
   # Tail-aware support filtering on raw y

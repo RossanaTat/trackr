@@ -166,14 +166,16 @@ track_progress <- function(data           = NULL,
   if (future == TRUE) {
 
     data_fut <- prep_data_fut(
-      data        = data,
-      indicator   = indicator,
-      granularity = granularity,
-      code_col    = code_col,
-      year_col    = year_col,
-      support     = support,
+      data               = data,
+      indicator          = indicator,
+      granularity        = granularity,
+      code_col           = code_col,
+      year_col           = year_col,
+      support            = support,
       extreme_percentile = extreme_percentile,
-      verbose     = verbose
+      startyear_data     = startyear_data,
+      endyear_data       = endyear_data,
+      verbose            = verbose
     )
 
     future_path_out <- future_path(

@@ -52,10 +52,24 @@ predict_speed <- function(data_model,
                           k = x_seq)
 
   # Create output data.table
+  # predictions_dt <- data.table(
+  #   y      = round(x_seq / granularity) * granularity,
+  #   change = as.numeric(changes_speed)
+  # )
+
+  # Updating to change with granularity
   predictions_dt <- data.table(
     y      = round(x_seq / granularity) * granularity,
-    change = as.numeric(changes_speed)
+    change = round(as.numeric(changes_speed) / granularity) * granularity
   )
+
+  # showing digits as in granularity
+
+  # if (!is.null(granularity)) {
+  #   n_decimals <- nchar(sub("0\\.", "", granularity))
+  #   predictions_dt[, change := round(change, digits = n_decimals)]
+  # }
+
 
   if (verbose) cli::cli_alert_success("Changes speed successfully calculated")
 
