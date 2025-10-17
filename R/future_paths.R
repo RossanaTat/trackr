@@ -51,9 +51,6 @@ prep_data_fut <- function(data               = NULL,
   # ____________________________
 
   # Compute percentiles of y
-  # lower_cutoff <- quantile(dt$y, probs = extreme_percentile, na.rm = TRUE)
-  # upper_cutoff <- quantile(dt$y, probs = 1 - extreme_percentile, na.rm = TRUE)
-
   # --------------------------------------
   # Tail cutoff logic: support asymmetric percentiles ####
   # --------------------------------------

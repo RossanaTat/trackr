@@ -24,8 +24,6 @@ library(trackr)
 
 ## Getting Started
 
-Installation
-
 You can install trackr directly from GitHub:
 
 ```{r}
@@ -41,23 +39,18 @@ library(trackr)
 
 ```
 
-Input Data Structure:
-
-`track_progress()` expects a dataset with at least three columns:
-`code_col`, `year_col` and `indicator` Overview
-
-The trackr package helps users evaluate and project progress on any
+The {trackr} package helps users evaluate and project progress on any
 indicator across countries and time. It provides two complementary
 scoring approaches:
 
-Speed of progress: how fast a country improved relative to a typical
+**Speed of progress:** how fast a country improved relative to a typical
 experience
 
-Percentile score: how a country’s progress compares to the distribution
-of all observed experiences
+**Percentile score:** how a country’s progress compares to the
+distribution of all observed experiences
 
-Together, these methods allow analysts to assess historical trends and
-simulate future trajectories under different assumptions.
+Together, these methods allow to assess historical trends and simulate
+future trajectories under different assumptions.
 
 ## 🌍 Example: Tracking Undernourishment (WDI)
 
@@ -70,6 +63,11 @@ We’ll use the indicator **“Prevalence of undernourishment (% of
 population)”**,\
 identified in WDI as `SN.ITK.DEFC.ZS`. Lower values indicate better
 outcomes.
+
+Input Data Structure:
+
+`track_progress()` expects a dataset with at least three columns:
+`code_col`, `year_col` and `indicator`
 
 ```{r}
 # Example 1: Tracking progress on undernourishment (% of population)
@@ -138,20 +136,13 @@ Together, these metrics help identify which countries are making
 accelerated progress and which may need additional support to meet
 global nutrition goals
 
-🔮 Visualizing XXXX TODO: Do we want to add a little vis here?
-
-This plot shows ... FEW WORDS HERE
-
 ## Key Takeaways
 
-trackr can work directly with WDI or any other dataset structured with
+{trackr} can work directly with WDI or any other dataset structured with
 country-year-indicator values.
 
 It produces transparent, reproducible progress assessments using
 comparable methods across indicators and countries.
-
-These outputs are particularly useful for monitoring development goals,
-benchmarking progress, and exploring future target scenarios.
 
 ## Summary
 
