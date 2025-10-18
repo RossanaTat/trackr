@@ -6,31 +6,32 @@
 \usage{
 future_path_pctls(
   data_fut,
-  pctlseq = seq(20, 80, 20),
-  predictions_pctl,
+  sequence_pctl = seq(20, 80, 20),
+  changes_pctl,
   target_year = 2030,
   granularity = 0.1,
-  min = 0,
-  max = 100,
+  min = NULL,
+  max = NULL,
   verbose = TRUE
 )
 }
 \arguments{
 \item{data_fut}{A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles=TRUE`.}
 
-\item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
+\item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
+If `NULL`, predictions are unrestricted on the upper end.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
 \item{verbose}{Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.}
 }
@@ -39,11 +40,6 @@ A data.table with the projected values (`y_fut`) by `code`, `year`, and `pctl`, 
 }
 \description{
 Computes projected future paths for given percentiles based on initial levels and predicted changes.
-}
-\details{
-This function builds a dataset that extends observed data (`data_fut`) forward in time to a target year using
-predicted changes at specified percentiles. It iteratively calculates future values by applying changes year-by-year,
-starting from the last available observation for each country-percentile pair.
 }
 \examples{
 \dontrun{

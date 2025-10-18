@@ -1,18 +1,7 @@
 #' Prepare data for future target projections
 #'
 #'
-#' @param data A `data.frame` or `data.table` containing the indicator data. Defaults to the result of
-#' `wbstats::wb_data()` for the specified indicator. The dataset must include columns for the country code,
-#' year, and indicator value.
-#' @param indicator Character. The name of the World Bank Development Indicator to use. Default is `"EG.ELC.ACCS.ZS"`,
-#' which measures the percentage of the population with access to electricity.
-#' @param granularity Numeric. The level of granularity for the output variable `y_fut`. For example, `0.1` rounds to
-#' one decimal place (e.g., 43.6%), while `1` rounds to the nearest whole number (e.g., 44%). Lower values yield
-#' more precise projections but may increase computing time. Default is `0.1`.
-#' @param code_col Character. Name of the column containing the country code (e.g., ISO3 code). Default is `"iso3c"`.
-#' @param year_col Character. Name of the column containing the year. Default is `"date"`.
-#' @param verbose Logical. If `TRUE`, the function may print messages. Default is `TRUE`.
-#'
+#' @inheritParams prep_data
 #' @return A `data.table` with the latest observation per country, including:
 #' \describe{
 #'   \item{code}{Standardized country code (from `code_col`)}
@@ -21,15 +10,19 @@
 #'   \item{y_fut}{Rounded value of `y`, based on the specified granularity}
 #' }
 #' @export
-prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
-                          indicator      = "EG.ELC.ACCS.ZS",
-                          granularity    = 0.1,
-                          code_col       = "iso3c",
-                          year_col       = "date",
-                          verbose = TRUE) {
+prep_data_fut <- function(data               = NULL,
+                          indicator          = "EG.ELC.ACCS.ZS",
+                          granularity        = 0.1,
+                          code_col           = "iso3c",
+                          year_col           = "date",
+                          support            = 1,
+                          extreme_percentile = getOption("trackr.extreme_pctl"),
+                          startyear_data     = 2000,
+                          endyear_data       = 2023,
+                          verbose            = TRUE) {
 
   # Convert to data.table
-  dt <- data.table::as.data.table(data)
+  dt <- qDT(data)
 
   # Standardize column names
   data.table::setnames(dt,
@@ -37,19 +30,71 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
                        new         = c("code", "year", "y"),
                        skip_absent = FALSE)
 
-  # Keep only relevant columns
-  dt <- dt[, .(code, year, y)]
+  # Keep relevant columns and latest observation per country
+  # Filter to intended future horizon
 
-  # Remove NAs and keep only the last observation for each code
-  dt <- dt[!is.na(y)]
-  data.table::setorder(dt, code, year)
+  dt <- dt[!is.na(y), .(code, year, y)]
+  dt <- dt[year >= startyear_data & year <= endyear_data]
+
+  setorder(dt, code, year)
+
   dt <- dt[, .SD[.N], by = code]
 
-  # Compute future value based on rounded y
+  if (nrow(dt) == 0) {
+    cli::cli_warn("No data remains within startyear_data and endyear_data window.")
+    return(NULL)
+  }
+
+
+  # ____________________________
+  # Tail-aware support filtering on raw y
+  # ____________________________
+
+  # Compute percentiles of y
+  # --------------------------------------
+  # Tail cutoff logic: support asymmetric percentiles ####
+  # --------------------------------------
+  if (length(extreme_percentile) == 1) {
+    lower_pct <- extreme_percentile
+    upper_pct <- extreme_percentile
+  } else if (length(extreme_percentile) == 2) {
+    lower_pct <- extreme_percentile[1]
+    upper_pct <- extreme_percentile[2]
+  } else {
+    cli::cli_abort("extreme_percentile must be a numeric vector of length 1 or 2.")
+  }
+
+  # Compute percentile-based cutoffs
+  lower_cutoff <- quantile(dt$y, probs = lower_pct, na.rm = TRUE)
+  upper_cutoff <- quantile(dt$y, probs = 1 - upper_pct, na.rm = TRUE)
+
+
+
+  # Compute bin on y for support checking
+  dt[, y_bin := round(y / granularity) * granularity]
+
+  # Support counts by raw y bin
+  support_table <- dt[, .(n_countries = uniqueN(code)), by = y_bin]
+  support_table[, region := fifelse(y_bin < lower_cutoff, "low",
+                                    fifelse(y_bin > upper_cutoff, "high", "middle"))]
+  support_table[, keep := region == "middle" | n_countries >= support]
+
+  supported_bins <- support_table[keep == TRUE, y_bin]
+
+  # Filter based on support in y bins
+  dt <- dt[y_bin %in% supported_bins]
+
+  # Now compute y_fut from filtered y
   dt[, y_fut := round(y / granularity) * granularity]
+  dt[, y_bin := NULL]  # clean up
+
+  if (verbose && support >= 1) {
+    cli::cli_alert_info("{length(supported_bins)} starting levels retained after applying support >= {support} to tails.")
+  }
 
   return(dt)
 }
+
 
 # -------------------- #
 # Percentiles ~~ #
@@ -59,12 +104,8 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 #'
 #' Computes projected future paths for given percentiles based on initial levels and predicted changes.
 #'
-#' This function builds a dataset that extends observed data (`data_fut`) forward in time to a target year using
-#' predicted changes at specified percentiles. It iteratively calculates future values by applying changes year-by-year,
-#' starting from the last available observation for each country-percentile pair.
-#'
 #' @param data_fut A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.
-#' @param target_year An integer specifying the year to project to. Default is `2030`.
+#' @param target_year An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.
 #' @inheritParams path_historical
 #' @param verbose Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.
 #'
@@ -79,12 +120,12 @@ prep_data_fut <- function(data           = wbstats::wb_data(indicator = indicato
 #'
 #' @export
 future_path_pctls <- function(data_fut,
-                              pctlseq     = seq(20,80,20),
-                              predictions_pctl,
+                              sequence_pctl     = seq(20,80,20),
+                              changes_pctl,
                               target_year = 2030,
                               granularity = 0.1,
-                              min         = 0,
-                              max         = 100,
+                              min         = NULL,
+                              max         = NULL,
                               verbose     = TRUE) {
 
   # Create a new dataset which will contain the predicted path from the last observation to targetyear at all selected percentiles
@@ -93,7 +134,7 @@ future_path_pctls <- function(data_fut,
                                year = seq(min(data_fut$year),
                                         target_year,
                                         1),
-                               pctl = pctlseq) |>
+                               pctl = sequence_pctl) |>
     # Merge in the actual data from WDI
     joyn::joyn(data_fut,
                by = c("code","year"),
@@ -111,34 +152,36 @@ future_path_pctls <- function(data_fut,
   n = startyear_target - min(path_fut_pctl$year) + 1
 
   # Continue this iteratively until the target year
-  while (n+min(path_fut_pctl$year)-1 <=target_year) {
+  while (n + min(path_fut_pctl$year) - 1 <= target_year) {
     # Year processed concurrently
-    #print(n+min(path_fut_pctl$year)-1)
-    if (verbose) cli::cli_alert_info("Processing year {.strong {(n + min(path_fut_pctl$year) - 1)}}")
-
     path_fut_pctl <- path_fut_pctl |>
       # Merge in data with predicted changes based on initial levels
-      joyn::joyn(predictions_pctl,
-                 match_type="m:1",
-                 keep="left",
-                 by=c("y_fut=initialvalue","pctl"),
-                 reportvar=FALSE,
-                 verbose=FALSE) |>
+      joyn::joyn(changes_pctl,
+                 match_type = "m:1",
+                 keep = "left",
+                 by = c("y_fut = y",
+                        "pctl"),
+                 reportvar = FALSE,
+                 verbose = FALSE) |>
       group_by(code,
                pctl) |>
       arrange(year) |>
       # Calculate new level based on the predicted changes.
-      mutate(y_fut = if_else(row_number()==n & !is.na(lag(y_fut)),
-                             round((lag(y_fut)+lag(change))/granularity)*granularity,y_fut)) |>
+      mutate(y_pctl = if_else(row_number()==n & !is.na(lag(y_fut)),
+                             round((lag(y_fut)+lag(change))/granularity)*granularity, y_fut)) |>
       ungroup() |>
       select(-change)
 
     n=n+1
   }
 
-  path_fut_pctl <- as.data.table(path_fut_pctl)[!is.na(y_fut) & (is.na(y) | (y >= min & y <= max))] |>
-    setorder(code, year)
-
+  path_fut_pctl <- qDT(path_fut_pctl)[
+    !is.na(y_pctl) & (is.na(y) | (y >= min & y <= max))
+  ][
+    , y_fut := NULL
+  ][
+    , setorder(.SD, code, year)
+  ]
 
   # Return ####
   return(path_fut_pctl)
@@ -148,14 +191,9 @@ future_path_pctls <- function(data_fut,
 # Speed ~~ #
 # -------------------- #
 
-#' Project Future Indicator Pathways at Different Speeds
+#' Project future indicator paths at different speeds
 #'
-#' This function simulates future indicator trajectories under different
-#' speeds of progress, based on current trends and a set of predefined
-#' projection speeds. It generates interpolated yearly projections from
-#' the latest available data point up to a given target year, filtering
-#' for progress scenarios that either increase or decrease the indicator
-#' as specified.
+#' This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
 #'
 #' @param data_fut A data frame or data table containing the historical and/or
 #'   baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
@@ -169,20 +207,20 @@ future_path_pctls <- function(data_fut,
 #'   indicator direction (`best`).
 #' @export
 future_path_speed <- function(data_fut,
-                              speedseq    = c(0.25,0.5,1,2,4),
+                              sequence_speed    = c(0.25,0.5,1,2,4),
                               path_speed,
                               best        = "high",
                               target_year = 2030,
-                              min         = 0,
-                              max         = 100) {
+                              min         = NULL,
+                              max         = NULL) {
 
 
   # Creates dataset with the country-years-speeds where projections are needed
   data_fut <- expand.grid(code = unique(data_fut$code),
-                          year =seq(min(data_fut$year),
+                          year = seq( min (data_fut$year),
                                    target_year,
                                    1),
-                          speed = speedseq) |>
+                          speed = sequence_speed) |>
     rename("yeartemp"          = "year") |>
     joyn::joyn(data_fut,
                match_type      = "m:1",
@@ -190,9 +228,11 @@ future_path_speed <- function(data_fut,
                reportvar       = FALSE,
                verbose         = FALSE,
                y_vars_to_keep  = "year") |>
+
     filter(yeartemp >= year) |>
     select(-year) |>
     rename("year"              = "yeartemp") |>
+
     joyn::joyn(data_fut,
                match_type      = "m:1",
                by              = c("code",
@@ -205,42 +245,53 @@ future_path_speed <- function(data_fut,
     select(-y) |>
     filter(!is.na(y_fut)) |>
     cross_join(path_speed) |>
-    mutate(bst = best) |>
-    filter(if_else(bst=="high",y_fut<=y,y_fut>=y)) |>
-    group_by(code,speed) |>
+    mutate(best = best) |>
+    filter(if_else(best == "high",
+                   y_fut <= y,
+                   y_fut >= y)) |>
+    group_by(code,
+             speed) |>
     arrange(time) |>
     mutate(year = year + (time-time[1])/speed) |>
     ungroup() |>
-    select(-c(y_fut,time,bst)) |>
-    rename("y_fut" = "y") |>
+    select(-c(y_fut,
+              time,
+              best)) |>
+    rename("y_speed" = "y") |>
+
     joyn::joyn(data_fut,
-               match_type="1:1",
-               by=c("code","year","speed"),
-               reportvar=FALSE,
-               verbose=FALSE,
-               y_vars_to_keep="y") |>
+               match_type = "1:1",
+               by = c("code","year","speed"),
+               reportvar = FALSE,
+               verbose = FALSE,
+               y_vars_to_keep = "y") |>
     group_by(code,
              speed) |>
     arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_fut,year,na.rm=FALSE,rule=2)) |>
-    filter(year %in% seq(min(year), target_year, 1)) |>
+    mutate(y_fut = zoo::na.approx(y_speed,
+                                  year,
+                                  na.rm = FALSE,
+                                  rule=2)) |>
+    filter(year %in% seq(min(year),
+                         target_year,
+                         1)) |>
     ungroup() |>
-    filter(!is.na(y_fut))
+    select(-y_speed,
+           -y)
 
-    # Only keep cases where target has not been reached
-    #filter(between(y,min,max) | is.na(y))
 
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y) | (y >= min & y <= max)] |>
-    setorder(code, year)
+  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
+    setorder(code,
+             year)
 
 
   return(path_fut_speed)
 }
 
-#' Wrapper to Compute Future Paths Based on Either Percentiles or Speeds method
+#' Future paths. Wrapper to Compute future paths based on either percentiles or speeds method
 #'
-#' Computes future trajectories for each country either based on percentile growth projections
-#' (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+#' Computes future trajectories for each country either based on percentile projections (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+#'
 #'
 #' @inheritParams future_path_pctls
 #' @inheritParams future_path_speed
@@ -256,25 +307,27 @@ future_path <- function(data_fut,
                         min              = 0,
                         max              = 100,
                         granularity      = 0.1,
-                        pctlseq          = seq(20, 80, 20),
-                        predictions_pctl = NULL,
-                        speedseq         = c(0.25, 0.5, 1, 2, 4),
+                        sequence_pctl    = seq(20, 80, 20),
+                        changes_pctl     = NULL,
+                        sequence_speed   = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
                         best             = "high",
                         verbose          = TRUE,
                         speed            = FALSE,
                         percentiles      = FALSE) {
 
-  result <- list(pctls = NULL, speed = NULL)
+  result <- list(pctl  = NULL,
+                 speed = NULL)
 
   if (percentiles) {
-    if (is.null(predictions_pctl)) {
-      cli::cli_abort("`predictions_pctl` must be provided when `percentiles = TRUE`.")
+    if (is.null(changes_pctl)) {
+      cli::cli_abort("`changes_pctl` must be provided when `percentiles = TRUE`.")
     }
-    result$pctls <- future_path_pctls(
+
+    result$pctl <- future_path_pctls(
       data_fut         = data_fut,
-      pctlseq          = pctlseq,
-      predictions_pctl = predictions_pctl,
+      sequence_pctl    = sequence_pctl,
+      changes_pctl     = changes_pctl,
       target_year      = target_year,
       granularity      = granularity,
       min              = min,
@@ -287,20 +340,22 @@ future_path <- function(data_fut,
     if (is.null(path_speed)) {
       cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
     }
+
     result$speed <- future_path_speed(
-      data_fut     = data_fut,
-      speedseq     = speedseq,
-      path_speed   = path_speed,
-      best         = best,
-      target_year  = target_year,
-      min          = min,
-      max          = max
+      data_fut       = data_fut,
+      sequence_speed = sequence_speed,
+      path_speed     = path_speed,
+      best           = best,
+      target_year    = target_year,
+      min            = min,
+      max            = max
     )
   }
 
-  if (is.null(result$pctls) && is.null(result$speed)) {
+  if (is.null(result$pctl) && is.null(result$speed)) {
     cli::cli_abort("At least one of `percentiles = TRUE` or `speed = TRUE` must be specified.")
   }
 
   return(result)
 }
+

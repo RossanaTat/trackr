@@ -1,0 +1,156 @@
+---
+title: "Evaluating and Projecting Progress with trackr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Evaluating and Projecting Progress with trackr}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE
+)
+```
+
+```{r setup}
+library(trackr)
+```
+
+## Getting Started
+
+You can install trackr directly from GitHub:
+
+```{r}
+# install.packages("devtools")
+#devtools::install_github("RossanaTat/trackr")
+
+```
+
+Then load it:
+
+```{r}
+library(trackr)
+
+```
+
+The {trackr} package helps users evaluate and project progress on any
+indicator across countries and time. It provides two complementary
+scoring approaches:
+
+**Speed of progress:** how fast a country improved relative to a typical
+experience
+
+**Percentile score:** how a country’s progress compares to the
+distribution of all observed experiences
+
+Together, these methods allow to assess historical trends and simulate
+future trajectories under different assumptions.
+
+## 🌍 Example: Tracking Undernourishment (WDI)
+
+In this example, we demonstrate how **trackr** can be used with real
+data from the [World Development Indicators
+(WDI)](https://databank.worldbank.org/source/world-development-indicators)
+to evaluate and project progress on a global development indicator.
+
+We’ll use the indicator **“Prevalence of undernourishment (% of
+population)”**,\
+identified in WDI as `SN.ITK.DEFC.ZS`. Lower values indicate better
+outcomes.
+
+Input Data Structure:
+
+`track_progress()` expects a dataset with at least three columns:
+`code_col`, `year_col` and `indicator`
+
+```{r}
+# Example 1: Tracking progress on undernourishment (% of population)
+indicator_wdi <- "SN.ITK.DEFC.ZS"
+
+data_wdi <- wbstats::wb_data(
+  indicator = indicator_wdi,
+  lang      = "en",
+  country   = "countries_only"
+)
+
+results_progress <- suppressWarnings(track_progress(
+                        data           = data_wdi,
+                        indicator      = indicator_wdi,
+                        code_col       = "iso3c",
+                        year_col       = "date",
+                        startyear_data = 1960,
+                        endyear_data   = 2024,
+                        eval_from      = 2015,
+                        eval_to        = 2024,
+                        future         = TRUE,
+                        target_year    = 2030,
+                        speed          = TRUE,
+                        percentiles    = TRUE,
+                        sequence_pctl  = seq(20, 80, 20),
+                        sequence_speed = c(0.25, 0.5, 1, 2, 4),
+                        best           = "low",  # lower undernourishment = better
+                        min            = 0,
+                        max            = NULL,
+                        support        = 1,
+                        granularity    = 0.1
+                      ))
+
+```
+
+### 📈 Interpreting the Output
+
+The output is a list of up to six components, depending on the user’s
+settings. Here we’ve enabled both speed and percentile methods, as well
+as future projections.
+
+```{r}
+names(results_progress)
+```
+
+Examples of relevant results for interpretation are:
+
+```{r}
+results_progress$scores # the country-level progress scores for 2015–2024
+
+results_progress$path_future # projections to 2030 under different assumptions
+
+head(results_progress$scores)
+```
+
+### 🔍 Understanding the Scores
+
+A speed score greater than 1 means a country reduced undernourishment
+faster than the typical global trend. For instance, 2.0 implies progress
+twice as fast as average.
+
+A percentile score of 80 means the country outperformed 80% of
+comparable experiences.
+
+Together, these metrics help identify which countries are making
+accelerated progress and which may need additional support to meet
+global nutrition goals
+
+## Key Takeaways
+
+{trackr} can work directly with WDI or any other dataset structured with
+country-year-indicator values.
+
+It produces transparent, reproducible progress assessments using
+comparable methods across indicators and countries.
+
+## Summary
+
+This example illustrated how to use track_progress() with WDI data to
+assess and project progress on undernourishment. The same workflow can
+be applied to any other indicator — either simply changing the WDI code
+or providing your own data.
+
+Suggested citation: Mahler, D. & Tatulli, R. trackr: Tools to Evaluate
+and Project Progress on Development Indicators. R package version 0.1.0.
+Available at: github.com/RossanaTat/trackr

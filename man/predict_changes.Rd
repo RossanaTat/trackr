@@ -8,14 +8,12 @@ predict_changes(
   data,
   min = NULL,
   max = NULL,
-  floor = 0,
-  ceiling = 100,
   granularity = 0.1,
-  lambdas = NULL,
   best = "high",
   speed = FALSE,
   percentiles = TRUE,
-  pctlseq = seq(20, 80, 20),
+  sequence_pctl = NULL,
+  support = 1,
   verbose = TRUE
 )
 }
@@ -23,47 +21,35 @@ predict_changes(
 \item{data}{A data frame or list representing the input data model to be used for the prediction.
 This should be the output of the [`prep_data()`] function, which prepares the data in the required format.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
 If `NULL`, predictions are unrestricted on the upper end.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
-
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
-
-\item{speed}{Logical. If TRUE, calculate speed of progress scores.
-Default is FALSE}
+\item{speed}{Logical. If TRUE, calculate speed of progress scores. Default is FALSE.}
 
 \item{percentiles}{Logical. If TRUE, calculate percentile scores. Default is TRUE}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles=TRUE`.}
 
 \item{verbose}{Logical. If TRUE, prints info messages in console}
 }
 \value{
 A list containing prediction results. The content depends on the selected method:
 \describe{
-  \item{`predictions_speed`}{Predicted changes using the `"speed"` method (if selected).}
+  \item{`changes_speed`}{Predicted changes using the `"speed"` method (if selected).}
   \item{`path_speed`}{The path or trajectory of predictions based on the `"speed"` method (if selected).}
-  \item{`predictions_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
+  \item{`changes_pctls`}{Predicted changes using the `"percentiles"` method (if selected).}
 }
 }
 \description{
-This function calculates projected changes in an indicator based on its initial value.
-Two methods are available: `"speed"` and `"percentiles"`.
+This function calculates predicted changes in an indicator based on its initial value. Two methods are available: `speed` and `percentiles`.
 }
 \details{
 - On The `"speed"` method: for indicators without overall progress, the speed of progress cannot be computed.

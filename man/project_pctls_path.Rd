@@ -2,55 +2,45 @@
 % Please edit documentation in R/historical_paths.R
 \name{project_pctls_path}
 \alias{project_pctls_path}
-\title{Project percentiles paths}
+\title{Historical percentiles paths}
 \usage{
 project_pctls_path(
   data_his,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   granularity = 0.1,
-  floor = 0,
-  ceiling = 100,
   min = NULL,
   max = NULL,
-  pctlseq = seq(20, 80, 20),
-  predictions_pctl,
+  sequence_pctl = seq(20, 80, 20),
+  changes_pctl,
   verbose = TRUE
 )
 }
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
-\item{min}{A numeric value indicating the minimum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles = TRUE`.}
 
-\item{max}{A numeric value indicating the maximum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
-
-\item{pctlseq}{Numeric vector. Sequence of percentiles}
-
-\item{predictions_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
+\item{changes_pctl}{A `data.table` with predicted changes by `initialvalue` and `pctl`.}
 
 \item{verbose}{Logical. Whether to print progress messages.}
 }
 \value{
-A `data.table` with projected values `y_his` by `code`, `year`, and `pctl`.
+A `data.table` with projected values `y_pctl` by `code`, `year`, and `pctl`. `y_pctl` is the projected value along the given percentile path in that year
 }
 \description{
-Simulates year-by-year projected paths of a variable across percentiles,
-based on historical values and predicted changes.
+Simulates year-by-year projected paths of a variable across percentiles, based on historical values and predicted changes
 }

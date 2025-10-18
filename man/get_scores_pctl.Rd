@@ -4,23 +4,23 @@
 \alias{get_scores_pctl}
 \title{Calculate percentile-based score over a historical evaluation period}
 \usage{
-get_scores_pctl(path_his_pctl, best = "high", min = 0, max = 100)
+get_scores_pctl(path_his_pctl, best = "high", min = NULL, max = NULL)
 }
 \arguments{
-\item{path_his_pctl}{A data frame containing columns: `code`, `year`, `y`, `y_his`, and `pctl`}
+\item{path_his_pctl}{A data frame containing columns: `code`, `year`, `y`, `y_pctl`, and `pctl`}
 
 \item{best}{Character indicating whether higher (`"high"`) or lower (`"low"`) values are better}
 
-\item{min}{Numeric. Minimum acceptable value for `y` (default is 0)}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{Numeric. Maximum acceptable value for `y` (default is 100)}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 }
 \value{
 A data.table with columns: `code`, `score` (as a percentile range), and `evaluationperiod`
 }
 \description{
-Computes a score based on how a country's latest value compares to its past performance,
-using percentiles (`pctl`) over a minimum 5-year period.
+Computes countries’ percentile progress scores over a user-specified evaluation period.
 }
 \examples{
 # get_scores_pctl(data, best = "low")

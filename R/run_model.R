@@ -1,55 +1,53 @@
-# Wrapper to run whole method #########
-
-# data_wdi <- wbstats::wb_data(indicator = indicator,lang = "en",country="countries_only")
-# indicator      = "EG.ELC.ACCS.ZS"
-
-
 #' Track Progress on an Indicator Over Time
 #'
-#' Calculates progress scores and future targets for a WDI indicator of choice, depending on user selection of speed, percentiles, and future projections.
+#' Evaluates countries’ progress in an indicator over a specified time period.
+#' Progress scores will either be calculated using a ‘speed of progress’ metric and/or by a ‘percentile score’ metric.
+#' The former evaluates countries by how fast they developed relative to the typical experience, expressed in years. A speed of progress of 2, for example, means that a country developed twice as fast as the typical experience.
+#' Percentile scores evaluate countries progress by the share of experiences that they are outperforming.
+#' A score of 90, for example, means that a country outperformed 90% of experiences observed. Alternatively (or additionally) Calculates progress scores and future targets for an indicator of choice, depending on user selections
 #'
 #' @inheritParams prep_data
 #' @inheritParams predict_changes
+#' @inheritParams path_historical
 #' @inheritParams future_path
 #' @inheritParams get_scores
-#'
+#' @param future Logical. If TRUE, projections to the future will be made using the speeds of sequence_speed (if speed=TRUE) and the percentile paths of sequence_pctl (if `percentiles = TRUE`).
 #' @return An (invisible) list containing:
 #' \describe{
-#'   \item{data_model}{Cleaned and normalized indicator data.}
-#'   \item{predicted_changes}{Output from `predict_changes()`.}
-#'   \item{data_historical}{Subset of original data used for historical paths.}
-#'   \item{path_historical}{Historical percentile and speed paths.}
-#'   \item{future_path}{(Optional) Projected future paths; `NULL` if `future = FALSE`.}
-#'   \item{scores}{Performance scores based on historical and projected trends.}
+#'   \item{data_model}{The indicator data used to fit the model.}
+#'   \item{predicted_changes}{Median changes in the indicator as a function of the level of the indicator (`changes_speed`), or quantile specific changes in the indicator as a function of the level of the indicator(`changes_pctl`), or the typical path from the worst outcome in the indicator to the best outcome in the indicator (path_speed) }
+#'   \item{path_historical}{The historical data as well as predicted paths from each country’s starting value at various speeds and/or percentile paths.}
+#'   \item{future_path}{(Optional) Projected future paths from the last observation for each country at various speeds and/or percentile paths; `NULL` if `future = FALSE`.}
+#'   \item{scores}{Progress scores for the evaluation period selected.}
 #' }
 #'
 #' @seealso [prep_data()], [predict_changes()], [future_path()], [get_scores()]
 #' @export
-track_indicator <- function(indicator      = NULL,
-                           data            = wbstats::wb_data(indicator = indicator,
-                                                   lang = "en", country = "countries_only"),
-                           speed          = FALSE,
-                           percentiles    = TRUE,
-                           startyear_data = 2000,
-                           start_year     = 2000,
-                           end_year       = 2022,
-                           target_year    = 2030,
-                           floor          = 0,
-                           ceiling        = 100,
-                           granularity    = 0.1,
+track_progress <- function(data           = NULL,
+                           indicator      = NULL,
                            code_col       = "iso3c",
                            year_col       = "date",
-                           pctlseq        = seq(20,80,20),
-                           speedseq       = c(0.25, 0.5, 1, 2, 4),
+                           startyear_data = NULL,
+                           endyear_data   = NULL,
+                           eval_from      = NULL,
+                           eval_to        = NULL,
+                           speed          = FALSE,
+                           percentiles    = TRUE,
+                           future         = FALSE,
+                           target_year    = 2030,
+                           sequence_pctl  = seq(20,80,20),
+                           sequence_speed = c(0.25, 0.5, 1, 2, 4),
+                           best           = NULL,
                            min            = NULL,
                            max            = NULL,
-                           lambdas        = 0.1*1.148^(0:50),
-                           best           = "high",
-                           future         = FALSE,
+                           support        = 1,
+                           extreme_percentile = getOption("trackr.extreme_pctl"),
+                           granularity    = 0.1,
                            verbose        = TRUE) {
 
-  # # Input Validation & Checks #
-  # To add here ##
+  # ___________________________ #
+  # Validation of Inputs ####
+  # ___________________________ #
 
   required_cols <- c(indicator,
                      code_col,
@@ -59,8 +57,30 @@ track_indicator <- function(indicator      = NULL,
                           names(data))
 
   if (length(missing_cols) > 0) {
+
     cli::cli_abort("The following required columns are missing in `data`: ",
-         paste(missing_cols, collapse = ", "))
+         paste(missing_cols,
+               collapse = ", "))
+  }
+
+  # Validate `best` argument
+  if (is.null(best)) {
+
+    cli::cli_abort("`best` must be provided: either 'high' or 'low'")
+  }
+
+  # Validate data and indicator params
+
+  if (is.null(indicator) && is.null(data)) {
+
+    cli::cli_abort("User must provide both indicator name and input data")
+
+  }
+
+  if (is.null(eval_from) && is.null(eval_to)) {
+
+    cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
+
   }
 
   # ___________________________ #
@@ -70,39 +90,35 @@ track_indicator <- function(indicator      = NULL,
   data_model <- prep_data(indicator      = indicator,
                           data           = data,
                           startyear_data = startyear_data,
-                          floor          = floor,
-                          ceiling        = ceiling,
+                          endyear_data   = endyear_data,
+                          support        = support,
+                          extreme_percentile = extreme_percentile,
                           granularity    = granularity,
                           code_col       = code_col,
                           year_col       = year_col,
+                          min            = min,
+                          max            = max,
                           verbose        = verbose
                           )
 
   # Retrieve min and max from data model
-  if (is.null(min)) {
-    min <- data_model$min
-  }
-
-  if (is.null(max)) {
-    max <- data_model$max
-  }
+  min <- data_model$min
+  max <- data_model$max
 
   # ___________________________ #
   # 2. Predict Changes ####
   # ___________________________ #
 
-  predicted_changes <- predict_changes(data        = data_model$data_model,
-                                       min         = min,
-                                       max         = max,
-                                       floor       = floor,
-                                       ceiling     = ceiling,
-                                       granularity = granularity,
-                                       lambdas     = lambdas,
-                                       best        = best,
-                                       speed       = speed,
-                                       percentiles = percentiles,
-                                       pctlseq     = pctlseq,
-                                       verbose     = verbose)
+  predicted_changes <- predict_changes(data           = data_model$data_model,
+                                       min            = min,
+                                       max            = max,
+                                       granularity    = granularity,
+                                       best           = best,
+                                       speed          = speed,
+                                       percentiles    = percentiles,
+                                       sequence_pctl  = sequence_pctl,
+                                       #support        = support,
+                                       verbose        = verbose)
 
 
   # ___________________________ #
@@ -116,8 +132,10 @@ track_indicator <- function(indicator      = NULL,
     year_col    = year_col,
     min         = min,
     max         = max,
-    start_year  = start_year,
-    end_year    = end_year,
+    eval_from   = eval_from,
+    eval_to     = eval_to,
+    support     = support,
+    extreme_percentile = extreme_percentile,
     granularity = granularity
   )
 
@@ -125,17 +143,15 @@ track_indicator <- function(indicator      = NULL,
     percentiles      = percentiles,
     speed            = speed,
     data_his         = data_his,
-    start_year       = start_year,
-    end_year         = end_year,
+    eval_from        = eval_from,
+    eval_to          = eval_to,
     granularity      = granularity,
-    floor            = floor,
-    ceiling          = ceiling,
     min              = min,
     max              = max,
-    pctlseq          = pctlseq,
-    predictions_pctl = predicted_changes$predictions_pctls,
+    sequence_pctl    = sequence_pctl,
+    changes_pctl     = predicted_changes$changes_pctl,
     verbose          = verbose,
-    speedseq         = speedseq,
+    sequence_speed   = sequence_speed,
     path_speed       = predicted_changes$path_speed,
     best             = best
   )
@@ -150,12 +166,16 @@ track_indicator <- function(indicator      = NULL,
   if (future == TRUE) {
 
     data_fut <- prep_data_fut(
-      data        = data,
-      indicator   = indicator,
-      granularity = granularity,
-      code_col    = code_col,
-      year_col    = year_col,
-      verbose     = verbose
+      data               = data,
+      indicator          = indicator,
+      granularity        = granularity,
+      code_col           = code_col,
+      year_col           = year_col,
+      support            = support,
+      extreme_percentile = extreme_percentile,
+      startyear_data     = startyear_data,
+      endyear_data       = endyear_data,
+      verbose            = verbose
     )
 
     future_path_out <- future_path(
@@ -164,9 +184,9 @@ track_indicator <- function(indicator      = NULL,
       min              = min,
       max              = max,
       granularity      = granularity,
-      pctlseq          = pctlseq,
-      predictions_pctl = predicted_changes$predictions_pctls,
-      speedseq         = speedseq,
+      sequence_pctl    = sequence_pctl,
+      changes_pctl     = predicted_changes$changes_pctl,
+      sequence_speed   = sequence_speed,
       path_speed       = predicted_changes$path_speed,
       best             = best,
       verbose          = verbose,
@@ -183,22 +203,15 @@ track_indicator <- function(indicator      = NULL,
   scores <- get_scores(
     speed          = speed,
     pctl           = percentiles,
-    path_his_pctl  = path_historical$percentile_path,
+    path_his_pctl  = path_historical$pctl,
     best           = best,
-    path_his_speed = path_historical$speed_path,
+    path_his_speed = path_historical$speed,
     path_speed     = predicted_changes$path_speed,
     min            = min,
     max            = max,
     granularity    = granularity,
     verbose        = verbose
   )
-
-
-  # if (verbose) {
-  #   cli::cli_alert_success(
-  #     cli::col_blue("✔ Method run completed.\n• Scores calculated\n• Historical and predicted paths generated\n• Output ready for use")
-  #   )
-  # }
 
   if (verbose) {
     components <- c()
@@ -219,7 +232,7 @@ track_indicator <- function(indicator      = NULL,
     components <- c("data model", "historical paths", "predicted changes", components)
 
     cli::cli_alert_success(
-      cli::col_blue(
+      cli::col_cyan(
         paste0("Method run completed for indicator: '", indicator, "'.\n• Output includes: ",
                paste(components, collapse = ", "), ".")
       )
@@ -232,14 +245,9 @@ track_indicator <- function(indicator      = NULL,
   return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
-    data_historical   = data_his,
     path_historical   = path_historical,
-    future_path       = future_path_out,
+    path_future       = future_path_out,
     scores            = scores
   )))
-
-
-
-
 
 }

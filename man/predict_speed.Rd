@@ -8,10 +8,7 @@ predict_speed(
   data_model,
   min = NULL,
   max = NULL,
-  lambdas = NULL,
   granularity = 0.1,
-  floor = 0,
-  ceiling = 100,
   verbose = TRUE
 )
 }
@@ -21,21 +18,11 @@ predict_speed(
 - `change`: numeric, the change in the indicator.
 - `fold_id`: numeric or factor, used for cross-validation.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
-
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
 If `NULL`, predictions are unrestricted on the upper end.}
 
 \item{verbose.}{Logical. If TRUE, display messages in console. Default is TRUE}
@@ -43,11 +30,11 @@ If `NULL`, predictions are unrestricted on the upper end.}
 \value{
 A data frame with:
   - `initialvalue`: sequence of values used for prediction.
-  - `predictions_speed`: predicted change.
+  - `changes_speed`: predicted change.
 }
 \description{
 Fits a generalized constrained regression quantile model (`gcrq`) to estimate
 the change in a variable as a function of its initial value
-The function can restrict predictions to a range between a specified `floor` and `ceiling`
+The function can restrict predictions to a range between a specified `min` and `max`
 (e.g., targets), or default to the observed data range if these are not specified.
 }

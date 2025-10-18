@@ -5,31 +5,32 @@
 \title{Prepare data for future target projections}
 \usage{
 prep_data_fut(
-  data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+  data = NULL,
   indicator = "EG.ELC.ACCS.ZS",
   granularity = 0.1,
   code_col = "iso3c",
   year_col = "date",
+  support = 1,
+  extreme_percentile = getOption("trackr.extreme_pctl"),
   verbose = TRUE
 )
 }
 \arguments{
-\item{data}{A `data.frame` or `data.table` containing the indicator data. Defaults to the result of
-`wbstats::wb_data()` for the specified indicator. The dataset must include columns for the country code,
-year, and indicator value.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{indicator}{Character. The name of the World Bank Development Indicator to use. Default is `"EG.ELC.ACCS.ZS"`,
-which measures the percentage of the population with access to electricity.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{granularity}{Numeric. The level of granularity for the output variable `y_fut`. For example, `0.1` rounds to
-one decimal place (e.g., 43.6%), while `1` rounds to the nearest whole number (e.g., 44%). Lower values yield
-more precise projections but may increase computing time. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
 
-\item{code_col}{Character. Name of the column containing the country code (e.g., ISO3 code). Default is `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column containing the year. Default is `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
-\item{verbose}{Logical. If `TRUE`, the function may print messages. Default is `TRUE`.}
+\item{support}{Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.}
+
+\item{extreme_percentile}{Numeric (length 1 or 2). Percentile(s) used to define the lower and upper tails of the distribution of initial values. Values in the tails are retained only if there is sufficient country support (`support`). If a single value is provided, it is applied symmetrically to both tails. Defaults to `getOption("trackr.extreme_pctl")`.}
+
+\item{verbose}{Logical. If TRUE print messages in console. Default is TRUE}
 }
 \value{
 A `data.table` with the latest observation per country, including:

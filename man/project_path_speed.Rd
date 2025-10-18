@@ -2,50 +2,42 @@
 % Please edit documentation in R/historical_paths.R
 \name{project_path_speed}
 \alias{project_path_speed}
-\title{Project speed path}
+\title{Historical speed path}
 \usage{
 project_path_speed(
   data_his,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed,
-  floor = 0,
-  ceiling = 100,
   granularity = 0.1,
-  start_year = 2000,
-  end_year = 2022,
+  eval_from = 2000,
+  eval_to = 2022,
   min = NULL,
-  max = NULL
+  max = NULL,
+  best = "high"
 )
 }
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{speedseq}{numeric vector of speed paths to calculate}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
-If `NULL`, predictions are unrestricted on the upper end.}
+\item{sequence_speed}{numeric vector of speed paths to calculate}
 
 \item{granularity}{A numeric value indicating the step size used when
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{min}{A numeric value indicating the minimum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{A numeric value indicating the maximum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
+
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 }
 \value{
-A data frame of projected values under different speeds
+A data table of projected values under different speeds
 }
 \description{
 Calculates path a country would have taken with various speeds

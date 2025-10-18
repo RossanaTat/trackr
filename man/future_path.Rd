@@ -2,7 +2,7 @@
 % Please edit documentation in R/future_paths.R
 \name{future_path}
 \alias{future_path}
-\title{Wrapper to Compute Future Paths Based on Either Percentiles or Speeds method}
+\title{Future paths. Wrapper to Compute future paths based on either percentiles or speeds method}
 \usage{
 future_path(
   data_fut,
@@ -10,9 +10,9 @@ future_path(
   min = 0,
   max = 100,
   granularity = 0.1,
-  pctlseq = seq(20, 80, 20),
-  predictions_pctl = NULL,
-  speedseq = c(0.25, 0.5, 1, 2, 4),
+  sequence_pctl = seq(20, 80, 20),
+  changes_pctl = NULL,
+  sequence_speed = c(0.25, 0.5, 1, 2, 4),
   path_speed = NULL,
   best = "high",
   verbose = TRUE,
@@ -23,23 +23,22 @@ future_path(
 \arguments{
 \item{data_fut}{A data frame containing historical data with columns `code`, `year`, and `y`. This serves as the baseline for projections.}
 
-\item{target_year}{An integer specifying the year to project to. Default is `2030`.}
+\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
+If `NULL`, predictions are unrestricted on the upper end.}
 
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles=TRUE`.}
 
-\item{predictions_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
+\item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
 \item{verbose}{Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.}
 
@@ -51,8 +50,7 @@ or \code{"low"} if lower values are better. This affects the direction of the pa
 A `data.table` with projected paths based on selected method.
 }
 \description{
-Computes future trajectories for each country either based on percentile growth projections
-(`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+Computes future trajectories for each country either based on percentile projections (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
 }
 \seealso{
 [future_path_pctls()], [future_path_speed()]

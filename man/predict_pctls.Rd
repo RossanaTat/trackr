@@ -9,11 +9,8 @@ predict_pctls(
   min = NULL,
   max = NULL,
   granularity = 0.1,
-  pctlseq = seq(20, 80, 20),
-  floor = 0,
-  ceiling = 100,
-  verbose = TRUE,
-  lambdas = NULL
+  sequence_pctl = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -22,26 +19,18 @@ predict_pctls(
 - `change`: numeric, the change in the indicator.
 - `fold_id`: numeric or factor, used for cross-validation.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict. If `NULL`,
-it is set to `floor` (if provided) or `min(data_model$initialvalue)`.}
+\item{min}{Optional. Minimum value of `initialvalue` to predict.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict. If `NULL`,
-it is set to `ceiling` (if provided) or `max(data_model$initialvalue)`.}
+\item{max}{Optional. Maximum value of `initialvalue` to predict.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
-
-\item{pctlseq}{Percentiles to calculate. The percentile score assigned is determined by the granularity of the percentiles selected here. I.e., if seq(20,80,20) is selected, then we will be able to tell if a country is between 0-20, 20-40, etc.}
-
-\item{floor}{Numeric or `NULL`.Minimum value of indicator.
-If `NULL`, predictions are unrestricted on the lower end.}
-
-\item{ceiling}{Maximum value of indicator (NA if none).
+\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.
 If `NULL`, predictions are unrestricted on the upper end.}
 
-\item{verbose}{Logical. If TRUE, prints info messages in console}
+\item{sequence_pctl}{Numeric vector of percentile paths to calculate.
+The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
+This argument is only relevant if `percentiles=TRUE`.}
 
-\item{lambdas}{Optional. A vector of lambda values, i.e., levels of flexibility that should be tried and evaluated through cross validation
-Defaults to `0.1 * 1.148^(0:50)`.}
+\item{verbose}{Logical. If TRUE, prints info messages in console}
 }
 \value{
 A data frame with calculated changes by percentiles.

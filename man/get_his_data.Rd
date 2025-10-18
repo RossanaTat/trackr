@@ -6,38 +6,41 @@
 \usage{
 get_his_data(
   indicator = "EG.ELC.ACCS.ZS",
-  data = wbstats::wb_data(indicator = indicator, lang = "en", country = "countries_only"),
+  data = NULL,
   code_col = "iso3c",
   year_col = "date",
-  min = 0,
-  max = 100,
-  start_year = 2000,
-  end_year = 2022,
-  granularity = 0.1
+  min = NULL,
+  max = NULL,
+  eval_from = 2000,
+  eval_to = 2022,
+  support = 1,
+  granularity = 0.1,
+  extreme_percentile = getOption("trackr.extreme_pctl")
 )
 }
 \arguments{
-\item{indicator}{Character. Indicator code (e.g., `"EG.ELC.ACCS.ZS"`). Defaults to access to electricity.}
+\item{indicator}{Character. Name of the column with the values of the indicator data}
 
-\item{data}{Optional. A data frame with indicator data. If NULL, data is downloaded via `wbstats::wb_data()`.}
+\item{data}{Optional. A data frame with indicator data.}
 
-\item{code_col}{Character. Name of the column with country codes. Defaults to `"iso3c"`.}
+\item{code_col}{Character. Name of the column with country codes (or other groupings used to calculate and compare progress)}
 
-\item{year_col}{Character. Name of the column with years. Defaults to `"date"`.}
+\item{year_col}{Character. Name of the column with years.}
 
-\item{min}{A numeric value indicating the minimum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `min <- data_model$min`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{min}{Numeric (optional). Minimum value of the indicator. If NULL, the minimum is computed from the data and rounded to the nearest multiple of `granularity`.
+Will be overruled by support if that reflects a higher minimum value}
 
-\item{max}{A numeric value indicating the maximum bound,
-typically passed from a previously processed dataset (e.g., `prep_data()` output via `max <- data_model$max`).
-This value is stored as an attribute of the returned object for later reference (e.g., in visualizations or simulations).}
+\item{max}{Numeric (optional). Maximum value of the indicator. If NULL, the maximum is computed from the data and rounded to the nearest multiple of `granularity`. Will be overruled by support if that reflects a lower maximum value.}
 
-\item{start_year}{The first year to include in the analysis}
+\item{eval_from}{First year to include when evaluating the progress of countries.}
 
-\item{end_year}{The last year to include in the analysis}
+\item{eval_to}{Last year to include when evaluating the progress of countries.}
 
-\item{granularity}{Numeric. Granularity in outcome variable. Default is `0.1`.}
+\item{support}{Numeric. Reflects minimum number of countries that must have experienced a particular outcome value from startyear_data to endyear_data for a progress score to be calculated. This limits the calculation of scores at extreme outcome values at which there is less support to evaluate what typical progress looks like. Will be overruled by min and max if those are more restrictive. Defaults to 1.}
+
+\item{granularity}{Numeric. Granularity in outcome variable. All outcome values are rounded to the nearest value reflecting this granularity. For example, if 1 is chosen, then all outcome values are rounded to the nearest integer. Default is 0.1. The lower granularity, the more precise the estimated paths but the longer it takes to run the code.}
+
+\item{extreme_percentile}{Numeric (length 1 or 2). Percentile(s) used to define the lower and upper tails of the distribution of initial values. Values in the tails are retained only if there is sufficient country support (`support`). If a single value is provided, it is applied symmetrically to both tails. Defaults to `getOption("trackr.extreme_pctl")`.}
 }
 \value{
 A `data.table` containing the following columns:
@@ -55,8 +58,8 @@ rounded to a specified granularity—as the baseline value (`y_his`).
 \examples{
 \dontrun{
   his_data <- get_his_data(indicator = "EG.ELC.ACCS.ZS",
-                           start_year = 2000,
-                           end_year = 2022,
+                           eval_from = 2000,
+                           eval_to = 2022,
                            granularity = 0.1)
 }
 

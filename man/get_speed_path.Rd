@@ -4,25 +4,18 @@
 \alias{get_speed_path}
 \title{Generate Speed Path from Predicted Changes}
 \usage{
-get_speed_path(
-  predictions_speed,
-  granularity = 0.1,
-  best = "high",
-  verbose = TRUE
-)
+get_speed_path(changes_speed, granularity = 0.1, best = "high", verbose = TRUE)
 }
 \arguments{
-\item{predictions_speed}{A data.table containing two columns:
-\code{initialvalue} (the starting level of the indicator) and
+\item{changes_speed}{A data.table containing two columns:
+\code{y} (the starting level of the indicator) and
 \code{change} (the expected annualized change from that level).}
 
 \item{granularity}{A numeric value indicating the step size used when
 computing the trajectory over time. Smaller values produce smoother curves.
 Defaults to \code{0.1}.}
 
-\item{best}{A character string indicating the direction of improvement.
-Use \code{"high"} (default) if higher values of the indicator are better,
-or \code{"low"} if lower values are better. This affects the direction of the path.}
+\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), a success message is displayed after computation.}
 }
@@ -30,9 +23,6 @@ or \code{"low"} if lower values are better. This affects the direction of the pa
 A \code{data.table} with two columns:
   \item{time}{Cumulative time (in years) needed to reach each step in the path.}
   \item{y}{The corresponding value of the indicator at each time step.}
-
-
-get_speed_path(predictions_speed, granularity = 1, best = "high")
 }
 \description{
 Computes the expected trajectory (or "speed path") of a variable over time,
