@@ -34,7 +34,7 @@ devtools::install_github("RossanaTat/trackr")
 ## Example Usage
 library(trackr)
 
-data <- wbstats::wb_data(indicator = indicator,
+data <- wbstats::wb_data(indicator = "EG.ELC.ACCS.ZS",
                          lang      = "en",
                          country   = "countries_only")
                              
