@@ -28,16 +28,18 @@ These methods can be used independently or together, depending on user preferenc
 # Install from GitHub (requires remotes package)
 remotes::install_github("RossanaTat/trackr")
 
+devtools::install_github("RossanaTat/trackr")
+
 
 ## Example Usage
 library(trackr)
 
-data <- wbstats::wb_data(indicator = "EG.ELC.ACCS.ZS",
+data <- wbstats::wb_data(indicator = indicator,
                          lang      = "en",
                          country   = "countries_only")
                              
                              
-track_progress(data                = data,
+result <- track_progress(data                = data,
                indicator           = "EG.ELC.ACCS.ZS",
                code_col            = "iso3c",
                year_col            = "date",
@@ -56,6 +58,4 @@ track_progress(data                = data,
                #extreme_percentile = getOption("trackr.extreme_pctl"),
                granularity         = 0.1,
                verbose             = TRUE)
-
-
 
