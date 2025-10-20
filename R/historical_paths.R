@@ -200,6 +200,15 @@ project_path_speed <- function(data_his,
 
   }
 
+  if (nrow(data_his_copy) == 0L) {
+    cli::cli_abort(c(
+      "!" = "Filtering by {.field best = '{best}'} resulted in 0 rows.",
+      "i" = "Check whether {.field y_his} and {.field y} overlap
+           given the filtering condition (<= or >=)."
+    ))
+  }
+
+
   data_his_copy[, year := year + (time - time[1]) / speed,
                 by = .(code, speed)]
 
