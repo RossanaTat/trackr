@@ -49,12 +49,19 @@ predict_speed <- function(data_model,
   # Predict (charts() returns a named vector or data.frame)
   # Predict changes over the grid
   changes_speed <- charts(fit_speed,
-                          k = x_seq)
+                          k = x_seq,
+                          digits=-log10(granularity))
 
-  # Updating to change with granularity
+  #fittedvalues <- charts(fit, k=seq(min,max,granularity),digits=-log10(granularity))
+
+  # predictions_dt <- data.table(
+  #   y      = round(x_seq / granularity) * granularity,
+  #   change = round(as.numeric(changes_speed) / granularity) * granularity
+  # )
+
   predictions_dt <- data.table(
     y      = round(x_seq / granularity) * granularity,
-    change = round(as.numeric(changes_speed) / granularity) * granularity
+    change = as.numeric(changes_speed)
   )
 
 
