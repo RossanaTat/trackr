@@ -61,6 +61,12 @@ predict_speed <- function(data_model,
                           k = x_seq,
                           digits=-log10(granularity))
 
+  #fittedvalues <- charts(fit, k=seq(min,max,granularity),digits=-log10(granularity))
+
+  # predictions_dt <- data.table(
+  #   y      = round(x_seq / granularity) * granularity,
+  #   change = round(as.numeric(changes_speed) / granularity) * granularity
+  # )
 
   predictions_dt <- data.table(
     y      = round(x_seq / granularity) * granularity,
@@ -123,6 +129,9 @@ get_speed_path <- function(changes_speed,
   setnames(path_speed,
            "change",
            "time")
+
+  # filter out time == 0
+  path_speed <- path_speed[time != 0]
 
   # Step 2: Compute lagged time and cumulative transformed time
 
