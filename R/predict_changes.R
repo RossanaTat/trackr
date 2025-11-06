@@ -121,6 +121,9 @@ get_speed_path <- function(changes_speed,
            "change",
            "time")
 
+  # filter out time == 0
+  path_speed <- path_speed[time != 0]
+
   # Step 2: Compute lagged time and cumulative transformed time
 
   path_speed[, time := {
