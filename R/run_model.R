@@ -45,6 +45,14 @@ track_progress <- function(data           = NULL,
                            granularity    = 0.1,
                            verbose        = TRUE) {
 
+  dt_warning_handler <- function(w) {
+    if (grepl("A shallow copy of this data.table was taken", w$message)) {
+      invokeRestart("muffleWarning")
+    }
+  }
+
+  withCallingHandlers({
+
   # ___________________________ #
   # Validation of Inputs ####
   # ___________________________ #
@@ -242,6 +250,14 @@ track_progress <- function(data           = NULL,
   } ### Messages completed
 
 
+  # return(invisible(list(
+  #   data_model        = data_model,
+  #   predicted_changes = predicted_changes,
+  #   path_historical   = path_historical,
+  #   path_future       = future_path_out,
+  #   scores            = scores
+  # )))
+
   return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
@@ -249,5 +265,7 @@ track_progress <- function(data           = NULL,
     path_future       = future_path_out,
     scores            = scores
   )))
+
+  }, warning = dt_warning_handler)
 
 }
