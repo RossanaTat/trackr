@@ -165,6 +165,23 @@ track_progress <- function(data           = NULL,
   )
 
 
+  # PSEUDO CODE TO CHECK ________ #
+  his_speed <- NULL
+
+  if (future && speed && any(sequence_speed == "his")) {
+    his_speed <- get_scores_speed(
+      path_his_speed = path_historical$speed,
+      path_speed     = predicted_changes$path_speed,
+      min            = min,
+      max            = max,
+      granularity    = granularity
+    )
+  }
+
+  # _____________________________ #
+
+
+
   # ___________________________ #
   # 4. Future Paths ####
   # ___________________________ #

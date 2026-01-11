@@ -206,87 +206,230 @@ future_path_pctls <- function(data_fut,
 #'   the `target_year`, respecting the selected progress speeds and
 #'   indicator direction (`best`).
 #' @export
+# future_path_speed <- function(data_fut,
+#                               sequence_speed    = c(0.25,0.5,1,2,4),
+#                               path_speed,
+#                               best        = "high",
+#                               target_year = 2030,
+#                               min         = NULL,
+#                               max         = NULL,
+#                               his_speed   = NULL) {  #NEW
+#
+#
+#   # Creates dataset with the country-years-speeds where projections are needed
+#   data_fut <- expand.grid(code = unique(data_fut$code),
+#                           year = seq( min (data_fut$year),
+#                                    target_year,
+#                                    1),
+#                           speed = sequence_speed) |>
+#     rename("yeartemp"          = "year") |>
+#     joyn::joyn(data_fut,
+#                match_type      = "m:1",
+#                by              = "code",
+#                reportvar       = FALSE,
+#                verbose         = FALSE,
+#                y_vars_to_keep  = "year") |>
+#
+#     filter(yeartemp >= year) |>
+#     select(-year) |>
+#     rename("year"              = "yeartemp") |>
+#
+#     joyn::joyn(data_fut,
+#                match_type      = "m:1",
+#                by              = c("code",
+#                     "year"),
+#                reportvar       = FALSE,
+#                verbose = FALSE)
+#
+#   # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
+#   path_fut_speed <- data_fut |>
+#     select(-y) |>
+#     filter(!is.na(y_fut)) |>
+#     cross_join(path_speed) |>
+#     mutate(best = best) |>
+#     filter(if_else(best == "high",
+#                    y_fut <= y,
+#                    y_fut >= y)) |>
+#     group_by(code,
+#              speed) |>
+#     arrange(time) |>
+#     mutate(year = year + (time-time[1])/speed) |>
+#     ungroup() |>
+#     select(-c(y_fut,
+#               time,
+#               best)) |>
+#     rename("y_speed" = "y") |>
+#
+#     joyn::joyn(data_fut,
+#                match_type = "1:1",
+#                by = c("code","year","speed"),
+#                reportvar = FALSE,
+#                verbose = FALSE,
+#                y_vars_to_keep = "y") |>
+#     group_by(code,
+#              speed) |>
+#     arrange(year) |>
+#     mutate(y_fut = zoo::na.approx(y_speed,
+#                                   year,
+#                                   na.rm = FALSE,
+#                                   rule=2)) |>
+#     filter(year %in% seq(min(year),
+#                          target_year,
+#                          1)) |>
+#     ungroup() |>
+#     select(-y_speed,
+#            -y)
+#
+#
+#   path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
+#     setorder(code,
+#              year)
+#
+#
+#   return(path_fut_speed)
+# }
 future_path_speed <- function(data_fut,
-                              sequence_speed    = c(0.25,0.5,1,2,4),
+                              sequence_speed    = c(0.25, 0.5, 1, 2, 4),
                               path_speed,
                               best        = "high",
                               target_year = 2030,
                               min         = NULL,
-                              max         = NULL) {
+                              max         = NULL,
+                              his_speed   = NULL) {
 
+  # -------------------------
+  # 1. Build speed grids
+  # -------------------------
 
-  # Creates dataset with the country-years-speeds where projections are needed
-  data_fut <- expand.grid(code = unique(data_fut$code),
-                          year = seq( min (data_fut$year),
-                                   target_year,
-                                   1),
-                          speed = sequence_speed) |>
-    rename("yeartemp"          = "year") |>
-    joyn::joyn(data_fut,
-               match_type      = "m:1",
-               by              = "code",
-               reportvar       = FALSE,
-               verbose         = FALSE,
-               y_vars_to_keep  = "year") |>
+  # Fixed numeric speeds
+  num_speeds <- sequence_speed[sequence_speed != "his"]
 
-    filter(yeartemp >= year) |>
-    select(-year) |>
-    rename("year"              = "yeartemp") |>
+  grid_fixed <- NULL
+  if (length(num_speeds) > 0) {
+    grid_fixed <- expand.grid(
+      code  = unique(data_fut$code),
+      year  = seq(min(data_fut$year), target_year, 1),
+      speed = num_speeds
+    )
+    grid_fixed$speed_type <- "fixed"
+  }
 
-    joyn::joyn(data_fut,
-               match_type      = "m:1",
-               by              = c("code",
-                    "year"),
-               reportvar       = FALSE,
-               verbose = FALSE)
+  # Historical speed ("his")
+  grid_his <- NULL
+  if ("his" %in% sequence_speed) {
 
-  # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
+    if (is.null(his_speed)) {
+      cli::cli_abort("`his_speed` must be provided when sequence_speed includes 'his'.")
+    }
+
+    grid_his <- expand.grid(
+      code = unique(data_fut$code),
+      year = seq(min(data_fut$year), target_year, 1)
+    )
+
+    grid_his <- joyn::joyn(
+      grid_his,
+      his_speed,                 # expects columns: code, score
+      by         = "code",
+      match_type = "m:1",
+      keep       = "left",
+      reportvar  = FALSE,
+      verbose    = FALSE
+    )
+
+    n_drop <- uniqueN(grid_his[is.na(score), code])
+
+    if (n_drop > 0) {
+      cli::cli_warn("Dropped {n_drop} countries with missing historical speed.")
+      grid_his <- grid_his[!is.na(score)]
+    }
+
+    grid_his[, speed := score]
+    grid_his[, score := NULL]
+    grid_his[, speed_type := "his"]
+  }
+
+  # Combine grids
+  data_fut <- data.table::rbindlist(
+    list(grid_fixed, grid_his),
+    use.names = TRUE,
+    fill = TRUE
+  )
+
+  # -------------------------
+  # 2. Attach baseline data
+  # -------------------------
+
+  data_fut <- data_fut |>
+    rename("yeartemp" = "year") |>
+    joyn::joyn(
+      data_fut[, .(code, year)],
+      match_type     = "m:1",
+      by             = "code",
+      reportvar      = FALSE,
+      verbose        = FALSE,
+      y_vars_to_keep = "year"
+    ) |>
+    dplyr::filter(yeartemp >= year) |>
+    dplyr::select(-year) |>
+    rename("year" = "yeartemp") |>
+    joyn::joyn(
+      data_fut,
+      match_type = "m:1",
+      by         = c("code", "year"),
+      reportvar  = FALSE,
+      verbose    = FALSE
+    )
+
+  # -------------------------
+  # 3. Project speed paths
+  # -------------------------
+
   path_fut_speed <- data_fut |>
-    select(-y) |>
-    filter(!is.na(y_fut)) |>
-    cross_join(path_speed) |>
-    mutate(best = best) |>
-    filter(if_else(best == "high",
-                   y_fut <= y,
-                   y_fut >= y)) |>
-    group_by(code,
-             speed) |>
-    arrange(time) |>
-    mutate(year = year + (time-time[1])/speed) |>
-    ungroup() |>
-    select(-c(y_fut,
-              time,
-              best)) |>
-    rename("y_speed" = "y") |>
+    dplyr::select(-y) |>
+    dplyr::filter(!is.na(y_fut)) |>
+    dplyr::cross_join(path_speed) |>
+    dplyr::mutate(best = best) |>
+    dplyr::filter(if_else(best == "high",
+                          y_fut <= y,
+                          y_fut >= y)) |>
+    dplyr::group_by(code, speed, speed_type) |>
+    dplyr::arrange(time) |>
+    dplyr::mutate(year = year + (time - time[1]) / speed) |>
+    dplyr::ungroup() |>
+    dplyr::select(-c(y_fut, time, best)) |>
+    dplyr::rename("y_speed" = "y") |>
 
-    joyn::joyn(data_fut,
-               match_type = "1:1",
-               by = c("code","year","speed"),
-               reportvar = FALSE,
-               verbose = FALSE,
-               y_vars_to_keep = "y") |>
-    group_by(code,
-             speed) |>
-    arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_speed,
-                                  year,
-                                  na.rm = FALSE,
-                                  rule=2)) |>
-    filter(year %in% seq(min(year),
-                         target_year,
-                         1)) |>
-    ungroup() |>
-    select(-y_speed,
-           -y)
+    joyn::joyn(
+      data_fut,
+      match_type = "1:1",
+      by = c("code", "year", "speed"),
+      reportvar = FALSE,
+      verbose   = FALSE,
+      y_vars_to_keep = "y"
+    ) |>
+    dplyr::group_by(code, speed, speed_type) |>
+    dplyr::arrange(year) |>
+    dplyr::mutate(
+      y_fut = zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2)
+    ) |>
+    dplyr::filter(year %in% seq(min(year), target_year, 1)) |>
+    dplyr::ungroup() |>
+    dplyr::select(-y_speed, -y)
 
+  # -------------------------
+  # 4. Bounds & ordering
+  # -------------------------
 
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
-    setorder(code,
-             year)
-
+  path_fut_speed <- data.table::as.data.table(path_fut_speed)[
+    is.na(y_fut) | (y_fut >= min & y_fut <= max)
+  ][
+    data.table::setorder(.SD, code, year)
+  ]
 
   return(path_fut_speed)
 }
+
 
 #' Future paths. Wrapper to Compute future paths based on either percentiles or speeds method
 #'
