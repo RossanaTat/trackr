@@ -191,241 +191,109 @@ future_path_pctls <- function(data_fut,
 # Speed ~~ #
 # -------------------- #
 
-#' Project future indicator paths at different speeds
+#' Project future indicator paths at different speeds, including historical speeds
 #'
-#' This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
+#' This function simulates future indicator trajectories under different speeds of progress.
+#' If "his" is included in `sequence_speed`, it will use each country's historical speed score.
 #'
-#' @param data_fut A data frame or data table containing the historical and/or
-#'   baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
-#'   and optionally `y_fut` and `time` for projections.
-#' @inheritParams future_path_pctls
-#' @inheritParams get_speed_path
+#' @param data_fut A data.table containing the historical/baseline data. Must include `code`, `year`, and `y_fut`.
+#' @param sequence_speed Numeric vector of speeds to project. Can include "his" to use historical speed.
+#' @param path_speed A typical path of progress (from worst to best outcome).
+#' @param scores_his Optional: historical speed scores table from `get_scores_speed()` (required if "his" in sequence_speed)
+#' @param best "high" or "low" (indicator direction)
+#' @param target_year Year to project to
+#' @param min Minimum allowed value
+#' @param max Maximum allowed value
 #'
-#' @return A data table with projected indicator values (`y_fut`) for each
-#'   country-year-speed combination from the last available year through
-#'   the `target_year`, respecting the selected progress speeds and
-#'   indicator direction (`best`).
+#' @return data.table with projected `y_fut` for each country-year-speed combination
 #' @export
-# future_path_speed <- function(data_fut,
-#                               sequence_speed    = c(0.25,0.5,1,2,4),
-#                               path_speed,
-#                               best        = "high",
-#                               target_year = 2030,
-#                               min         = NULL,
-#                               max         = NULL,
-#                               his_speed   = NULL) {  #NEW
-#
-#
-#   # Creates dataset with the country-years-speeds where projections are needed
-#   data_fut <- expand.grid(code = unique(data_fut$code),
-#                           year = seq( min (data_fut$year),
-#                                    target_year,
-#                                    1),
-#                           speed = sequence_speed) |>
-#     rename("yeartemp"          = "year") |>
-#     joyn::joyn(data_fut,
-#                match_type      = "m:1",
-#                by              = "code",
-#                reportvar       = FALSE,
-#                verbose         = FALSE,
-#                y_vars_to_keep  = "year") |>
-#
-#     filter(yeartemp >= year) |>
-#     select(-year) |>
-#     rename("year"              = "yeartemp") |>
-#
-#     joyn::joyn(data_fut,
-#                match_type      = "m:1",
-#                by              = c("code",
-#                     "year"),
-#                reportvar       = FALSE,
-#                verbose = FALSE)
-#
-#   # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
-#   path_fut_speed <- data_fut |>
-#     select(-y) |>
-#     filter(!is.na(y_fut)) |>
-#     cross_join(path_speed) |>
-#     mutate(best = best) |>
-#     filter(if_else(best == "high",
-#                    y_fut <= y,
-#                    y_fut >= y)) |>
-#     group_by(code,
-#              speed) |>
-#     arrange(time) |>
-#     mutate(year = year + (time-time[1])/speed) |>
-#     ungroup() |>
-#     select(-c(y_fut,
-#               time,
-#               best)) |>
-#     rename("y_speed" = "y") |>
-#
-#     joyn::joyn(data_fut,
-#                match_type = "1:1",
-#                by = c("code","year","speed"),
-#                reportvar = FALSE,
-#                verbose = FALSE,
-#                y_vars_to_keep = "y") |>
-#     group_by(code,
-#              speed) |>
-#     arrange(year) |>
-#     mutate(y_fut = zoo::na.approx(y_speed,
-#                                   year,
-#                                   na.rm = FALSE,
-#                                   rule=2)) |>
-#     filter(year %in% seq(min(year),
-#                          target_year,
-#                          1)) |>
-#     ungroup() |>
-#     select(-y_speed,
-#            -y)
-#
-#
-#   path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
-#     setorder(code,
-#              year)
-#
-#
-#   return(path_fut_speed)
-# }
 future_path_speed <- function(data_fut,
-                              sequence_speed    = c(0.25, 0.5, 1, 2, 4),
+                              sequence_speed    = c(0.25,0.5,1,2,4),
                               path_speed,
+                              scores_his        = NULL,
                               best        = "high",
                               target_year = 2030,
                               min         = NULL,
-                              max         = NULL,
-                              his_speed   = NULL) {
+                              max         = NULL) {
 
-  # -------------------------
-  # 1. Build speed grids
-  # -------------------------
-
-  # Fixed numeric speeds
-  num_speeds <- sequence_speed[sequence_speed != "his"]
-
-  grid_fixed <- NULL
-  if (length(num_speeds) > 0) {
-    grid_fixed <- expand.grid(
-      code  = unique(data_fut$code),
-      year  = seq(min(data_fut$year), target_year, 1),
-      speed = num_speeds
-    )
-    grid_fixed$speed_type <- "fixed"
-  }
-
-  # Historical speed ("his")
-  grid_his <- NULL
+  # ------------------------------
+  # Step 1: Handle "his" in sequence_speed
+  # ------------------------------
+  his_dt <- NULL
   if ("his" %in% sequence_speed) {
 
-    if (is.null(his_speed)) {
-      cli::cli_abort("`his_speed` must be provided when sequence_speed includes 'his'.")
+    if (is.null(scores_his) || nrow(scores_his) == 0) {
+      cli::cli_warn("Historical speed scores missing. Countries with missing historical speed will be dropped.")
+      sequence_speed <- setdiff(sequence_speed, "his")
+    } else {
+      his_dt <- copy(scores_his)
+      setnames(his_dt, "score", "speed")
+      sequence_speed <- setdiff(sequence_speed, "his")
     }
-
-    grid_his <- expand.grid(
-      code = unique(data_fut$code),
-      year = seq(min(data_fut$year), target_year, 1)
-    )
-
-    grid_his <- joyn::joyn(
-      grid_his,
-      his_speed,                 # expects columns: code, score
-      by         = "code",
-      match_type = "m:1",
-      keep       = "left",
-      reportvar  = FALSE,
-      verbose    = FALSE
-    )
-
-    n_drop <- uniqueN(grid_his[is.na(score), code])
-
-    if (n_drop > 0) {
-      cli::cli_warn("Dropped {n_drop} countries with missing historical speed.")
-      grid_his <- grid_his[!is.na(score)]
-    }
-
-    grid_his[, speed := score]
-    grid_his[, score := NULL]
-    grid_his[, speed_type := "his"]
   }
 
-  # Combine grids
-  data_fut <- data.table::rbindlist(
-    list(grid_fixed, grid_his),
-    use.names = TRUE,
-    fill = TRUE
+  # ------------------------------
+  # Step 2: Build full code-year-speed grid
+  # ------------------------------
+  data_fut_expanded <- expand.grid(
+    code  = unique(data_fut$code),
+    year  = seq(min(data_fut$year), target_year, 1),
+    speed = sequence_speed
+  ) |> as.data.table()
+
+  # Append historical speed rows if applicable
+  if (!is.null(his_dt)) {
+    data_fut_expanded <- rbindlist(list(
+      data_fut_expanded,
+      data_fut_expanded[, .(code, year, speed = his_dt$score), by = code]
+    ), use.names = TRUE)
+  }
+
+  # ------------------------------
+  # Step 3: Merge in baseline y_fut
+  # ------------------------------
+  data_fut_expanded <- joyn::joyn(
+    data_fut_expanded,
+    data_fut,
+    by = "code",
+    reportvar = FALSE,
+    y_vars_to_keep = "y_fut",
+    verbose = FALSE
   )
 
-  # -------------------------
-  # 2. Attach baseline data
-  # -------------------------
+  # ------------------------------
+  # Step 4: Cross join with path_speed and apply best filter
+  # ------------------------------
+  path_fut_speed <- copy(data_fut_expanded) |>
+    select(-y_fut) |>
+    filter(!is.na(y_fut)) |>
+    cross_join(path_speed) |>
+    mutate(best = best) |>
+    filter(if_else(best == "high", y_fut <= y, y_fut >= y))
 
-  data_fut <- data_fut |>
-    rename("yeartemp" = "year") |>
-    joyn::joyn(
-      data_fut[, .(code, year)],
-      match_type     = "m:1",
-      by             = "code",
-      reportvar      = FALSE,
-      verbose        = FALSE,
-      y_vars_to_keep = "year"
-    ) |>
-    dplyr::filter(yeartemp >= year) |>
-    dplyr::select(-year) |>
-    rename("year" = "yeartemp") |>
-    joyn::joyn(
-      data_fut,
-      match_type = "m:1",
-      by         = c("code", "year"),
-      reportvar  = FALSE,
-      verbose    = FALSE
-    )
+  # ------------------------------
+  # Step 5: Apply speed transformation
+  # ------------------------------
+  path_fut_speed <- path_fut_speed |>
+    group_by(code, speed) |>
+    arrange(time) |>
+    mutate(year = year + (time - time[1]) / speed) |>
+    ungroup() |>
+    select(-c(y_fut, time, best)) |>
+    rename("y_speed" = "y") |>
+    joyn::joyn(data_fut_expanded, by = c("code", "year", "speed"), reportvar = FALSE, verbose = FALSE, y_vars_to_keep = "y") |>
+    group_by(code, speed) |>
+    arrange(year) |>
+    mutate(y_fut = zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2)) |>
+    filter(year %in% seq(min(year), target_year, 1)) |>
+    ungroup() |>
+    select(-y_speed, -y)
 
-  # -------------------------
-  # 3. Project speed paths
-  # -------------------------
-
-  path_fut_speed <- data_fut |>
-    dplyr::select(-y) |>
-    dplyr::filter(!is.na(y_fut)) |>
-    dplyr::cross_join(path_speed) |>
-    dplyr::mutate(best = best) |>
-    dplyr::filter(if_else(best == "high",
-                          y_fut <= y,
-                          y_fut >= y)) |>
-    dplyr::group_by(code, speed, speed_type) |>
-    dplyr::arrange(time) |>
-    dplyr::mutate(year = year + (time - time[1]) / speed) |>
-    dplyr::ungroup() |>
-    dplyr::select(-c(y_fut, time, best)) |>
-    dplyr::rename("y_speed" = "y") |>
-
-    joyn::joyn(
-      data_fut,
-      match_type = "1:1",
-      by = c("code", "year", "speed"),
-      reportvar = FALSE,
-      verbose   = FALSE,
-      y_vars_to_keep = "y"
-    ) |>
-    dplyr::group_by(code, speed, speed_type) |>
-    dplyr::arrange(year) |>
-    dplyr::mutate(
-      y_fut = zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2)
-    ) |>
-    dplyr::filter(year %in% seq(min(year), target_year, 1)) |>
-    dplyr::ungroup() |>
-    dplyr::select(-y_speed, -y)
-
-  # -------------------------
-  # 4. Bounds & ordering
-  # -------------------------
-
-  path_fut_speed <- data.table::as.data.table(path_fut_speed)[
-    is.na(y_fut) | (y_fut >= min & y_fut <= max)
-  ][
-    data.table::setorder(.SD, code, year)
-  ]
+  # ------------------------------
+  # Step 6: Apply min/max bounds
+  # ------------------------------
+  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
+    setorder(code, year)
 
   return(path_fut_speed)
 }
@@ -445,6 +313,66 @@ future_path_speed <- function(data_fut,
 #'
 #' @seealso [future_path_pctls()], [future_path_speed()]
 #' @export
+# future_path <- function(data_fut,
+#                         target_year      = 2030,
+#                         min              = 0,
+#                         max              = 100,
+#                         granularity      = 0.1,
+#                         sequence_pctl    = seq(20, 80, 20),
+#                         changes_pctl     = NULL,
+#                         sequence_speed   = c(0.25, 0.5, 1, 2, 4),
+#                         path_speed       = NULL,
+#                         best             = "high",
+#                         verbose          = TRUE,
+#                         speed            = FALSE,
+#                         percentiles      = FALSE) {
+#
+#   result <- list(pctl  = NULL,
+#                  speed = NULL)
+#
+#   if (percentiles) {
+#     if (is.null(changes_pctl)) {
+#       cli::cli_abort("`changes_pctl` must be provided when `percentiles = TRUE`.")
+#     }
+#
+#     result$pctl <- future_path_pctls(
+#       data_fut         = data_fut,
+#       sequence_pctl    = sequence_pctl,
+#       changes_pctl     = changes_pctl,
+#       target_year      = target_year,
+#       granularity      = granularity,
+#       min              = min,
+#       max              = max,
+#       verbose          = verbose
+#     )
+#   }
+#
+#   if (speed) {
+#     if (is.null(path_speed)) {
+#       cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
+#     }
+#
+#     result$speed <- future_path_speed(
+#       data_fut       = data_fut,
+#       sequence_speed = sequence_speed,
+#       path_speed     = path_speed,
+#       best           = best,
+#       target_year    = target_year,
+#       min            = min,
+#       max            = max
+#     )
+#   }
+#
+#   if (is.null(result$pctl) && is.null(result$speed)) {
+#     cli::cli_abort("At least one of `percentiles = TRUE` or `speed = TRUE` must be specified.")
+#   }
+#
+#   return(result)
+# }
+#
+# -------------------- #
+# Future paths. Wrapper with "his" support
+# -------------------- #
 future_path <- function(data_fut,
                         target_year      = 2030,
                         min              = 0,
@@ -454,6 +382,7 @@ future_path <- function(data_fut,
                         changes_pctl     = NULL,
                         sequence_speed   = c(0.25, 0.5, 1, 2, 4),
                         path_speed       = NULL,
+                        scores_his       = NULL, # new argument for historical speed
                         best             = "high",
                         verbose          = TRUE,
                         speed            = FALSE,
@@ -462,6 +391,9 @@ future_path <- function(data_fut,
   result <- list(pctl  = NULL,
                  speed = NULL)
 
+  # ------------------- #
+  # Percentiles
+  # ------------------- #
   if (percentiles) {
     if (is.null(changes_pctl)) {
       cli::cli_abort("`changes_pctl` must be provided when `percentiles = TRUE`.")
@@ -479,19 +411,48 @@ future_path <- function(data_fut,
     )
   }
 
+  # ------------------- #
+  # Speed
+  # ------------------- #
   if (speed) {
+
     if (is.null(path_speed)) {
       cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
     }
 
+    # --- Handle "his" in sequence_speed
+    use_his <- "his" %in% sequence_speed
+    numeric_speeds <- sequence_speed[sequence_speed != "his"]
+
+    speed_input <- data.table(code = unique(data_fut$code))
+
+    if (use_his) {
+      if (is.null(scores_his) || !"score" %in% names(scores_his)) {
+        cli::cli_abort("Historical speed scores not provided or missing `score` column.")
+      }
+
+      # Keep only countries with historical speed
+      his_speeds <- scores_his[!is.na(score), .(code, speed = score)]
+
+      missing_countries <- setdiff(unique(scores_his$code), his_speeds$code)
+      if (length(missing_countries) > 0) {
+        cli::cli_warn("Dropping {length(missing_countries)} countries with missing historical speed: {paste(missing_countries, collapse=', ')}")
+      }
+
+      # Merge historical speeds into the data
+      speed_input <- merge(speed_input, his_speeds, by = "code", all.x = FALSE)
+    }
+
+    # Now call future_path_speed
     result$speed <- future_path_speed(
-      data_fut       = data_fut,
-      sequence_speed = sequence_speed,
-      path_speed     = path_speed,
-      best           = best,
-      target_year    = target_year,
-      min            = min,
-      max            = max
+      data_fut        = data_fut[speed_input, on = "code"], # filter countries with historical speeds
+      sequence_speed  = numeric_speeds,
+      path_speed      = path_speed,
+      best            = best,
+      target_year     = target_year,
+      min             = min,
+      max             = max,
+      scores_his      = if (use_his) his_speeds else NULL # pass historical speed scores
     )
   }
 
@@ -501,4 +462,3 @@ future_path <- function(data_fut,
 
   return(result)
 }
-
