@@ -49,59 +49,44 @@ track_progress <- function(data           = NULL,
   # Validation of Inputs ####
   # ___________________________ #
 
-  required_cols <- c(indicator,
-                     code_col,
-                     year_col)
-
-  missing_cols <- setdiff(required_cols,
-                          names(data))
-
+  required_cols <- c(indicator, code_col, year_col)
+  missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
-
     cli::cli_abort("The following required columns are missing in `data`: ",
-         paste(missing_cols,
-               collapse = ", "))
+         paste(missing_cols, collapse = ", "))
   }
 
-  # Validate `best` argument
   if (is.null(best)) {
-
     cli::cli_abort("`best` must be provided: either 'high' or 'low'")
   }
 
-  # Validate data and indicator params
-
   if (is.null(indicator) && is.null(data)) {
-
     cli::cli_abort("User must provide both indicator name and input data")
-
   }
 
   if (is.null(eval_from) && is.null(eval_to)) {
-
     cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
-
   }
 
   # ___________________________ #
   # 1. Prepare Data ####
   # ___________________________ #
 
-  data_model <- prep_data(indicator      = indicator,
-                          data           = data,
-                          startyear_data = startyear_data,
-                          endyear_data   = endyear_data,
-                          support        = support,
-                          extreme_percentile = extreme_percentile,
-                          granularity    = granularity,
-                          code_col       = code_col,
-                          year_col       = year_col,
-                          min            = min,
-                          max            = max,
-                          verbose        = verbose
-                          )
+  data_model <- prep_data(
+    indicator      = indicator,
+    data           = data,
+    startyear_data = startyear_data,
+    endyear_data   = endyear_data,
+    support        = support,
+    extreme_percentile = extreme_percentile,
+    granularity    = granularity,
+    code_col       = code_col,
+    year_col       = year_col,
+    min            = min,
+    max            = max,
+    verbose        = verbose
+  )
 
-  # Retrieve min and max from data model
   min <- data_model$min
   max <- data_model$max
 
@@ -109,17 +94,17 @@ track_progress <- function(data           = NULL,
   # 2. Predict Changes ####
   # ___________________________ #
 
-  predicted_changes <- predict_changes(data           = data_model$data_model,
-                                       min            = min,
-                                       max            = max,
-                                       granularity    = granularity,
-                                       best           = best,
-                                       speed          = speed,
-                                       percentiles    = percentiles,
-                                       sequence_pctl  = sequence_pctl,
-                                       #support        = support,
-                                       verbose        = verbose)
-
+  predicted_changes <- predict_changes(
+    data           = data_model$data_model,
+    min            = min,
+    max            = max,
+    granularity    = granularity,
+    best           = best,
+    speed          = speed,
+    percentiles    = percentiles,
+    sequence_pctl  = sequence_pctl,
+    verbose        = verbose
+  )
 
   # ___________________________ #
   # 3. Historical Paths ####
@@ -156,12 +141,29 @@ track_progress <- function(data           = NULL,
     best             = best
   )
 
+  # ___________________________ #
+  # 4. Scores ####
+  # ___________________________ #
+
+  scores <- get_scores(
+    speed          = speed,
+    pctl           = percentiles,
+    path_his_pctl  = path_historical$pctl,
+    best           = best,
+    path_his_speed = path_historical$speed,
+    path_speed     = predicted_changes$path_speed,
+    min            = min,
+    max            = max,
+    granularity    = granularity,
+    verbose        = verbose
+  )
 
   # ___________________________ #
-  # 4. Future Paths ####
+  # 5. Future Paths ####
   # ___________________________ #
 
   future_path_out <- NULL
+  path_future_his <- NULL
 
   if (future == TRUE) {
 
@@ -191,63 +193,50 @@ track_progress <- function(data           = NULL,
       best             = best,
       verbose          = verbose,
       speed            = speed,
-      percentiles      = percentiles)
+      percentiles      = percentiles
+    )
 
+    # ---- NEW BLOCK: Future projections using historical speed ----
+    if (speed && !is.null(scores$speed)) {
+      his_speeds <- scores$speed[, .(code, speed = score)]
+      path_future_his <- future_path(
+        data_fut         = data_fut,
+        target_year      = target_year,
+        min              = min,
+        max              = max,
+        granularity      = granularity,
+        sequence_pctl    = sequence_pctl,
+        changes_pctl     = predicted_changes$changes_pctl,
+        sequence_speed   = his_speeds, # country-specific speeds
+        path_speed       = predicted_changes$path_speed,
+        best             = best,
+        verbose          = verbose,
+        speed            = TRUE,
+        percentiles      = FALSE
+      )
+    }
   }
-
-
-  # ___________________________ #
-  # 5. Scores ####
-  # ___________________________ #
-
-  scores <- get_scores(
-    speed          = speed,
-    pctl           = percentiles,
-    path_his_pctl  = path_historical$pctl,
-    best           = best,
-    path_his_speed = path_historical$speed,
-    path_speed     = predicted_changes$path_speed,
-    min            = min,
-    max            = max,
-    granularity    = granularity,
-    verbose        = verbose
-  )
 
   if (verbose) {
     components <- c()
-
-    if (percentiles) {
-      components <- c(components, "percentile scores")
-    }
-
-    if (speed) {
-      components <- c(components, "speed scores")
-    }
-
-    if (future) {
-      components <- c(components, "future path")
-    }
-
-    # Always include these
+    if (percentiles) components <- c(components, "percentile scores")
+    if (speed) components <- c(components, "speed scores")
+    if (future) components <- c(components, "future path")
     components <- c("data model", "historical paths", "predicted changes", components)
-
     cli::cli_alert_success(
       cli::col_cyan(
         paste0("Method run completed for indicator: '", indicator, "'.\n• Output includes: ",
                paste(components, collapse = ", "), ".")
       )
-
-
     )
-  } ### Messages completed
-
+  }
 
   return(invisible(list(
     data_model        = data_model,
     predicted_changes = predicted_changes,
     path_historical   = path_historical,
     path_future       = future_path_out,
+    path_future_his   = path_future_his, # new output
     scores            = scores
   )))
-
 }
