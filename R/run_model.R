@@ -156,12 +156,30 @@ track_progress <- function(data           = NULL,
     best             = best
   )
 
-
   # ___________________________ #
-  # 4. Future Paths ####
+  # 4. Scores ####
+  # ___________________________ #
+
+  scores <- get_scores(
+    speed          = speed,
+    pctl           = percentiles,
+    path_his_pctl  = path_historical$pctl,
+    best           = best,
+    path_his_speed = path_historical$speed,
+    path_speed     = predicted_changes$path_speed,
+    min            = min,
+    max            = max,
+    granularity    = granularity,
+    verbose        = verbose
+  )
+  # ___________________________ #
+  # 5. Future Paths ####
   # ___________________________ #
 
   future_path_out <- NULL
+
+  # NEW -fut projections using his speed
+  future_path_his <- NULL
 
   if (future == TRUE) {
 
@@ -193,25 +211,18 @@ track_progress <- function(data           = NULL,
       speed            = speed,
       percentiles      = percentiles)
 
+    # NEW ####
+    future_path_his <- path_future_his_speed(data_fut = data_fut,
+                                             scores   = scores,
+                                             path_speed = predicted_changes$path_speed,
+                                             best        = best,
+                                             target_year = target_year,
+                                             min         = min,
+                                             max         = max)
+
   }
 
 
-  # ___________________________ #
-  # 5. Scores ####
-  # ___________________________ #
-
-  scores <- get_scores(
-    speed          = speed,
-    pctl           = percentiles,
-    path_his_pctl  = path_historical$pctl,
-    best           = best,
-    path_his_speed = path_historical$speed,
-    path_speed     = predicted_changes$path_speed,
-    min            = min,
-    max            = max,
-    granularity    = granularity,
-    verbose        = verbose
-  )
 
   if (verbose) {
     components <- c()
@@ -247,6 +258,7 @@ track_progress <- function(data           = NULL,
     predicted_changes = predicted_changes,
     path_historical   = path_historical,
     path_future       = future_path_out,
+    path_future_his_speed = future_path_his, # optionally remove NAs
     scores            = scores
   )))
 

@@ -97,7 +97,7 @@ prep_data_fut <- function(data               = NULL,
 
 
 # -------------------- #
-# Percentiles ~~ #
+# Percentiles ~~ ####
 # -------------------- #
 
 #' Generate Future Percentile Paths
@@ -188,7 +188,7 @@ future_path_pctls <- function(data_fut,
 }
 
 # -------------------- #
-# Speed ~~ #
+# Speed ~~ ####
 # -------------------- #
 
 #' Project future indicator paths at different speeds
@@ -358,4 +358,161 @@ future_path <- function(data_fut,
 
   return(result)
 }
+
+
+# --------------------------- #
+# Hist. Speed Scores ~~ ####
+# --------------------------- #
+
+
+#' Project future indicator paths using historical country-specific speeds
+#'
+#' This function simulates future indicator trajectories by extending each
+#' country along the global speed path using its own historically observed
+#' speed score.
+#'
+#' @param data_fut Output of `prep_data_fut()`
+#' @param scores A data.table containing historical speed scores.
+#'   Must include columns: `code`, `year`, and `score`
+#' @param path_speed Output of `get_speed_path()`
+#' @param best Indicator direction ("high" or "low")
+#' @param target_year Projection horizon
+#' @param min Optional lower bound on projected values
+#' @param max Optional upper bound on projected values
+#'
+#' @return A data.table with projected indicator values (`y_fut`) by country-year
+#' @export
+path_future_his_speed <- function(data_fut,
+                                  scores,
+                                  path_speed,
+                                  best        = "high",
+                                  target_year = 2030,
+                                  min         = NULL,
+                                  max         = NULL) {
+
+
+  # Keep latest speed score per country
+  setorder(scores, code, -year)
+  scores <- scores[, .SD[1], by = code]
+
+  # Drop invalid speeds
+  scores <- scores[is.finite(score) & score > 0]
+
+  # --------------------------------------------------
+  # Create country-year grid for projections
+  # --------------------------------------------------
+
+  data_fut <- expand.grid(
+    code = unique(data_fut$code),
+    year = seq(min(data_fut$year), target_year, 1)
+  ) |>
+    rename("yeartemp" = "year") |>
+    joyn::joyn(data_fut,
+               match_type     = "m:1",
+               by             = "code",
+               reportvar      = FALSE,
+               verbose        = FALSE,
+               y_vars_to_keep = "year") |>
+    filter(yeartemp >= year) |>
+    select(-year) |>
+    rename("year" = "yeartemp") |>
+    joyn::joyn(data_fut,
+               match_type = "m:1",
+               by = c("code", "year"),
+               reportvar = FALSE,
+               verbose   = FALSE)
+
+  # Attach historical speed
+  data_fut <- joyn::joyn(data_fut,
+                         scores[, .(code, speed = score)],
+                         match_type = "m:1",
+                         by = "code",
+                         reportvar = FALSE,
+                         verbose   = FALSE)
+
+  # --------------------------------------------------
+  # Build future path using historical speed
+  # --------------------------------------------------
+
+  path_fut_speed <- data_fut |>
+    select(-y) |>
+    filter(!is.na(y_fut), !is.na(speed)) |>
+    cross_join(path_speed) |>
+    mutate(best = best) |>
+    filter(if_else(best == "high",
+                   y >= y_fut,
+                   y <= y_fut)) |>
+    group_by(code) |>
+    arrange(time) |>
+    mutate(year = year + (time - time[1]) / speed) |>
+    ungroup() |>
+    select(-c(y_fut, time, best, speed)) |>
+    rename("y_speed" = "y") |>
+
+    joyn::joyn(data_fut,
+               match_type = "1:1",
+               by = c("code", "year"),
+               reportvar = FALSE,
+               verbose   = FALSE,
+               y_vars_to_keep = "y") |>
+    group_by(code) |>
+    arrange(year) |>
+    mutate(y_fut = zoo::na.approx(y_speed,
+                                  year,
+                                  na.rm = FALSE,
+                                  rule = 2)) |>
+    filter(year %in% seq(min(year), target_year, 1)) |>
+    ungroup() |>
+    select(-y_speed, -y)
+
+  # Apply bounds and ordering
+  path_fut_speed <- as.data.table(path_fut_speed)[
+    is.na(y_fut) | (y_fut >= min & y_fut <= max)
+  ][
+    order(code, year)
+  ]
+
+  # TODO: Handle NAs ####
+
+  return(path_fut_speed)
+}
+
+
+## Helper ####
+#' Diagnose speed-path domain violations
+#'
+#' Identifies countries whose starting values lie outside the
+#' speed-path domain and therefore cannot be projected.
+#'
+#' @param data_fut Output of `prep_data_fut()`
+#' @param path_speed Output of `get_speed_path()`
+#'
+#' @return A data.table with one row per country and a diagnostic flag
+#' @keywords internal
+diagnose_speed_domain <- function(data_fut, path_speed) {
+
+  data_fut  <- as.data.table(data_fut)
+  path_min  <- min(path_speed$y, na.rm = TRUE)
+  path_max  <- max(path_speed$y, na.rm = TRUE)
+
+  out <- data_fut[, .(
+    code,
+    year,
+    y_fut,
+    status = fifelse(
+      y_fut < path_min, "below_speed_domain",
+      fifelse(y_fut > path_max, "above_speed_domain", "inside_speed_domain")
+    )
+  )]
+
+  return(out)
+}
+## Check which countries would be undefined BEFORE projecting
+#diagnose_speed_domain(data_fut, path_speed)[status != "inside_speed_domain"]
+
+# Summary table of violations
+# diagnose_speed_domain(data_fut, path_speed)[,
+#                                            .N, by = status
+# ]
+
 
