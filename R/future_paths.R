@@ -208,94 +208,82 @@ future_path_pctls <- function(data_fut,
 #' @return data.table with projected `y_fut` for each country-year-speed combination
 #' @export
 future_path_speed <- function(data_fut,
-                              sequence_speed    = c(0.25,0.5,1,2,4),
+                              sequence_speed    = c(0.25,0.5,1,2,4,"his"),
                               path_speed,
-                              scores_his        = NULL,
                               best        = "high",
                               target_year = 2030,
                               min         = NULL,
-                              max         = NULL) {
+                              max         = NULL,
+                              eval_from   = NULL,
+                              eval_to     = NULL,
+                              path_his_speed = NULL) {
 
-  # ------------------------------
-  # Step 1: Handle "his" in sequence_speed
-  # ------------------------------
-  his_dt <- NULL
+  dt <- qDT(data_fut)
+
+  # -------------------------------
+  # 1. Compute historical speeds if "his" is requested
+  # -------------------------------
   if ("his" %in% sequence_speed) {
-
-    if (is.null(scores_his) || nrow(scores_his) == 0) {
-      cli::cli_warn("Historical speed scores missing. Countries with missing historical speed will be dropped.")
-      sequence_speed <- setdiff(sequence_speed, "his")
-    } else {
-      his_dt <- copy(scores_his)
-      setnames(his_dt, "score", "speed")
-      sequence_speed <- setdiff(sequence_speed, "his")
+    if (is.null(path_his_speed)) {
+      cli::cli_abort("`path_his_speed` must be provided when 'his' is included in sequence_speed.")
     }
+
+    his_speed_dt <- path_his_speed[, .(code, his_speed = score)]
+
+    missing_speed <- his_speed_dt[is.na(his_speed), code]
+    if (length(missing_speed) > 0) {
+      cli::cli_warn("Historical speed missing for country(ies): {paste(missing_speed, collapse=', ')}. Dropping from projections.")
+      his_speed_dt <- his_speed_dt[!is.na(his_speed)]
+    }
+
+    # Merge historical speeds into data
+    dt <- dt[his_speed_dt, on = "code"]
   }
 
-  # ------------------------------
-  # Step 2: Build full code-year-speed grid
-  # ------------------------------
-  data_fut_expanded <- expand.grid(
-    code  = unique(data_fut$code),
-    year  = seq(min(data_fut$year), target_year, 1),
-    speed = sequence_speed
-  ) |> as.data.table()
+  # -------------------------------
+  # 2. Expand data by sequence_speed
+  # -------------------------------
+  expanded <- CJ(code = unique(dt$code),
+                 year = seq(min(dt$year), target_year, 1),
+                 speed = sequence_speed,
+                 unique = TRUE)
 
-  # Append historical speed rows if applicable
-  if (!is.null(his_dt)) {
-    data_fut_expanded <- rbindlist(list(
-      data_fut_expanded,
-      data_fut_expanded[, .(code, year, speed = his_dt$score), by = code]
-    ), use.names = TRUE)
-  }
+  dt <- expanded[dt, on = .(code), allow.cartesian = TRUE]
 
-  # ------------------------------
-  # Step 3: Merge in baseline y_fut
-  # ------------------------------
-  data_fut_expanded <- joyn::joyn(
-    data_fut_expanded,
-    data_fut,
-    by = "code",
-    reportvar = FALSE,
-    y_vars_to_keep = "y_fut",
-    verbose = FALSE
-  )
+  # -------------------------------
+  # 3. Convert speed column to numeric
+  # -------------------------------
+  dt[, speed_num := fifelse(speed == "his", his_speed, as.numeric(speed))]
 
-  # ------------------------------
-  # Step 4: Cross join with path_speed and apply best filter
-  # ------------------------------
-  path_fut_speed <- copy(data_fut_expanded) |>
-    select(-y_fut) |>
-    filter(!is.na(y_fut)) |>
-    cross_join(path_speed) |>
-    mutate(best = best) |>
-    filter(if_else(best == "high", y_fut <= y, y_fut >= y))
+  # Drop countries without numeric speed
+  dt <- dt[!is.na(speed_num)]
 
-  # ------------------------------
-  # Step 5: Apply speed transformation
-  # ------------------------------
-  path_fut_speed <- path_fut_speed |>
-    group_by(code, speed) |>
-    arrange(time) |>
-    mutate(year = year + (time - time[1]) / speed) |>
-    ungroup() |>
-    select(-c(y_fut, time, best)) |>
-    rename("y_speed" = "y") |>
-    joyn::joyn(data_fut_expanded, by = c("code", "year", "speed"), reportvar = FALSE, verbose = FALSE, y_vars_to_keep = "y") |>
-    group_by(code, speed) |>
-    arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2)) |>
-    filter(year %in% seq(min(year), target_year, 1)) |>
-    ungroup() |>
-    select(-y_speed, -y)
+  # -------------------------------
+  # 4. Cross join with path_speed lookup
+  # -------------------------------
+  dt <- dt[path_speed, on = "y", allow.cartesian = TRUE]
+  dt[, best := best]
 
-  # ------------------------------
-  # Step 6: Apply min/max bounds
-  # ------------------------------
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
-    setorder(code, year)
+  # Apply best direction filter
+  if (best == "high") dt <- dt[y <= y_speed]
+  if (best == "low")  dt <- dt[y >= y_speed]
 
-  return(path_fut_speed)
+  # -------------------------------
+  # 5. Compute projected years and values
+  # -------------------------------
+  dt <- dt[order(code, speed_num, time)]
+  dt[, year := round(year + (time - time[1]) / speed_num), by = .(code, speed)]
+
+  dt[, y_fut := zoo::na.approx(y_speed, year, na.rm = FALSE, rule = 2), by = .(code, speed)]
+
+  # -------------------------------
+  # 6. Keep only relevant columns and within bounds
+  # -------------------------------
+  dt <- dt[is.na(y_fut) | (y_fut >= min & y_fut <= max)]
+  dt <- dt[, .(code, year, speed, y_fut)]
+  setorder(dt, code, year, speed)
+
+  return(dt)
 }
 
 

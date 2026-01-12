@@ -126,18 +126,23 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
   return(dt)
 }
 
-#' Historical speed path
+
+#' Historical speed path (robust)
 #'
-#' Calculates path a country would have taken with various speeds
+#' Calculates the projected path a country would take at different speeds, including using historical speed ("his").
 #'
-#' @inheritParams get_speed_path
-#' @inheritParams project_pctls_path
-#' @param sequence_speed numeric vector of speed paths to calculate
+#' @param data_his A data.table with historical values (`code`, `year`, `y_his`).
+#' @param sequence_speed Numeric vector of speeds or "his" to use historical speed.
+#' @param path_speed Lookup table mapping `y` to `time`.
+#' @param granularity Rounding precision for `y`.
+#' @param eval_from First year to include.
+#' @param eval_to Last year to include.
+#' @param min Minimum value for y.
+#' @param max Maximum value for y.
+#' @param best "high" or "low" for filtering.
+#' @param verbose Logical.
 #'
-#'
-#' @return A data table of projected values under different speeds
-#'
-#'
+#' @return data.table with projected values (`y_speed`) by `code`, `year`, and `speed`.
 #' @export
 project_path_speed <- function(data_his,
                                sequence_speed = c(0.25, 0.5, 1, 2, 4),
@@ -147,119 +152,81 @@ project_path_speed <- function(data_his,
                                eval_to        = 2022,
                                min            = NULL,
                                max            = NULL,
-                               best           = "high") {
+                               best           = "high",
+                               verbose        = TRUE) {
 
-  # Set min and max from attributes if not provided
+  # Ensure min/max are set
   if (is.null(min)) min <- attr(data_his, "min")
   if (is.null(max)) max <- attr(data_his, "max")
 
-  data_his_copy <- data_his[!is.na(y_his)]
+  data_his <- copy(data_his[!is.na(y_his)])
 
-  # # Cross join with sequence_speed
-  speeds <- qDT(sequence_speed)[, k := 1]
+  # Handle "his" as a special speed
+  if ("his" %in% sequence_speed) {
+    sequence_speed <- unique(c(sequence_speed[sequence_speed != "his"], 1))
+    use_his <- TRUE
+  } else {
+    use_his <- FALSE
+  }
 
-  data_his_copy[, k := 1]
-
-  data_his_copy <- joyn::merge(data_his_copy,
-                          speeds,
-                          by              = "k",
-                          allow.cartesian = TRUE,
-                          reportvar       = FALSE,
-                          verbose         = FALSE)
-
+  # Create a speed table for cross join
+  speeds <- data.table(sequence_speed = sequence_speed)[, k := 1]
   data_his[, k := 1]
-  data_his <- joyn::merge(data_his,
-                               speeds,
-                               by              = "k",
-                               allow.cartesian = TRUE,
-                               reportvar       = FALSE,
-                               verbose         = FALSE)
-  data_his[, k := NULL]
-  setnames(data_his, "sequence_speed", "speed")
+  data_his_exp <- merge(data_his, speeds, by = "k", allow.cartesian = TRUE)
+  data_his_exp[, k := NULL]
 
+  # Rename for clarity
+  setnames(data_his_exp, "sequence_speed", "speed")
 
-  data_his_copy <- data_his_copy[, .(code, year, y_his, k, speed = sequence_speed, best)]
-
-  # Cross join path speed
-
+  # Join with path_speed
   path_speed_copy <- copy(path_speed)
   path_speed_copy[, k := 1]
+  data_his_exp[, k := 1]
+  data_his_exp <- merge(data_his_exp, path_speed_copy, by = "k",
+                        allow.cartesian = TRUE)
+  data_his_exp[, k := NULL]
 
-
-  data_his_copy <- joyn::merge(data_his_copy,
-                               path_speed_copy,
-                               by              = "k",
-                               allow.cartesian = TRUE,
-                               reportvar       = FALSE,
-                               verbose         = FALSE)
-
-  if (best == "high") {
-    data_his_copy <- data_his_copy[y_his <= y]
-  } else if (best == "low") {
-    data_his_copy <- data_his_copy[y_his >= y]
-
+  # Filter by best
+  if (!is.null(best)) {
+    if (best == "high") {
+      data_his_exp <- data_his_exp[y_his <= y]
+    } else if (best == "low") {
+      data_his_exp <- data_his_exp[y_his >= y]
+    }
   }
 
-  if (nrow(data_his_copy) == 0L) {
-    cli::cli_abort(c(
-      "!" = "Filtering by {.field best = '{best}'} resulted in 0 rows.",
-      "i" = "Check whether {.field y_his} and {.field y} overlap
-           given the filtering condition (<= or >=)."
-    ))
+  if (nrow(data_his_exp) == 0) {
+    cli::cli_abort("No rows left after filtering by {.field best = '{best}'} and y_his/y overlap.")
   }
 
+  # Calculate year projections
+  data_his_exp[, year := year + (time - time[1]) / speed, by = .(code, speed)]
 
-  data_his_copy[, year := year + (time - time[1]) / speed,
-                by = .(code, speed)]
+  # If using "his", override speed-based calculation with y_his
+  if (use_his) {
+    data_his_exp[speed == 1, y_speed := y_his]
+  }
 
-  data_his_copy[, c("best", "y_his", "time") := NULL]
+  # For other speeds, assign y_speed from y
+  data_his_exp[speed != 1, y_speed := y]
 
-  setnames(data_his_copy,
-           "y", "y_speed")
+  # Keep only relevant columns
+  keep_cols <- c("code", "year", "y_speed", "y_his", "speed")
+  data_his_exp <- data_his_exp[, ..keep_cols]
 
-  data_his_copy <- data_his_copy |>
-    joyn::joyn(data_his,
-             match_type     = "1:1",
-             by             = c("code","year","speed"),
-             reportvar      = FALSE,
-             y_vars_to_keep = "y",
-             verbose        = FALSE)
-
-  # keep original row order
-  data_his_copy[, orig_order := .I]
-
-  # replicate: group_by(code, speed) |> arrange(year) |> mutate(...)
-  data_his_copy <- data_his_copy[
+  # Interpolate missing y_speed within each code/speed
+  data_his_exp <- data_his_exp[
     order(code, speed, year),
     y_speed := zoo::na.approx(y_speed, x = year, na.rm = FALSE, rule = 2),
     by = .(code, speed)
   ]
 
-  # restore original row order
-  setorder(data_his_copy, orig_order)
-  data_his_copy[, orig_order := NULL]   # drop helper column
+  # Filter by eval_from/eval_to and min/max
+  data_his_exp <- data_his_exp[year >= eval_from & year <= eval_to]
+  data_his_exp <- data_his_exp[y_speed >= min & y_speed <= max]
 
-  data_his_copy[year %in% seq(eval_from, eval_to)]
-
-  # # Filter for actual values between min and max
-  data_his_copy <- data_his_copy[y >= min, ][y <= max, ][, k := NULL]
-
-
-  if (verbose) {
-    if (is.null(data_his_copy)) {
-      cli::cli_alert_danger("Computed path dt is empty")
-    }
-  }
-
-  # Output _____ #
-  ################
-
-  # y_speed:  Simulated trajectory values from path_speed (non-regular years)
-  # y      :  Actual observed data
-
-  return(data_his_copy[])
+  return(data_his_exp[])
 }
-
 
 
 
