@@ -213,7 +213,7 @@ track_progress <- function(data           = NULL,
 
     # NEW ####
     future_path_his <- path_future_his_speed(data_fut = data_fut,
-                                             scores   = scores,
+                                             scores   = scores$speed,
                                              path_speed = predicted_changes$path_speed,
                                              best        = best,
                                              target_year = target_year,
