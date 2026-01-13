@@ -371,6 +371,11 @@ future_path <- function(data_fut,
 #' country along the global speed path using its own historically observed
 #' speed score.
 #'
+#' Missing values (`NA`) in projected outcomes indicate that a historically
+#' anchored future path could not be computed, typically due to missing or
+#' non-positive historical speed estimates or infeasible extrapolation beyond
+#' the modeled indicator range.
+#'
 #' @param data_fut Output of `prep_data_fut()`
 #' @param scores A data.table containing historical speed scores.
 #'   Must include columns: `code`, `year`, and `score`
@@ -380,7 +385,10 @@ future_path <- function(data_fut,
 #' @param min Optional lower bound on projected values
 #' @param max Optional upper bound on projected values
 #'
-#' @return A data.table with projected indicator values (`y_fut`) by country-year
+#' @return A data.table with projected indicator values (`y_fut`) by country-year.
+#'   A diagnostics table explaining missing projections is attached as an
+#'   attribute: `attr(x, "diagnostics")`.
+#'
 #' @export
 path_future_his_speed <- function(data_fut,
                                   scores,
@@ -390,16 +398,18 @@ path_future_his_speed <- function(data_fut,
                                   min         = NULL,
                                   max         = NULL) {
 
+  # --------------------------------------------------
+  # 1. Keep latest valid speed score per country
+  # --------------------------------------------------
 
-  # Keep latest speed score per country
   setorder(scores, code, -year)
-  scores <- scores[, .SD[1], by = code]
+  scores_latest <- scores[, .SD[1], by = code]
 
-  # Drop invalid speeds
-  scores <- scores[is.finite(score) & score > 0]
+  scores_latest[, has_valid_speed :=
+                  is.finite(score) & score > 0]
 
   # --------------------------------------------------
-  # Create country-year grid for projections
+  # 2. Create country-year grid for projections
   # --------------------------------------------------
 
   data_fut <- expand.grid(
@@ -407,36 +417,45 @@ path_future_his_speed <- function(data_fut,
     year = seq(min(data_fut$year), target_year, 1)
   ) |>
     rename("yeartemp" = "year") |>
-    joyn::joyn(data_fut,
-               match_type     = "m:1",
-               by             = "code",
-               reportvar      = FALSE,
-               verbose        = FALSE,
-               y_vars_to_keep = "year") |>
+    joyn::joyn(
+      data_fut,
+      match_type     = "m:1",
+      by             = "code",
+      reportvar      = FALSE,
+      verbose        = FALSE,
+      y_vars_to_keep = "year"
+    ) |>
     filter(yeartemp >= year) |>
     select(-year) |>
     rename("year" = "yeartemp") |>
-    joyn::joyn(data_fut,
-               match_type = "m:1",
-               by = c("code", "year"),
-               reportvar = FALSE,
-               verbose   = FALSE)
-
-  # Attach historical speed
-  data_fut <- joyn::joyn(data_fut,
-                         scores[, .(code, speed = score)],
-                         match_type = "m:1",
-                         by = "code",
-                         reportvar = FALSE,
-                         verbose   = FALSE)
+    joyn::joyn(
+      data_fut,
+      match_type = "m:1",
+      by = c("code", "year"),
+      reportvar = FALSE,
+      verbose   = FALSE
+    )
 
   # --------------------------------------------------
-  # Build future path using historical speed
+  # 3. Attach historical speed
+  # --------------------------------------------------
+
+  data_fut <- joyn::joyn(
+    data_fut,
+    scores_latest[, .(code, speed = score, has_valid_speed)],
+    match_type = "m:1",
+    by = "code",
+    reportvar = FALSE,
+    verbose   = FALSE
+  )
+
+  # --------------------------------------------------
+  # 4. Build future path using historical speed
   # --------------------------------------------------
 
   path_fut_speed <- data_fut |>
     select(-y) |>
-    filter(!is.na(y_fut), !is.na(speed)) |>
+    filter(!is.na(y_fut), has_valid_speed) |>
     cross_join(path_speed) |>
     mutate(best = best) |>
     filter(if_else(best == "high",
@@ -446,36 +465,72 @@ path_future_his_speed <- function(data_fut,
     arrange(time) |>
     mutate(year = year + (time - time[1]) / speed) |>
     ungroup() |>
-    select(-c(y_fut, time, best, speed)) |>
+    select(-c(y_fut, time, best, speed, has_valid_speed)) |>
     rename("y_speed" = "y") |>
-
-    joyn::joyn(data_fut,
-               match_type = "1:1",
-               by = c("code", "year"),
-               reportvar = FALSE,
-               verbose   = FALSE,
-               y_vars_to_keep = "y") |>
+    joyn::joyn(
+      data_fut,
+      match_type = "1:1",
+      by = c("code", "year"),
+      reportvar = FALSE,
+      verbose   = FALSE,
+      y_vars_to_keep = "y"
+    ) |>
     group_by(code) |>
     arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_speed,
-                                  year,
-                                  na.rm = FALSE,
-                                  rule = 2)) |>
+    mutate(
+      y_fut = zoo::na.approx(
+        y_speed,
+        year,
+        na.rm = FALSE,
+        rule = 2
+      )
+    ) |>
     filter(year %in% seq(min(year), target_year, 1)) |>
     ungroup() |>
     select(-y_speed, -y)
 
-  # Apply bounds and ordering
+  # --------------------------------------------------
+  # 5. Apply bounds and ordering
+  # --------------------------------------------------
+
   path_fut_speed <- as.data.table(path_fut_speed)[
     is.na(y_fut) | (y_fut >= min & y_fut <= max)
   ][
     order(code, year)
   ]
 
-  # TODO: Handle NAs ####
+  # --------------------------------------------------
+  # 6. Build diagnostics for missing projections
+  # --------------------------------------------------
+
+  diagnostics <- path_fut_speed[, .(
+    has_any_projection = any(!is.na(y_fut)),
+    all_na             = all(is.na(y_fut))
+  ), by = code]
+
+  diagnostics <- joyn::joyn(
+    diagnostics,
+    scores_latest[, .(code, has_valid_speed)],
+    match_type = "m:1",
+    by = "code",
+    reportvar = FALSE,
+    verbose   = FALSE
+  )
+
+  diagnostics[, reason := fifelse(
+    !has_valid_speed,
+    "no_valid_historical_speed",
+    fifelse(all_na,
+            "infeasible_or_outside_speed_path",
+            NA_character_)
+  )]
+
+  # Attach diagnostics as attribute
+  attr(path_fut_speed, "diagnostics") <- diagnostics
 
   return(path_fut_speed)
 }
+
 
 
 ## Helper ####
