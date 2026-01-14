@@ -85,6 +85,7 @@ track_progress <- function(data           = NULL,
 
   }
 
+
   if (is.null(eval_from) && is.null(eval_to)) {
 
     cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
@@ -108,6 +109,32 @@ track_progress <- function(data           = NULL,
   if (is.null(endyear_data)) {
     endyear_data <- max(year_vec, na.rm = TRUE)
   }
+
+  # -------------------------------- #
+  # Validate evaluation period length
+  # -------------------------------- #
+
+  if (!is.numeric(eval_from) || !is.numeric(eval_to)) {
+    cli::cli_abort("`eval_from` and `eval_to` must be numeric year values")
+  }
+
+  if (eval_to <= eval_from) {
+    cli::cli_abort("`eval_to` must be greater than `eval_from`")
+  }
+
+  eval_period <- eval_to - eval_from
+
+  if (eval_period < 5) {
+    cli::cli_abort(
+      paste0(
+        "Progress scores require an evaluation period of at least five years.\n",
+        "• Provided period: ", eval_from, "–", eval_to,
+        " (", eval_period, " years).\n",
+        "• Please expand the evaluation window to five years or more."
+      )
+    )
+  }
+
 
 
   # ___________________________ #
