@@ -27,8 +27,8 @@ track_progress <- function(data           = NULL,
                            indicator      = NULL,
                            code_col       = "iso3c",
                            year_col       = "date",
-                           startyear_data = 1960,
-                           endyear_data   = 2024,
+                           startyear_data = NULL,
+                           endyear_data   = NULL,
                            eval_from      = NULL,
                            eval_to        = NULL,
                            speed          = FALSE,
@@ -90,6 +90,25 @@ track_progress <- function(data           = NULL,
     cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
 
   }
+
+  # -------------------------- #
+  # Set default start/end years
+  # -------------------------- #
+
+  year_vec <- data[[year_col]]
+
+  if (!is.numeric(year_vec)) {
+    cli::cli_abort("`year_col` must refer to a numeric year variable")
+  }
+
+  if (is.null(startyear_data)) {
+    startyear_data <- min(year_vec, na.rm = TRUE)
+  }
+
+  if (is.null(endyear_data)) {
+    endyear_data <- max(year_vec, na.rm = TRUE)
+  }
+
 
   # ___________________________ #
   # 1. Prepare Data ####
