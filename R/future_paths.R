@@ -255,7 +255,7 @@ future_path_speed <- function(data_fut,
                    y_fut >= y))
 
   # Step 3: Debug / safety check
-  message("nrow(path_fut_speed) before group_by: ", nrow(path_fut_speed))
+  #message("nrow(path_fut_speed) before group_by: ", nrow(path_fut_speed))
   if (nrow(path_fut_speed) == 0) {
     warning("No valid future speed paths available after filtering. Returning empty table.")
     return(data.table(
