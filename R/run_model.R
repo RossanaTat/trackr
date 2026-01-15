@@ -53,272 +53,198 @@ track_progress <- function(data           = NULL,
 
   withCallingHandlers({
 
-  # ___________________________ #
-  # Validation of Inputs ####
-  # ___________________________ #
+    # ========================= #
+    # 0. Input validation ####
+    # ========================= #
 
-  required_cols <- c(indicator,
-                     code_col,
-                     year_col)
+    required_cols <- c(indicator, code_col, year_col)
+    missing_cols <- setdiff(required_cols, names(data))
 
-  missing_cols <- setdiff(required_cols,
-                          names(data))
-
-  if (length(missing_cols) > 0) {
-
-    cli::cli_abort("The following required columns are missing in `data`: ",
-         paste(missing_cols,
-               collapse = ", "))
-  }
-
-  # Validate `best` argument
-  if (is.null(best)) {
-
-    cli::cli_abort("`best` must be provided: either 'high' or 'low'")
-  }
-
-  # Validate data and indicator params
-
-  if (is.null(indicator) && is.null(data)) {
-
-    cli::cli_abort("User must provide both indicator name and input data")
-
-  }
-
-
-  if (is.null(eval_from) && is.null(eval_to)) {
-
-    cli::cli_abort("User must provide both first and last year to include when evaluating the progress")
-
-  }
-
-  # -------------------------- #
-  # Set default start/end years
-  # -------------------------- #
-
-  year_vec <- data[[year_col]]
-
-  if (!is.numeric(year_vec)) {
-    cli::cli_abort("`year_col` must refer to a numeric year variable")
-  }
-
-  if (is.null(startyear_data)) {
-    startyear_data <- min(year_vec, na.rm = TRUE)
-  }
-
-  if (is.null(endyear_data)) {
-    endyear_data <- max(year_vec, na.rm = TRUE)
-  }
-
-  # -------------------------------- #
-  # Validate evaluation period length
-  # -------------------------------- #
-
-  if (!is.numeric(eval_from) || !is.numeric(eval_to)) {
-    cli::cli_abort("`eval_from` and `eval_to` must be numeric year values")
-  }
-
-  if (eval_to <= eval_from) {
-    cli::cli_abort("`eval_to` must be greater than `eval_from`")
-  }
-
-  eval_period <- eval_to - eval_from
-
-  if (eval_period < 5) {
-    cli::cli_abort(
-      paste0(
-        "Progress scores require an evaluation period of at least five years.\n",
-        "• Provided period: ", eval_from, "–", eval_to,
-        " (", eval_period, " years).\n",
-        "• Please expand the evaluation window to five years or more."
+    if (length(missing_cols) > 0) {
+      cli::cli_abort(
+        "The following required columns are missing in `data`: {paste(missing_cols, collapse = ', ')}"
       )
-    )
-  }
+    }
 
+    if (is.null(best)) {
+      cli::cli_abort("`best` must be provided: either 'high' or 'low'")
+    }
 
+    if (is.null(eval_from) || is.null(eval_to)) {
+      cli::cli_abort("User must provide both `eval_from` and `eval_to`.")
+    }
 
-  # ___________________________ #
-  # 1. Prepare Data ####
-  # ___________________________ #
+    if (!is.numeric(eval_from) || !is.numeric(eval_to)) {
+      cli::cli_abort("`eval_from` and `eval_to` must be numeric year values.")
+    }
 
-  data_model <- prep_data(indicator      = indicator,
-                          data           = data,
-                          startyear_data = startyear_data,
-                          endyear_data   = endyear_data,
-                          support        = support,
-                          extreme_percentile = extreme_percentile,
-                          granularity    = granularity,
-                          code_col       = code_col,
-                          year_col       = year_col,
-                          min            = min,
-                          max            = max,
-                          verbose        = verbose
-                          )
+    if (eval_to <= eval_from) {
+      cli::cli_abort("`eval_to` must be greater than `eval_from`.")
+    }
 
-  # Retrieve min and max from data model
-  min <- data_model$min
-  max <- data_model$max
+    if ((eval_to - eval_from) < 5) {
+      cli::cli_abort(
+        paste0(
+          "Progress scores require an evaluation period of at least five years.\n",
+          "• Provided period: ", eval_from, "–", eval_to,
+          " (", eval_to - eval_from, " years).\n",
+          "• Please expand the evaluation window."
+        )
+      )
+    }
 
-  # ___________________________ #
-  # 2. Predict Changes ####
-  # ___________________________ #
+    # ========================= #
+    # 1. Prepare data ####
+    # ========================= #
 
-  predicted_changes <- predict_changes(data           = data_model$data_model,
-                                       min            = min,
-                                       max            = max,
-                                       granularity    = granularity,
-                                       best           = best,
-                                       speed          = speed,
-                                       percentiles    = percentiles,
-                                       sequence_pctl  = sequence_pctl,
-                                       #support        = support,
-                                       verbose        = verbose)
-
-
-  # ___________________________ #
-  # 3. Historical Paths ####
-  # ___________________________ #
-
-  data_his <- get_his_data(
-    indicator   = indicator,
-    data        = data,
-    code_col    = code_col,
-    year_col    = year_col,
-    min         = min,
-    max         = max,
-    eval_from   = eval_from,
-    eval_to     = eval_to,
-    support     = support,
-    extreme_percentile = extreme_percentile,
-    granularity = granularity
-  )
-
-  path_historical <- path_historical(
-    percentiles      = percentiles,
-    speed            = speed,
-    data_his         = data_his,
-    eval_from        = eval_from,
-    eval_to          = eval_to,
-    granularity      = granularity,
-    min              = min,
-    max              = max,
-    sequence_pctl    = sequence_pctl,
-    changes_pctl     = predicted_changes$changes_pctl,
-    verbose          = verbose,
-    sequence_speed   = sequence_speed,
-    path_speed       = predicted_changes$path_speed,
-    best             = best
-  )
-
-  # ___________________________ #
-  # 4. Scores ####
-  # ___________________________ #
-
-  scores <- get_scores(
-    speed          = speed,
-    pctl           = percentiles,
-    path_his_pctl  = path_historical$pctl,
-    best           = best,
-    path_his_speed = path_historical$speed,
-    path_speed     = predicted_changes$path_speed,
-    min            = min,
-    max            = max,
-    granularity    = granularity,
-    verbose        = verbose
-  )
-  # ___________________________ #
-  # 5. Future Paths ####
-  # ___________________________ #
-
-  future_path_out <- NULL
-
-  # NEW -fut projections using his speed
-  future_path_his <- NULL
-
-  if (future == TRUE) {
-
-    data_fut <- prep_data_fut(
-      data               = data,
-      indicator          = indicator,
-      granularity        = granularity,
-      code_col           = code_col,
-      year_col           = year_col,
-      support            = support,
+    data_model <- prep_data(
+      indicator      = indicator,
+      data           = data,
+      startyear_data = startyear_data,
+      endyear_data   = endyear_data,
+      support        = support,
       extreme_percentile = extreme_percentile,
-      startyear_data     = startyear_data,
-      endyear_data       = endyear_data,
-      verbose            = verbose
+      granularity    = granularity,
+      code_col       = code_col,
+      year_col       = year_col,
+      min            = min,
+      max            = max,
+      verbose        = verbose
     )
 
-    future_path_out <- future_path(
-      data_fut         = data_fut,
-      target_year      = target_year,
+    min <- data_model$min
+    max <- data_model$max
+
+    # ========================= #
+    # 2. Predict changes ####
+    # ========================= #
+
+    predicted_changes <- predict_changes(
+      data           = data_model$data_model,
+      min            = min,
+      max            = max,
+      granularity    = granularity,
+      best           = best,
+      speed          = speed,
+      percentiles    = percentiles,
+      sequence_pctl  = sequence_pctl,
+      verbose        = verbose
+    )
+
+    # ========================= #
+    # 3. Historical paths ####
+    # ========================= #
+
+    data_his <- get_his_data(
+      indicator   = indicator,
+      data        = data,
+      code_col    = code_col,
+      year_col    = year_col,
+      min         = min,
+      max         = max,
+      eval_from   = eval_from,
+      eval_to     = eval_to,
+      support     = support,
+      extreme_percentile = extreme_percentile,
+      granularity = granularity
+    )
+
+    path_historical <- path_historical(
+      percentiles      = percentiles,
+      speed            = speed,
+      data_his         = data_his,
+      eval_from        = eval_from,
+      eval_to          = eval_to,
+      granularity      = granularity,
       min              = min,
       max              = max,
-      granularity      = granularity,
       sequence_pctl    = sequence_pctl,
       changes_pctl     = predicted_changes$changes_pctl,
+      verbose          = verbose,
       sequence_speed   = sequence_speed,
       path_speed       = predicted_changes$path_speed,
-      best             = best,
-      verbose          = verbose,
-      speed            = speed,
-      percentiles      = percentiles)
+      best             = best
+    )
 
-    # NEW ####
-    future_path_his <- path_future_his_speed(data_fut = data_fut,
-                                             scores   = scores$speed,
-                                             path_speed = predicted_changes$path_speed,
-                                             best        = best,
-                                             target_year = target_year,
-                                             min         = min,
-                                             max         = max)
+    # ========================= #
+    # 4. Scores ####
+    # ========================= #
 
-  }
+    scores <- get_scores(
+      speed          = speed,
+      pctl           = percentiles,
+      path_his_pctl  = path_historical$pctl,
+      best           = best,
+      path_his_speed = path_historical$speed,
+      path_speed     = predicted_changes$path_speed,
+      min            = min,
+      max            = max,
+      granularity    = granularity,
+      verbose        = verbose
+    )
 
+    # ========================= #
+    # 5. Future paths ####
+    # ========================= #
 
-
-  if (verbose) {
-    components <- c()
-
-    if (percentiles) {
-      components <- c(components, "percentile scores")
-    }
-
-    if (speed) {
-      components <- c(components, "speed scores")
-    }
+    future_path_out <- NULL
 
     if (future) {
-      components <- c(components, "future path")
-    }
 
-    # Always include these
-    components <- c("data model", "historical paths", "predicted changes", components)
-
-    cli::cli_alert_success(
-      cli::col_cyan(
-        paste0("Method run completed for indicator: '", indicator, "'.\n• Output includes: ",
-               paste(components, collapse = ", "), ".")
+      data_fut <- prep_data_fut(
+        data               = data,
+        indicator          = indicator,
+        granularity        = granularity,
+        code_col           = code_col,
+        year_col           = year_col,
+        support            = support,
+        extreme_percentile = extreme_percentile,
+        startyear_data     = startyear_data,
+        endyear_data       = endyear_data,
+        verbose            = verbose
       )
 
+      future_path_out <- future_path(
+        data_fut         = data_fut,
+        target_year      = target_year,
+        min              = min,
+        max              = max,
+        granularity      = granularity,
+        sequence_pctl    = sequence_pctl,
+        changes_pctl     = predicted_changes$changes_pctl,
+        sequence_speed   = sequence_speed,
+        path_speed       = predicted_changes$path_speed,
+        best             = best,
+        verbose          = verbose,
+        speed            = speed,
+        percentiles      = percentiles,
+        scores           = scores$speed   # 🔑 NEW
+      )
+    }
 
-    )
-  } ### Messages completed
+    if (verbose) {
+      cli::cli_alert_success(
+        cli::col_cyan(
+          paste0(
+            "Method run completed for indicator: '", indicator, "'.\n",
+            "• Output includes: data model, historical paths, predicted changes",
+            if (percentiles) ", percentile scores" else "",
+            if (speed) ", speed scores" else "",
+            if (future) ", future paths" else "",
+            "."
+          )
+        )
+      )
+    }
 
-
-  return(invisible(list(
-    data_model        = data_model,
-    predicted_changes = predicted_changes,
-    path_historical   = path_historical,
-    path_future = list(
-      model_based = future_path_out,
-      historical_speed = future_path_his
-    ),
-    #path_future_his_speed = future_path_his, # optionally remove NAs
-    scores            = scores
-  )))
+    return(invisible(list(
+      data_model        = data_model,
+      predicted_changes = predicted_changes,
+      path_historical   = path_historical,
+      path_future       = future_path_out,
+      scores            = scores
+    )))
 
   }, warning = dt_warning_handler)
-
 }
+

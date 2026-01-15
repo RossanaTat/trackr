@@ -9,8 +9,8 @@ track_progress(
   indicator = NULL,
   code_col = "iso3c",
   year_col = "date",
-  startyear_data = 1960,
-  endyear_data = 2024,
+  startyear_data = NULL,
+  endyear_data = NULL,
   eval_from = NULL,
   eval_to = NULL,
   speed = FALSE,
@@ -56,6 +56,8 @@ track_progress(
 \item{sequence_pctl}{Numeric vector of percentile paths to calculate.
 The percentile score is determined by the granularity of the percentiles chosen here. For example, if seq(20,80,20) is chosen, then a country’s progress will fall in the 0th-20th percentile, 20th-40th percentile etc.
 This argument is only relevant if `percentiles=TRUE`.}
+
+\item{sequence_speed}{Vector of numeric speeds to simulate.}
 
 \item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
 

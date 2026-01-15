@@ -193,54 +193,58 @@ future_path_pctls <- function(data_fut,
 
 #' Project future indicator paths at different speeds
 #'
-#' This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
+#' This function simulates future indicator trajectories under different speeds of progress.
+#' It generates yearly projections from the latest available data point up to a given target year.
 #'
 #' @param data_fut A data frame or data table containing the historical and/or
 #'   baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
 #'   and optionally `y_fut` and `time` for projections.
-#' @inheritParams future_path_pctls
-#' @inheritParams get_speed_path
+#' @param sequence_speed Vector of numeric speeds to simulate.
+#' @param path_speed A data frame or table containing the modeled speed paths.
+#' @param best Character: "high" or "low", the direction of progress.
+#' @param target_year Numeric, final year for projections.
+#' @param min Optional numeric lower bound for indicator values.
+#' @param max Optional numeric upper bound for indicator values.
 #'
 #' @return A data table with projected indicator values (`y_fut`) for each
 #'   country-year-speed combination from the last available year through
-#'   the `target_year`, respecting the selected progress speeds and
-#'   indicator direction (`best`).
+#'   the `target_year`.
 #' @export
 future_path_speed <- function(data_fut,
-                              sequence_speed    = c(0.25,0.5,1,2,4),
+                              sequence_speed = c(0.25, 0.5, 1, 2, 4),
                               path_speed,
-                              best        = "high",
+                              best = "high",
                               target_year = 2030,
-                              min         = NULL,
-                              max         = NULL) {
+                              min = NULL,
+                              max = NULL) {
 
-
-  # Creates dataset with the country-years-speeds where projections are needed
-  data_fut <- expand.grid(code = unique(data_fut$code),
-                          year = seq( min (data_fut$year),
-                                   target_year,
-                                   1),
-                          speed = sequence_speed) |>
-    rename("yeartemp"          = "year") |>
-    joyn::joyn(data_fut,
-               match_type      = "m:1",
-               by              = "code",
-               reportvar       = FALSE,
-               verbose         = FALSE,
-               y_vars_to_keep  = "year") |>
-
+  # Step 1: Create country-year-speed grid
+  data_fut <- expand.grid(
+    code = unique(data_fut$code),
+    year = seq(min(data_fut$year), target_year, 1),
+    speed = sequence_speed
+  ) |>
+    rename("yeartemp" = "year") |>
+    joyn::joyn(
+      data_fut,
+      match_type = "m:1",
+      by = "code",
+      reportvar = FALSE,
+      verbose = FALSE,
+      y_vars_to_keep = "year"
+    ) |>
     filter(yeartemp >= year) |>
     select(-year) |>
-    rename("year"              = "yeartemp") |>
+    rename("year" = "yeartemp") |>
+    joyn::joyn(
+      data_fut,
+      match_type = "m:1",
+      by = c("code", "year"),
+      reportvar = FALSE,
+      verbose = FALSE
+    )
 
-    joyn::joyn(data_fut,
-               match_type      = "m:1",
-               by              = c("code",
-                    "year"),
-               reportvar       = FALSE,
-               verbose = FALSE)
-
-  # Create a new dataset which will eventually contain the predicted path from the last observation to targetyear at all selected speeds
+  # Step 2: Prepare dataset for projected paths
   path_fut_speed <- data_fut |>
     select(-y) |>
     filter(!is.na(y_fut)) |>
@@ -248,59 +252,69 @@ future_path_speed <- function(data_fut,
     mutate(best = best) |>
     filter(if_else(best == "high",
                    y_fut <= y,
-                   y_fut >= y)) |>
-    group_by(code,
-             speed) |>
-    arrange(time) |>
-    mutate(year = year + (time-time[1])/speed) |>
-    ungroup() |>
-    select(-c(y_fut,
-              time,
-              best)) |>
-    rename("y_speed" = "y") |>
+                   y_fut >= y))
 
-    joyn::joyn(data_fut,
-               match_type = "1:1",
-               by = c("code","year","speed"),
-               reportvar = FALSE,
-               verbose = FALSE,
-               y_vars_to_keep = "y") |>
-    group_by(code,
-             speed) |>
+  # Step 3: Debug / safety check
+  message("nrow(path_fut_speed) before group_by: ", nrow(path_fut_speed))
+  if (nrow(path_fut_speed) == 0) {
+    warning("No valid future speed paths available after filtering. Returning empty table.")
+    return(data.table(
+      code = character(),
+      year = numeric(),
+      speed = numeric(),
+      y_fut = numeric()
+    ))
+  }
+
+  # Step 4: Build projected paths
+  path_fut_speed <- path_fut_speed |>
+    group_by(code, speed) |>
+    arrange(time) |>
+    mutate(year = year + (time - time[1]) / speed) |>
+    ungroup() |>
+    select(-c(y_fut, time, best)) |>
+    rename("y_speed" = "y") |>
+    joyn::joyn(
+      data_fut,
+      match_type = "1:1",
+      by = c("code", "year", "speed"),
+      reportvar = FALSE,
+      verbose = FALSE,
+      y_vars_to_keep = "y"
+    ) |>
+    group_by(code, speed) |>
     arrange(year) |>
     mutate(y_fut = zoo::na.approx(y_speed,
                                   year,
                                   na.rm = FALSE,
-                                  rule=2)) |>
-    filter(year %in% seq(min(year),
-                         target_year,
-                         1)) |>
+                                  rule = 2)) |>
+    filter(year %in% seq(min(year), target_year, 1)) |>
     ungroup() |>
-    select(-y_speed,
-           -y)
+    select(-y_speed, -y)
 
-
-  path_fut_speed <- as.data.table(path_fut_speed)[is.na(y_fut) | (y_fut >= min & y_fut <= max)] |>
-    setorder(code,
-             year)
-
+  # Step 5: Apply bounds and ordering
+  path_fut_speed <- as.data.table(path_fut_speed)[
+    is.na(y_fut) | (y_fut >= min & y_fut <= max)
+  ][order(code, year)]
 
   return(path_fut_speed)
 }
 
+
 #' Future paths. Wrapper to Compute future paths based on either percentiles or speeds method
 #'
-#' Computes future trajectories for each country either based on percentile projections (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
-#'
+#' Computes future trajectories for each country either based on percentile projections
+#' (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
 #'
 #' @inheritParams future_path_pctls
 #' @inheritParams future_path_speed
-#' @param speed Logical. If `TRUE`, calls `future_path_speed()`.
+#' @param speed Logical. If `TRUE`, calls `future_path_speed()` and always augments
+#'   projections with historically observed speeds of progress.
 #' @param percentiles Logical. If `TRUE`, calls `future_path_pctls()`.
 #'
-#' @return A `data.table` with projected paths based on selected method.
+#' @return A list containing projected future paths based on selected method(s).
 #'
-#' @seealso [future_path_pctls()], [future_path_speed()]
+#' @seealso [future_path_pctls()], [future_path_speed()], [path_future_his_speed()]
 #' @export
 future_path <- function(data_fut,
                         target_year      = 2030,
@@ -314,10 +328,14 @@ future_path <- function(data_fut,
                         best             = "high",
                         verbose          = TRUE,
                         speed            = FALSE,
-                        percentiles      = FALSE) {
+                        percentiles      = FALSE,
+                        scores           = NULL) {
 
-  result <- list(pctl  = NULL,
-                 speed = NULL)
+  result <- list(pctl = NULL, speed = NULL)
+
+  # --------------------------------------------------
+  # Percentile-based future paths
+  # --------------------------------------------------
 
   if (percentiles) {
     if (is.null(changes_pctl)) {
@@ -336,12 +354,20 @@ future_path <- function(data_fut,
     )
   }
 
+  # --------------------------------------------------
+  # Speed-based future paths (model + historical)
+  # --------------------------------------------------
+
   if (speed) {
     if (is.null(path_speed)) {
       cli::cli_abort("`path_speed` must be provided when `speed = TRUE`.")
     }
+    if (is.null(scores)) {
+      cli::cli_abort("`scores` must be provided when `speed = TRUE` to compute historical-speed projections.")
+    }
 
-    result$speed <- future_path_speed(
+    # --- Model-based speed projections
+    path_speed_model <- future_path_speed(
       data_fut       = data_fut,
       sequence_speed = sequence_speed,
       path_speed     = path_speed,
@@ -350,10 +376,37 @@ future_path <- function(data_fut,
       min            = min,
       max            = max
     )
+
+    if (!is.null(path_speed_model) && nrow(path_speed_model) > 0) {
+      path_speed_model[, speed_source := "model"]
+    }
+
+    # --- Historical-speed projections
+    path_speed_his <- path_future_his_speed(
+      data_fut    = data_fut,
+      scores      = scores,
+      path_speed  = path_speed,
+      best        = best,
+      target_year = target_year,
+      min         = min,
+      max         = max
+    )
+
+    # --- Combine
+    result$speed <- rbind(
+      path_speed_model,
+      path_speed_his,
+      fill = TRUE
+    )
+
+    # --- Preserve diagnostics
+    attr(result$speed, "diagnostics") <- attr(path_speed_his, "diagnostics")
   }
 
   if (is.null(result$pctl) && is.null(result$speed)) {
-    cli::cli_abort("At least one of `percentiles = TRUE` or `speed = TRUE` must be specified.")
+    cli::cli_abort(
+      "At least one of `percentiles = TRUE` or `speed = TRUE` must be specified."
+    )
   }
 
   return(result)
@@ -500,7 +553,16 @@ path_future_his_speed <- function(data_fut,
   ]
 
   # --------------------------------------------------
-  # 6. Build diagnostics for missing projections
+  # 6. Add schema alignment for merging with model-based paths
+  # --------------------------------------------------
+
+  path_fut_speed[, `:=`(
+    speed        = NA_real_,
+    speed_source = "historical"
+  )]
+
+  # --------------------------------------------------
+  # 7. Build diagnostics for missing projections
   # --------------------------------------------------
 
   diagnostics <- path_fut_speed[, .(

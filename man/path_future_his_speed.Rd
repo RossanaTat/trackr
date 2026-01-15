@@ -31,10 +31,18 @@ Must include columns: `code`, `year`, and `score`}
 \item{max}{Optional upper bound on projected values}
 }
 \value{
-A data.table with projected indicator values (`y_fut`) by country-year
+A data.table with projected indicator values (`y_fut`) by country-year.
+  A diagnostics table explaining missing projections is attached as an
+  attribute: `attr(x, "diagnostics")`.
 }
 \description{
 This function simulates future indicator trajectories by extending each
 country along the global speed path using its own historically observed
 speed score.
+}
+\details{
+Missing values (`NA`) in projected outcomes indicate that a historically
+anchored future path could not be computed, typically due to missing or
+non-positive historical speed estimates or infeasible extrapolation beyond
+the modeled indicator range.
 }
