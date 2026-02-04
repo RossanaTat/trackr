@@ -132,7 +132,15 @@ get_his_data <- function(indicator          = "EG.ELC.ACCS.ZS",
 #'
 #' @inheritParams get_speed_path
 #' @inheritParams project_pctls_path
-#' @param sequence_speed numeric vector of speed paths to calculate
+#' @param sequence_speed Numeric vector of relative speeds of progress used for
+#'   model-based future projections when `speed = TRUE`. A value of 1 represents
+#'   the typical (median) speed observed historically; values above (below) 1
+#'   represent faster (slower) progress.
+#'
+#'   In addition to these model-based speeds, in the case of future projections, these are always
+#'   computed using each country’s historically estimated speed of progress
+#'   (when available). Historical-speed projections are appended to the future
+#'   speed paths and identified via a `speed_source` column.
 #'
 #'
 #' @return A data table of projected values under different speeds

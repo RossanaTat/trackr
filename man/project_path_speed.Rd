@@ -19,7 +19,15 @@ project_path_speed(
 \arguments{
 \item{data_his}{A `data.table` containing historical values with variables `code`, `year`, and `y_his`.}
 
-\item{sequence_speed}{numeric vector of speed paths to calculate}
+\item{sequence_speed}{Numeric vector of relative speeds of progress used for
+  model-based future projections when `speed = TRUE`. A value of 1 represents
+  the typical (median) speed observed historically; values above (below) 1
+  represent faster (slower) progress.
+
+  In addition to these model-based speeds, in the case of future projections, these are always
+  computed using each country’s historically estimated speed of progress
+  (when available). Historical-speed projections are appended to the future
+  speed paths and identified via a `speed_source` column.}
 
 \item{granularity}{A numeric value indicating the step size used when
 computing the trajectory over time. Smaller values produce smoother curves.

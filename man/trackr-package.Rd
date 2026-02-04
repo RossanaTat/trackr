@@ -6,7 +6,7 @@
 \alias{trackr-package}
 \title{trackr: Track Progress and Forecast Targets for WDI Indicators}
 \description{
-Calculates progress scores and future targets for any WDI indicator of interest. Users can specify their preferred method and parameters to evaluate and project country performance. Depending on the settings, the package returns between two and six data frames summarizing percentile-based and speed-based scores, as well as historical and future indicator trajectories under different assumptions.
+Calculates progress scores and projects future targets for any indicator of interest. Users can choose their preferred methods and parameters to evaluate and project country performance. Depending on the settings, the package returns two to six data frames summarizing percentile-based and speed-based scores, along with historical and projected indicator trajectories under different assumptions.
 }
 \seealso{
 Useful links:

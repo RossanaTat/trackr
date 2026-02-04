@@ -17,7 +17,8 @@ future_path(
   best = "high",
   verbose = TRUE,
   speed = FALSE,
-  percentiles = FALSE
+  percentiles = FALSE,
+  scores = NULL
 )
 }
 \arguments{
@@ -38,20 +39,26 @@ This argument is only relevant if `percentiles=TRUE`.}
 
 \item{changes_pctl}{A `data.table` with predicted changes by initialvalue and pctl.}
 
-\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
+\item{sequence_speed}{Vector of numeric speeds to simulate.}
+
+\item{path_speed}{A data frame or table containing the modeled speed paths.}
+
+\item{best}{Character: "high" or "low", the direction of progress.}
 
 \item{verbose}{Logical; if `TRUE`, messages will be printed for each processing year. Default is `TRUE`.}
 
-\item{speed}{Logical. If `TRUE`, calls `future_path_speed()`.}
+\item{speed}{Logical. If `TRUE`, calls `future_path_speed()` and always augments
+projections with historically observed speeds of progress.}
 
 \item{percentiles}{Logical. If `TRUE`, calls `future_path_pctls()`.}
 }
 \value{
-A `data.table` with projected paths based on selected method.
+A list containing projected future paths based on selected method(s).
 }
 \description{
-Computes future trajectories for each country either based on percentile projections (`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
+Computes future trajectories for each country either based on percentile projections
+(`future_path_pctls()`) or speed of progress (`future_path_speed()`), depending on user input.
 }
 \seealso{
-[future_path_pctls()], [future_path_speed()]
+[future_path_pctls()], [future_path_speed()], [path_future_his_speed()]
 }

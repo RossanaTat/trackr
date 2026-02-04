@@ -19,20 +19,24 @@ future_path_speed(
 baseline data. Must include columns: `code`, `year`, and `y` (the indicator),
 and optionally `y_fut` and `time` for projections.}
 
-\item{best}{A character string indicating whether higher or lower values of thei indicator are better. Use "high" if higher values of the indicator reflect better outcomes, or "low" if lower values are better.}
+\item{sequence_speed}{Vector of numeric speeds to simulate.}
 
-\item{target_year}{An integer specifying the year to project to. Default is '2030'. Only relevant if `future = TRUE`.}
+\item{path_speed}{A data frame or table containing the modeled speed paths.}
 
-\item{min}{Optional. Minimum value of `initialvalue` to predict.}
+\item{best}{Character: "high" or "low", the direction of progress.}
 
-\item{max}{Optional. Maximum value of `initialvalue` to predict.}
+\item{target_year}{Numeric, final year for projections.}
+
+\item{min}{Optional numeric lower bound for indicator values.}
+
+\item{max}{Optional numeric upper bound for indicator values.}
 }
 \value{
 A data table with projected indicator values (`y_fut`) for each
   country-year-speed combination from the last available year through
-  the `target_year`, respecting the selected progress speeds and
-  indicator direction (`best`).
+  the `target_year`.
 }
 \description{
-This function simulates future indicator trajectories under different speeds of progress. It generates yearly projections from the latest available data point up to a given target year.
+This function simulates future indicator trajectories under different speeds of progress.
+It generates yearly projections from the latest available data point up to a given target year.
 }
