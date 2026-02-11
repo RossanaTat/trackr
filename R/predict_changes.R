@@ -36,7 +36,7 @@ predict_speed <- function(data_model,
 
   # Fit model
   fit_speed <- gcrq(change ~ ps(initialvalue,
-                                lambda = 0.1 * 1.148^(0:50)),
+                                lambda = 0.1 * 1.148^seq(0, 50, by=2)),
                     foldid = data_model$fold_id,
                     tau    = 0.5,
                     data   = data_model)
@@ -192,7 +192,7 @@ predict_pctls <- function(data_model,
   # gcrq automatically ensures that the percentile-curves do not cross
 
   fit_pctl <- gcrq(change ~ ps(initialvalue,
-                               lambda = 0.1 * 1.148^(0:50)),
+                               lambda = 0.1 * 1.148^seq(0, 50, by=2)),
                    foldid = data_model$fold_id,
                    tau    = sequence_pctl / 100,
                    data   = data_model)
