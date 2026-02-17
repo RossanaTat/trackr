@@ -1,4 +1,3 @@
-
 #____________________________ #
 ### HISTORICAL PATHS ####
 #____________________________ #
@@ -219,11 +218,13 @@ project_path_speed <- function(data_his,
 
   data_his_copy[, year := year + (time - time[1]) / speed,
                 by = .(code, speed)]
+  
+  data_his_copy[, c("best", "y_his", "time", "k") := NULL]
 
-  data_his_copy[, c("best", "y_his", "time") := NULL]
-
-  setnames(data_his_copy,
-           "y", "y_speed")
+  data_his_copy <- data_his_copy[, 
+    .(y_speed = median(y, na.rm = TRUE)),
+    by = .(code, year, speed)
+  ]
 
   data_his_copy <- data_his_copy |>
     joyn::joyn(data_his,
