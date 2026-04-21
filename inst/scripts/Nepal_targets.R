@@ -17,7 +17,7 @@ if (length(new_packages)) {
 }
 
 # Install trackr
-devtools::install_github("RossanaTat/trackr")
+# devtools::install_github("RossanaTat/trackr")
 
 # Load packages
 library(trackr)
