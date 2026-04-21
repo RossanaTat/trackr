@@ -11,15 +11,18 @@ LazyData: true
 URL: https://github.com/RossanaTat/sdgtrackr
 BugReports: https://github.com/RossanaTat/sdgtrackr/issues
 Imports: 
+    cli,
     collapse,
     data.table,
     dplyr,
     joyn,
     quantregGrowth,
-    wbstats,
+    readxl,
     rlang,
-    cli,
-    writexl
+    splitstackshape,
+    wbstats,
+    writexl,
+    zoo
 Suggests: 
     knitr,
     rmarkdown,
