@@ -1,3 +1,44 @@
+#' Re-grid a fractional-year trajectory onto whole calendar years
+#'
+#' The speed-based projections compute a continuous (fractional) `year` for
+#' each simulated step, e.g. `2024.37`, based on how long the model predicts
+#' it takes to move between indicator levels. Those fractional years almost
+#' never line up exactly with whole calendar years, so this helper explicitly
+#' interpolates the trajectory onto the integer-year grid
+#' `round(min(year)):target_year`, rather than discarding every row that
+#' doesn't happen to already land on a whole year.
+#'
+#' @param year Numeric vector of (fractional) years for one code/speed group.
+#' @param y Numeric vector of indicator values aligned with `year`.
+#' @param target_year Final year of the desired integer-year grid.
+#'
+#' @return A `data.table` with columns `year` (integers from
+#'   `round(min(year))` to `target_year`) and `y_fut` (interpolated value).
+#' @keywords internal
+regrid_fut_years <- function(year, y, target_year) {
+
+  ord  <- order(year)
+  year <- year[ord]
+  y    <- y[ord]
+
+  yrs <- seq(round(min(year)), target_year, 1)
+
+  # na.approx() needs at least two distinct, non-NA points to interpolate.
+  # If we only have one usable point, hold the trajectory flat at that value.
+  n_valid <- length(unique(year[!is.na(y)]))
+
+  if (n_valid < 2) {
+    val <- y[!is.na(y)]
+    val <- if (length(val)) val[1] else NA_real_
+    y_fut <- rep(val, length(yrs))
+  } else {
+    y_fut <- zoo::na.approx(y, year, xout = yrs, na.rm = FALSE, rule = 2)
+  }
+
+  data.table(year = yrs, y_fut = y_fut)
+}
+
+
 #' Prepare data for future target projections
 #'
 #'
@@ -275,24 +316,17 @@ future_path_speed <- function(data_fut,
     mutate(year = year + (time - time[1]) / speed) |>
     ungroup() |>
     select(-c(y_fut, time, best)) |>
-    rename("y_speed" = "y") |>
-    joyn::joyn(
-      data_fut,
-      match_type = "1:1",
-      by = c("code", "year", "speed"),
-      reportvar = FALSE,
-      verbose = FALSE,
-      y_vars_to_keep = "y"
-    ) |>
-    group_by(code, speed) |>
-    arrange(year) |>
-    mutate(y_fut = zoo::na.approx(y_speed,
-                                  year,
-                                  na.rm = FALSE,
-                                  rule = 2)) |>
-    filter(year %in% seq(min(year), target_year, 1)) |>
-    ungroup() |>
-    select(-y_speed, -y)
+    rename("y_speed" = "y")
+
+  # Re-grid the fractional-year trajectory onto whole calendar years
+  # (round(min(year)) through target_year), per code/speed. See
+  # `regrid_fut_years()` for why this is needed instead of filtering
+  # for rows that already happen to fall on a whole year.
+  path_fut_speed <- as.data.table(path_fut_speed)[
+    order(code, speed, year),
+    regrid_fut_years(year, y_speed, target_year),
+    by = .(code, speed)
+  ]
 
   # Step 5: Apply bounds and ordering
   path_fut_speed <- as.data.table(path_fut_speed)[
@@ -511,7 +545,7 @@ path_future_his_speed <- function(data_fut,
   path_fut_speed <- data_fut |>
     select(-y) |>
     filter(!is.na(y_fut), has_valid_speed) |>
-    cross_join(path_speed) |>
+    dplyr::cross_join(path_speed) |>
     mutate(best = best) |>
     filter(if_else(best == "high",
                    y >= y_fut,
@@ -521,28 +555,17 @@ path_future_his_speed <- function(data_fut,
     mutate(year = year + (time - time[1]) / speed) |>
     ungroup() |>
     select(-c(y_fut, time, best, speed, has_valid_speed)) |>
-    rename("y_speed" = "y") |>
-    joyn::joyn(
-      data_fut,
-      match_type = "1:1",
-      by = c("code", "year"),
-      reportvar = FALSE,
-      verbose   = FALSE,
-      y_vars_to_keep = "y"
-    ) |>
-    group_by(code) |>
-    arrange(year) |>
-    mutate(
-      y_fut = zoo::na.approx(
-        y_speed,
-        year,
-        na.rm = FALSE,
-        rule = 2
-      )
-    ) |>
-    filter(year %in% seq(min(year), target_year, 1)) |>
-    ungroup() |>
-    select(-y_speed, -y)
+    rename("y_speed" = "y")
+
+  # Re-grid the fractional-year trajectory onto whole calendar years
+  # (round(min(year)) through target_year), per country. See
+  # `regrid_fut_years()` for why this is needed instead of filtering
+  # for rows that already happen to fall on a whole year.
+  path_fut_speed <- as.data.table(path_fut_speed)[
+    order(code, year),
+    regrid_fut_years(year, y_speed, target_year),
+    by = .(code)
+  ]
 
   # --------------------------------------------------
   # 5. Apply bounds and ordering
